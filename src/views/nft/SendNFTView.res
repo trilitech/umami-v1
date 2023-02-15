@@ -98,7 +98,7 @@ module Form = {
           <FormGroupNFTView nft />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            keep={a => a.address != (sender->Alias.fromAccount).address}
+            keep={a => a.address != sender.address}
             value=form.values.recipient
             onChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
