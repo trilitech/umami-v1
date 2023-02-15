@@ -37,11 +37,12 @@ let decode = json => {
 }
 
 type action =
-  | Create(Account.t, bool)
-  | Edit(Account.t, PublicKeyHash.t)
+  | Create(Alias.t, bool)
+  | Edit(Alias.t, PublicKeyHash.t)
 
-let account = action =>
+let address = action =>
   switch action {
-  | Create(a, _) => Some(a)
-  | Edit(a, _) => Some(a)
+  | Create(a, _)
+  | Edit(a, _) =>
+    a.address
   }

@@ -1116,32 +1116,55 @@ let useAliasesAccountsMultisigs = () => {
   }
 }
 
-/*
-  Return accounts and multisigs,
-  formatted as aliases or corresponding registred alias if it exists.
-*/
-let useGetAccountsMultisigsAliasesAsAliases = () => {
-  ApiRequest.map(useAliasesAccountsMultisigs(), ((aliases, accounts, multisigs)) => {
-    let replaceName = v => {
-      switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
-      | Some(alias) => {...v, name: alias.Alias.name}
-      | None => v
+module AccountsMultisigs = {
+  // Return accounts and multisigs,
+  // formatted as aliases or corresponding registred alias if it exists.
+  let useRequest = () => {
+    ApiRequest.map(useAliasesAccountsMultisigs(), ((aliases, accounts, multisigs)) => {
+      let replaceName = v => {
+        switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
+        | Some(alias) => {...v, name: alias.Alias.name}
+        | None => v
+        }
       }
-    }
-    let acc = PublicKeyHash.Map.empty
-    let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
-      let v = Alias.fromAccount(v)
-      let v = replaceName(v)
-      PublicKeyHash.Map.set(acc, k, v)
+      let acc = PublicKeyHash.Map.empty
+      let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
+        let v = Alias.fromAccount(v)
+        let v = replaceName(v)
+        PublicKeyHash.Map.set(acc, k, v)
+      })
+      let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
+        let v = Alias.fromMultisig(v)
+        let v = replaceName(v)
+        PublicKeyHash.Map.set(acc, k, v)
+      })
+      acc
     })
-    let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
-      let v = Alias.fromMultisig(v)
-      let v = replaceName(v)
-      PublicKeyHash.Map.set(acc, k, v)
+  }
+
+  let useGetAll = () => {
+    useRequest()
+    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+    ->PublicKeyHash.Map.keep((_, a) =>
+      switch a.kind {
+      | Some(Account(_)) | Some(Multisig) => true
+      | _ => false
+      }
+    )
+  }
+
+  let useGetAllWithDelegates = () => {
+    let accounts = useGetAll()
+    let delegates = Delegate.useGetAll()
+    accounts->PublicKeyHash.Map.map(account => {
+      let delegate = delegates->Map.String.get((account.address :> string))
+      (account, delegate)
     })
-    acc
-  })
+  }
 }
+
+// For backward compatibility. To be removed.
+let useGetAccountsMultisigsAliasesAsAliases = AccountsMultisigs.useRequest
 
 let useGetImplicitFromAlias = () => {
   let accounts = Accounts.useGetAll()
@@ -1153,9 +1176,7 @@ let useGetImplicitFromAlias = () => {
     | Some(Account(_)) => getAccount(alias.Alias.address)
     | Some(Multisig) =>
       getMultisig(alias.Alias.address)
-      ->Option.flatMap(multisig =>
-        Js.Array.find(PublicKeyHash.Map.has(accounts), multisig.signers)
-      )
+      ->Option.flatMap(multisig => Js.Array.find(PublicKeyHash.Map.has(accounts), multisig.signers))
       ->Option.flatMap(signer => PublicKeyHash.Map.get(accounts, signer))
     | Some(Contact) => None
     | None => None

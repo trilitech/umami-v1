@@ -25,7 +25,7 @@
 
 module StateLenses = %lenses(
   type state = {
-    sender: Account.t,
+    sender: Alias.t,
     baker: string,
     fee: string,
   }

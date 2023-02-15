@@ -35,27 +35,17 @@ let styles = {
   })
 }
 
-let buildTransaction = (state: DelegateForm.state) => {
-  let infos = {
-    open Protocol.Delegation
-    {
-      delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
-      options: ProtocolOptions.make(),
-    }
-  }
-
-  (ProtocolHelper.Delegation.makeSingleton(~source=state.values.sender, ~infos, ()), infos)
-}
-
 type step =
   | SendStep
-  | SigningStep(Protocol.Delegation.t, Protocol.batch, Protocol.Simulation.results)
+  | SourceStep(DelegateForm.state)
+  | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
-  | SigningStep(_, _, _) => "signingstep"
+  | SourceStep(_) => "sourceStep"
+  | SigningStep(_, _) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
   }
 
@@ -82,10 +72,8 @@ module Form = {
             }
           , Baker))
       },
-      ~onSubmit=({state}) => {
-        let operation = buildTransaction(state)
-        onSubmit(operation)
-
+      ~onSubmit=x => {
+        onSubmit(x)
         None
       },
       ~initialState={
@@ -101,7 +89,7 @@ module Form = {
   module ViewBase = {
     type param_FormGroupDelegateSelector = {
       value: PublicKeyHash.t,
-      handleChange: Account.t => unit,
+      handleChange: Alias.t => unit,
       disabled: bool,
       error: option<string>,
     }
@@ -206,31 +194,47 @@ let make = (~closeAction, ~action) => {
 
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
-  let form = Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) =>
-    Promise.async(() =>
-      sendOperationSimulate(op)->Promise.mapOk(dryRun =>
-        setModalStep(_ => SigningStep(d, op, dryRun))
+  let onSubmit = ({state}: DelegateForm.onSubmitAPI) => {
+    switch state.values.sender.Alias.kind {
+    | Some(Account(_)) =>
+      let source = Alias.toAccountExn(state.values.sender)
+      let infos = {
+        open Protocol.Delegation
+        {
+          delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
+          options: ProtocolOptions.make(),
+        }
+      }
+      let operation = ProtocolHelper.Delegation.makeSingleton(~source, ~infos, ())
+      Promise.async(() =>
+        sendOperationSimulate(operation)->Promise.mapOk(dryRun =>
+          setModalStep(_ => SigningStep(operation, dryRun))
+        )
       )
-    )
-  )
+    | Some(Multisig) => setModalStep(_ => SourceStep(state))
+    | _ => assert false
+    }
+  }
+
+  let form = Form.build(action, onSubmit)
 
   let (signStep, _) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 
   let title = switch (modalStep, action) {
-  | (SigningStep(_, _, _), _) =>
+  | (SigningStep(_, _), _) =>
     let summaryTitle = I18n.Title.confirm_delegate
     SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some
-  | (SendStep, Create(_)) => I18n.Title.delegate->Some
-  | (SendStep, Edit(_)) => I18n.Title.delegate_update->Some
+  | (SendStep | SourceStep(_), Create(_)) => I18n.Title.delegate->Some
+  | (SendStep | SourceStep(_), Edit(_)) => I18n.Title.delegate_update->Some
   | (SubmittedStep(_), _) => None
   }
 
   let (signingState, _) as state = React.useState(() => None)
 
   let closing = switch (modalStep, (signingState: option<SigningBlock.state>)) {
-  | (SigningStep(_, {source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
-  | (SigningStep(_, {source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName))
   | _ => ModalFormView.Close(closeAction)
   }
@@ -252,12 +256,25 @@ let make = (~closeAction, ~action) => {
       <ModalFormView back closing ?title>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch modalStep {
-          | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
           | SendStep => <Form.View form action loading=loadingSimulate />
-          | SigningStep(_, operation, dryRun) =>
+          | SourceStep(state) =>
+            let onSubmit = source => {
+              let destination = state.values.sender.address
+              let parameter = ReTaquito.Toolkit.Lambda.setDelegate(state.values.baker)
+              let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
+              let operation = ProtocolHelper.Multisig.wrap(~source, [proposal])
+              sendOperationSimulate(operation)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(operation, dryRun))
+              })
+            }
+            <SourceStepView
+              multisig=state.values.sender.address sender=state.values.sender onSubmit
+            />
+          | SigningStep(operation, dryRun) =>
             <SignOperationView
               signer=operation.source signOpStep dryRun state operation sendOperation loading
             />
+          | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

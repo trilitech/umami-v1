@@ -83,7 +83,7 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
     let currentLevel =
       Network.monitor(config.network.explorer)->Promise.mapOk(monitor => monitor.nodeLastBlock)
 
-    let f = (operations, operationsTzkt, currentLevel) =>
+    let f = (operations, operationsTzkt, currentLevel) => {
       switch (operations, operationsTzkt, currentLevel) {
       | (Ok(operations), Ok(operationsTzkt), Ok(currentLevel)) =>
         // If [address] is initiator of a transaction
@@ -97,6 +97,7 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
             | Transaction(Tez({destination}))
             | Transaction(Token({destination}, _, _)) =>
               destination == address
+            | Delegation({delegate}) => delegate == Some(address)
             | _ => true
             }
         })
@@ -110,6 +111,7 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
       | (Error(_) as e, _, _)
       | (_, _, Error(_) as e) => e
       }
+    }
 
     Promise.map3(operations, operationsTzkt, currentLevel, f)
   }

@@ -456,7 +456,9 @@ module Pending = {
         let parameter =
           ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
             id->ReBigNumber.toString,
-          )->Result.getExn->Option.getExn
+          )
+          ->Result.getExn
+          ->Option.getExn
         let destination = multisig.Multisig.address
         let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
         let transfers = [transfer]
@@ -568,145 +570,153 @@ module Pending = {
     let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
     let multisig = multisigFromAddress(account.Alias.address)->Option.getExn
 
-    {
-      switch pending.type_ {
-      | Transaction =>
-        let common: Operation.Transaction.common = {
-          amount: pending.amount->ReBigNumber.toString->Tez.fromMutezString,
-          destination: pending.recipient,
-          parameters: None,
-          entrypoint: None, // FIXME: pending.entrypoint?
-        }
-        let transaction = Operation.Transaction.Tez(common)
-        let tooltipSuffix = pending.id->ReBigNumber.toString
-        let canSubmit =
-          ReBigNumber.fromInt(Array.length(pending.approvals))->ReBigNumber.isGreaterThanOrEqualTo(
-            multisig.Multisig.threshold,
-          )
-        let signed = pending.approvals->Array.length->Int.toString
-        let threshold = multisig.Multisig.threshold->ReBigNumber.toString
-        let header = (collapseButton, expanded) => {
-          let rowStyle = expanded
-            ? Style.style(
-                ~backgroundColor=theme.colors.stateActive,
-                ~borderTopLeftRadius=4.,
-                ~borderTopRightRadius=4.,
-                (),
-              )->Some
-            : None
-          <Table.Row.Bordered ?rowStyle>
-            <CellExpandToggle> {collapseButton} </CellExpandToggle>
-            <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
+    let tooltipSuffix = pending.id->ReBigNumber.toString
+    let canSubmit =
+      ReBigNumber.fromInt(Array.length(pending.approvals))->ReBigNumber.isGreaterThanOrEqualTo(
+        multisig.Multisig.threshold,
+      )
+    let signed = pending.approvals->Array.length->Int.toString
+    let threshold = multisig.Multisig.threshold->ReBigNumber.toString
+    let header = (collapseButton, expanded) => {
+      let rowStyle = expanded
+        ? Style.style(
+            ~backgroundColor=theme.colors.stateActive,
+            ~borderTopLeftRadius=4.,
+            ~borderTopRightRadius=4.,
+            (),
+          )->Some
+        : None
+
+      <Table.Row.Bordered ?rowStyle>
+        <CellExpandToggle> {collapseButton} </CellExpandToggle>
+        <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
+        {switch pending.operation {
+        | Transaction(transaction) => <>
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
             <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
-            <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
-            <CellSignatures style={Style.style(~flexDirection=#row, ())}>
+            <CellAddress>
+              {getContactOrRaw(
+                aliases,
+                tokens,
+                Operation.Transaction.Accessor.destination(transaction),
+              )}
+            </CellAddress>
+          </>
+        | Delegation({delegate}) => <>
+            {cellType(I18n.operation_delegation)}
+            <CellAmount />
+            {delegate->Option.mapWithDefault(
+              <CellAddress>
+                {I18n.delegation_removal->Typography.body1(~numberOfLines=1)}
+              </CellAddress>,
+              d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
+            )}
+          </>
+        | _ => React.null // FIXME
+        }}
+        <CellSignatures style={Style.style(~flexDirection=#row, ())}>
+          {
+            let color = canSubmit ? theme.colors.textPositive : theme.colors.textHighEmphasis
+            <>
+              <Icons.Key size=20. color />
+              {I18n.a_of_b(signed, threshold)->Typography.body1(
+                ~style=Style.style(~color, ~marginLeft=8.->Style.dp, ()),
+              )}
+            </>
+          }
+        </CellSignatures>
+      </Table.Row.Bordered>
+    }
+    <ContractRows.Collapsable header expanded=false>
+      <View
+        style={Style.array([
+          styles["pendingDetails"],
+          Style.style(
+            ~backgroundColor=theme.colors.stateActive,
+            ~borderTopColor=theme.colors.stateDisabled,
+            ~borderTopWidth=1.,
+            (),
+          ),
+        ])}>
+        <View style={styles["numberOfApproval"]}>
+          {
+            let size = 24.
+            let style = {
+              open Style
+              style(~marginRight=10.->dp, ())
+            }
+            ReBigNumber.fromInt(
+              pending.approvals->Array.length,
+            )->ReBigNumber.isGreaterThanOrEqualTo(multisig.Multisig.threshold)
+              ? <Icons.CheckFill size style color=theme.colors.textPositive />
+              : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
+          }
+          {I18n.approved_a_of_b(signed, threshold)->Typography.overline2}
+        </View>
+        <View>
+          {multisig.Multisig.signers
+          ->Array.mapWithIndex((i, owner) => {
+            let hasSigned = Js.Array.includes(owner, pending.approvals)
+            <View key={i->Int.toString} style={styles["signerWrapper"]}>
               {
-                let color = canSubmit ? theme.colors.textPositive : theme.colors.textHighEmphasis
+                let textColor = hasSigned
+                  ? None
+                  : {
+                      open Style
+                      style(~color=theme.colors.textDisabled, ())->Some
+                    }
+                let addressStyle = textColor
+                let iconStyle = Style.arrayOption([
+                  OperationSummaryView.styles["accounticon"]->Some,
+                  textColor,
+                ])
+                let nameStyle = Style.arrayOption([
+                  OperationSummaryView.styles["subtitle"]->Some,
+                  textColor,
+                ])
+                let fst =
+                  i == 0
+                    ? styles["signerFst"]->Some
+                    : Style.style(
+                        ~borderTopColor=theme.colors.textDisabled,
+                        ~borderTopWidth=1.,
+                        (),
+                      )->Some
+                let lst =
+                  i == Js.Array.length(multisig.Multisig.signers) - 1
+                    ? styles["signerLst"]->Some
+                    : None
+                let style = Style.arrayOption([
+                  fst,
+                  lst,
+                  styles["signerBox"]->Some,
+                  Style.style(~backgroundColor=theme.colors.stateDisabled, ())->Some,
+                ])
                 <>
-                  <Icons.Key size=20. color />
-                  {I18n.a_of_b(signed, threshold)->Typography.body1(
-                    ~style=Style.style(~color, ~marginLeft=8.->Style.dp, ()),
-                  )}
+                  <View style>
+                    <OperationSummaryView.EntityInfoContent
+                      iconStyle nameStyle ?addressStyle address={Some(owner)}
+                    />
+                    {hasSigned
+                      ? <Icons.CheckFill
+                          style={Style.style(~marginLeft="auto"->StyleUtils.stringToSize, ())}
+                          size=20.
+                          color=theme.colors.textPositive
+                        />
+                      : React.null}
+                  </View>
+                  {switch PublicKeyHash.Map.get(accounts, owner) {
+                  | Some(signer) =>
+                    <TransactionActionButtons signer multisig id=pending.id hasSigned canSubmit />
+                  | None => React.null
+                  }}
                 </>
               }
-            </CellSignatures>
-          </Table.Row.Bordered>
-        }
-        <ContractRows.Collapsable header expanded=false>
-          <View
-            style={Style.array([
-              styles["pendingDetails"],
-              Style.style(
-                ~backgroundColor=theme.colors.stateActive,
-                ~borderTopColor=theme.colors.stateDisabled,
-                ~borderTopWidth=1.,
-                (),
-              ),
-            ])}>
-            <View style={styles["numberOfApproval"]}>
-              {
-                let size = 24.
-                let style = {
-                  open Style
-                  style(~marginRight=10.->dp, ())
-                }
-                ReBigNumber.fromInt(
-                  pending.approvals->Array.length,
-                )->ReBigNumber.isGreaterThanOrEqualTo(multisig.Multisig.threshold)
-                  ? <Icons.CheckFill size style color=theme.colors.textPositive />
-                  : <Icons.RadioOff size style color=theme.colors.textMediumEmphasis />
-              }
-              {I18n.approved_a_of_b(signed, threshold)->Typography.overline2}
             </View>
-            <View>
-              {multisig.Multisig.signers
-              ->Array.mapWithIndex((i, owner) => {
-                let hasSigned = Js.Array.includes(owner, pending.approvals)
-                <View key={i->Int.toString} style={styles["signerWrapper"]}>
-                  {
-                    let textColor = hasSigned
-                      ? None
-                      : {
-                          open Style
-                          style(~color=theme.colors.textDisabled, ())->Some
-                        }
-                    let addressStyle = textColor
-                    let iconStyle = Style.arrayOption([
-                      OperationSummaryView.styles["accounticon"]->Some,
-                      textColor,
-                    ])
-                    let nameStyle = Style.arrayOption([
-                      OperationSummaryView.styles["subtitle"]->Some,
-                      textColor,
-                    ])
-                    let fst =
-                      i == 0
-                        ? styles["signerFst"]->Some
-                        : Style.style(
-                            ~borderTopColor=theme.colors.textDisabled,
-                            ~borderTopWidth=1.,
-                            (),
-                          )->Some
-                    let lst =
-                      i == Js.Array.length(multisig.Multisig.signers) - 1
-                        ? styles["signerLst"]->Some
-                        : None
-                    let style = Style.arrayOption([
-                      fst,
-                      lst,
-                      styles["signerBox"]->Some,
-                      Style.style(~backgroundColor=theme.colors.stateDisabled, ())->Some,
-                    ])
-                    <>
-                      <View style>
-                        <OperationSummaryView.EntityInfoContent
-                          iconStyle nameStyle ?addressStyle address={Some(owner)}
-                        />
-                        {hasSigned
-                          ? <Icons.CheckFill
-                              style={Style.style(~marginLeft="auto"->StyleUtils.stringToSize, ())}
-                              size=20.
-                              color=theme.colors.textPositive
-                            />
-                          : React.null}
-                      </View>
-                      {switch PublicKeyHash.Map.get(accounts, owner) {
-                      | Some(signer) =>
-                        <TransactionActionButtons
-                          signer multisig id=pending.id hasSigned canSubmit
-                        />
-                      | None => React.null
-                      }}
-                    </>
-                  }
-                </View>
-              })
-              ->React.array}
-            </View>
-          </View>
-        </ContractRows.Collapsable>
-      }
-    }
+          })
+          ->React.array}
+        </View>
+      </View>
+    </ContractRows.Collapsable>
   }
 }

@@ -32,7 +32,7 @@ let styles = {
 
 @react.component
 let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) => {
-  let accounts = StoreContext.Accounts.useGetAllWithDelegates()
+  let accounts = StoreContext.AccountsMultisigs.useGetAllWithDelegates()
 
   let hasError = error->Option.isSome
 
@@ -40,11 +40,10 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
     accounts
     ->PublicKeyHash.Map.valuesToArray
     ->Array.keepMap(((account, delegate)) =>
-      delegate->Option.isNone || disabled ? Some(Alias.fromAccount(account)) : None
+      account.address == value || delegate->Option.isNone ? Some(account) : None
     )
     ->SortArray.stableSortBy(Alias.compare)
 
-  let handleChange = x => handleChange(Alias.toAccountExn(x))
   let renderButton = AccountElements.Selector.baseRenderButton(
     ~forceFetch=false,
     ~showAmount=Balance,

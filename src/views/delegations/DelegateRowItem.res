@@ -91,8 +91,7 @@ let memo = component =>
   )
 
 @react.component
-let make = memo((~account: Account.t, ~delegateRequest) => {
-  Js.log(__LOC__)
+let make = memo((~account: Alias.t, ~delegateRequest) => {
   let aliases = StoreContext.Aliases.useGetAll()
   let balanceRequest =
     StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)

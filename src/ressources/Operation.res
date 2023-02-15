@@ -39,7 +39,7 @@ module Transaction = {
     amount: Tez.t,
     destination: PublicKeyHash.t,
     parameters: option<Js.Dict.t<string>>,
-    entrypoint: option<string>
+    entrypoint: option<string>,
   }
   type token_info = {
     kind: TokenRepr.kind,
@@ -157,14 +157,34 @@ module Origination = {
 module Delegation = {
   type t = {delegate: option<PublicKeyHash.t>}
 
-  let decode = json => {
+  module Decode = {
     open Json.Decode
-    {
-      delegate: switch json |> optional(field("data", field("delegate", string))) {
-      | Some(delegate) =>
-        delegate->Js.String2.length == 0 ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
-      | None => None
-      },
+
+    let t = json => {
+      {
+        delegate: switch json |> optional(field("data", field("delegate", string))) {
+        | Some(delegate) =>
+          delegate->Js.String2.length == 0
+            ? None
+            : Some(delegate->PublicKeyHash.build->Result.getExn)
+        | None => None
+        },
+      }
+    }
+
+    module Tzkt = {
+      let t = json => {
+        {
+          delegate: json
+          |> field("newDelegate", field("address", string))
+          |> (
+            delegate =>
+              delegate->Js.String2.length == 0
+                ? None
+                : Some(delegate->PublicKeyHash.build->Result.getExn)
+          ),
+        }
+      }
     }
   }
 }
@@ -214,7 +234,7 @@ module Decode = {
     | "reveal" => Reveal(json->Reveal.decode)
     | "transaction" => Transaction(json->Transaction.Decode.t)
     | "origination" => Origination(json->Origination.decode)
-    | "delegation" => Delegation(json->Delegation.decode)
+    | "delegation" => Delegation(json->Delegation.Decode.t)
     | _ => Unknown
     }
 
@@ -245,7 +265,7 @@ module Decode = {
       | "reveal" => None
       | "transaction" => Option.map(json->Transaction.Decode.Tzkt.t, t => Transaction(t))
       | "origination" => None
-      | "delegation" => None
+      | "delegation" => (json->Delegation.Decode.Tzkt.t)->Delegation->Some
       | _ => None
       }
 

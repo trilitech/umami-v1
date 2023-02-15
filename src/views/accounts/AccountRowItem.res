@@ -63,7 +63,7 @@ module GenericRowItem = {
 
 module Delegate = {
   @react.component
-  let make = (~account: Account.t) => {
+  let make = (~account: Alias.t) => {
     let delegateRequest = StoreContext.Delegate.useLoad(account.address)
     let balanceRequest =
       StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
@@ -89,7 +89,7 @@ module Delegate = {
 
 module MultisigRowItem = {
   @react.component
-  let make = (~multisig: Multisig.t) => {
+  let make = (~multisig: Multisig.t, ~token: option<Token.t>=?) => {
     let description = {
       let threshold = multisig.threshold->ReBigNumber.toString
       let signers = Array.length(multisig.signers)->Int.toString
@@ -99,16 +99,17 @@ module MultisigRowItem = {
         {I18n.Label.out_of(threshold, signers)->React.string}
       </Typography.Body2>
     }
-    <GenericRowItem account={multisig->Alias.fromMultisig} description>
-      {React.null}
+    let account = Alias.fromMultisig(multisig)
+    <GenericRowItem account description>
+      {<Delegate account />->ReactUtils.onlyWhen(token == None)}
     </GenericRowItem>
   }
 }
 
 @react.component
 let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
-  <GenericRowItem
-    account={account->Alias.fromAccount} ?token icon_isHD=isHD justifyContent=#spaceBetween>
+  let account = Alias.fromAccount(account)
+  <GenericRowItem account ?token icon_isHD=isHD justifyContent=#spaceBetween>
     {<Delegate account />->ReactUtils.onlyWhen(token == None)}
   </GenericRowItem>
 }

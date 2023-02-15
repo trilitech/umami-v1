@@ -60,13 +60,19 @@ let make = (~closeAction, ~account, ~delegate) => {
   let (_, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
   React.useEffect0(() => {
-    let delegate = Protocol.Delegation.Undelegate(Some(delegate))
-    let op = ProtocolHelper.Delegation.makeSingleton(
-      ~source=account,
-      ~infos={delegate: delegate, options: ProtocolOptions.make()},
-      (),
-    )
-    sendOperationSimulate(op)->Promise.getOk(dryRun => setModalStep(_ => SigningStep(op, dryRun)))
+    switch account.Alias.kind {
+    | Some(Account(_)) =>
+      let account = Alias.toAccountExn(account)
+      let delegate = Protocol.Delegation.Undelegate(Some(delegate))
+      let op = ProtocolHelper.Delegation.makeSingleton(
+        ~source=account,
+        ~infos={delegate: delegate, options: ProtocolOptions.make()},
+        (),
+      )
+      sendOperationSimulate(op)->Promise.getOk(dryRun => setModalStep(_ => SigningStep(op, dryRun)))
+    | Some(Multisig) => failwith("TODO")
+    | _ => assert false
+    }
     None
   })
 

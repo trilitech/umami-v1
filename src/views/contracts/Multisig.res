@@ -230,13 +230,11 @@ module API = {
   }
 
   module PendingOperation = {
-    type type_ = Transaction
+    type operation = Operation.payload
 
     type t = {
       id: ReBigNumber.t,
-      type_: type_,
-      amount: ReBigNumber.t,
-      recipient: PublicKeyHash.t,
+      operation: operation,
       approvals: array<PublicKeyHash.t>,
     }
   }
@@ -274,11 +272,11 @@ module API = {
       ->Option.flatMap(Js.Json.decodeObject)
       ->Option.flatMap(x => Js.Dict.get(x, "int"))
       ->Option.flatMap(Js.Json.decodeString)
-      ->Option.map(ReBigNumber.fromString)
+      ->Option.map(Tez.fromMutezString)
 
     type recipient_amount = {
       recipient: PublicKeyHash.t,
-      amount: ReBigNumber.t,
+      amount: Tez.t,
     }
 
     let recipient_amount = (r, rk, encode, a, array): option<recipient_amount> => {
@@ -293,7 +291,50 @@ module API = {
       })
     }
 
-    // See LAMBDA_MANAGER.transferImplicit
+    // See MANAGER_LAMBDA.setDelegate
+    // [
+    // 0 {prim: 'DROP'},
+    // 1 {prim: 'NIL', args: [{ prim: 'operation' }]},
+    // 2 {prim: 'PUSH', args: [{ prim: 'key_hash' }, { string: key }]},
+    // 3 {prim: 'SOME'},
+    // 4 {prim: 'SET_DELEGATE'},
+    // 5 {prim: 'CONS'},
+    // ]
+    let setDelegate = (json: Js.Json.t) => {
+      Js.Json.decodeArray(json)->Option.flatMap(array => {
+        let check = (pos, value) => check(array, pos, value)
+        check(0, {"prim": "DROP"}) &&
+        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
+        check(3, {"prim": "SOME"}) &&
+        check(4, {"prim": "SET_DELEGATE"}) &&
+        check(5, {"prim": "CONS"})
+          ? array[2]->Option.flatMap(recipient("key_hash", ReTaquitoUtils.encodeKeyHash))
+          : None
+      })
+    }
+
+    // See MANAGER_LAMBDA.removeDelegate
+    // [
+    // 0 { prim: 'DROP' },
+    // 1 { prim: 'NIL', args: [{ prim: 'operation' }] },
+    // 2 { prim: 'NONE', args: [{ prim: 'key_hash' }] },
+    // 3 { prim: 'SET_DELEGATE' },
+    // 4 { prim: 'CONS' },
+    // ]
+    let removeDelegate = (json: Js.Json.t) => {
+      Js.Json.decodeArray(json)->Option.flatMap(array => {
+        let check = (pos, value) => check(array, pos, value)
+        check(0, {"prim": "DROP"}) &&
+        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
+        check(2, {"prim": "NONE", "args": [{"prim": "key_hash"}]}) &&
+        check(3, {"prim": "SET_DELEGATE"}) &&
+        check(4, {"prim": "CONS"})
+          ? Some()
+          : None
+      })
+    }
+
+    // See MANAGER_LAMBDA.transferImplicit
     // [
     // 0 {prim: "DROP"},
     // 1 {prim: "NIL", args: [{prim: "operation"}]},
@@ -306,7 +347,7 @@ module API = {
     // ]
     let transferImplicit = (json: Js.Json.t) => {
       Js.Json.decodeArray(json)->Option.flatMap(array => {
-        let check = ( pos, value) => check(array, pos, value)
+        let check = (pos, value) => check(array, pos, value)
         check(0, {"prim": "DROP"}) &&
         check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
         check(3, {"prim": "IMPLICIT_ACCOUNT"}) &&
@@ -318,7 +359,7 @@ module API = {
       })
     }
 
-    // See LAMBDA_MANAGER.transferToContract
+    // See MANAGER_LAMBDA.transferToContract
     // [
     // 0 { prim: 'DROP' },
     // 1 { prim: 'NIL', args: [{ prim: 'operation' }] },
@@ -350,12 +391,34 @@ module API = {
       | None => transferToContract(json)
       | x => x
       }
+
+    let delegate = (json: Js.Json.t): option<option<PublicKeyHash.t>> =>
+      switch setDelegate(json) {
+      | None => removeDelegate(json)->Option.map(() => None)
+      | x => Some(x)
+      }
   }
 
-  let parseActions = actions => {
+  let parseActions = (actions): option<Operation.payload> => {
     actions
-    ->JsonEx.parse
-    ->Result.flatMap(x => x->LAMBDA_PARSER.transfer->ResultEx.fromOption(JsonEx.ParsingError("")))
+    ->Json.parse
+    ->Option.flatMap(x => {
+      open Operation
+      switch LAMBDA_PARSER.transfer(x)->Option.map(({amount, recipient}) =>
+        Transaction.Tez({
+          amount: amount,
+          destination: recipient,
+          parameters: None,
+          entrypoint: None,
+        })->Transaction
+      ) {
+      | None =>
+        LAMBDA_PARSER.delegate(x)->Option.map(delegate =>
+          {Delegation.delegate: delegate}->Delegation
+        )
+      | x => x
+      }
+    })
   }
 
   let getPendingOperations = (network: Network.t, ~bigmap: int) =>
@@ -369,22 +432,18 @@ module API = {
       entries->Array.keepMap(entry => {
         switch (entry.active, entry.key, entry.value) {
         | (true, Some(key), Some(value)) =>
-          parseActions(value.actions)
-          ->Result.map(({amount, recipient}) => Some({
+          parseActions(value.actions)->Option.map(payload => {
             PendingOperation.id: key,
-            type_: Transaction,
-            amount: amount,
-            recipient: recipient,
+            operation: payload,
             approvals: value.approvals,
-          }))
-          ->Result.getWithDefault(None)
+          })
         | _ => None
         }
       })
     )
     ->Promise.mapOk(results =>
       results->Array.reduce(ReBigNumber.Map.empty, (map, pendingOperation) =>
-        map->ReBigNumber.Map.set(pendingOperation.id, pendingOperation)
+        map->ReBigNumber.Map.set(pendingOperation.PendingOperation.id, pendingOperation)
       )
     )
 

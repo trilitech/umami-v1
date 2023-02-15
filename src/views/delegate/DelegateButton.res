@@ -45,9 +45,7 @@ let styles = {
 let make = (~zeroTez, ~action: Delegate.action, ~style as styleFromProp=?) => {
   let theme = ThemeContext.useTheme()
 
-  let tooltipId =
-    "delegate_button_" ++
-    Delegate.account(action)->Option.mapWithDefault("", a => (a.address :> string))
+  let tooltipId = "delegate_button_" ++ (Delegate.address(action) :> string)
 
   let (textColor, backgroundColor, focusOutlineColor, text, tooltip) = switch action {
   | _ if zeroTez => (
