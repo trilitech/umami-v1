@@ -303,6 +303,7 @@ module API = {
     let setDelegate = (json: Js.Json.t) => {
       Js.Json.decodeArray(json)->Option.flatMap(array => {
         let check = (pos, value) => check(array, pos, value)
+        Array.length(array) == 6 &&
         check(0, {"prim": "DROP"}) &&
         check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
         check(3, {"prim": "SOME"}) &&
@@ -324,6 +325,7 @@ module API = {
     let removeDelegate = (json: Js.Json.t) => {
       Js.Json.decodeArray(json)->Option.flatMap(array => {
         let check = (pos, value) => check(array, pos, value)
+        Array.length(array) == 5 &&
         check(0, {"prim": "DROP"}) &&
         check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
         check(2, {"prim": "NONE", "args": [{"prim": "key_hash"}]}) &&
@@ -348,6 +350,7 @@ module API = {
     let transferImplicit = (json: Js.Json.t) => {
       Js.Json.decodeArray(json)->Option.flatMap(array => {
         let check = (pos, value) => check(array, pos, value)
+        Array.length(array) == 8 &&
         check(0, {"prim": "DROP"}) &&
         check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
         check(3, {"prim": "IMPLICIT_ACCOUNT"}) &&
@@ -374,6 +377,7 @@ module API = {
     let transferToContract = (json: Js.Json.t) => {
       Js.Json.decodeArray(json)->Option.flatMap(array => {
         let check = (pos, value) => check(array, pos, value)
+        Array.length(array) == 9 &&
         check(0, {"prim": "DROP"}) &&
         check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
         check(3, {"prim": "CONTRACT", "args": [{"prim": "unit"}]}) &&
