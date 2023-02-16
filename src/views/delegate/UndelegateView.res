@@ -34,12 +34,14 @@ let styles = {
 
 type step =
   | SendStep
+  | SourceStep
   | SigningStep(Protocol.batch, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
+  | SourceStep => "sourcestep"
   | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
   }
@@ -70,7 +72,7 @@ let make = (~closeAction, ~account, ~delegate) => {
         (),
       )
       sendOperationSimulate(op)->Promise.getOk(dryRun => setModalStep(_ => SigningStep(op, dryRun)))
-    | Some(Multisig) => failwith("TODO")
+    | Some(Multisig) => setModalStep(_ => SourceStep)
     | _ => assert false
     }
     None
@@ -79,7 +81,7 @@ let make = (~closeAction, ~account, ~delegate) => {
   let title = switch modalStep {
   | SigningStep(_) =>
     SignOperationView.makeTitle(~custom=I18n.Title.delegate_delete, signStep)->Some
-  | SendStep => I18n.Title.delegate_delete->Some
+  | SourceStep | SendStep => I18n.Title.delegate_delete->Some
   | SubmittedStep(_) => None
   }
 
@@ -99,6 +101,17 @@ let make = (~closeAction, ~account, ~delegate) => {
           {switch modalStep {
           | SubmittedStep(hash) => <SubmittedView hash onPressCancel={_ => closeAction()} />
           | SendStep => <LoadingView style={styles["deleteLoading"]} />
+          | SourceStep =>
+            let onSubmit = source => {
+              let destination = account.address
+              let parameter = ReTaquito.Toolkit.Lambda.removeDelegate()
+              let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
+              let operation = ProtocolHelper.Multisig.wrap(~source, [proposal])
+              sendOperationSimulate(operation)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(operation, dryRun))
+              })
+            }
+            <SourceStepView multisig=account.address sender=account onSubmit />
           | SigningStep(operation, dryRun) =>
             let loading = operationRequest->ApiRequest.isLoading
             <SignOperationView
