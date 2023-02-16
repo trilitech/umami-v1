@@ -251,6 +251,7 @@ module GenericCellAmount = {
 }
 
 let cellType = i18n => <CellType> {i18n->Typography.body1} </CellType>
+
 let cellFee = (account: Alias.t, source, fee) => {
   let fee = account.address == source ? fee : Tez.zero
   <CellFee>
@@ -511,10 +512,14 @@ module Pending = {
 
   module ApproveWithConfirmationButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id) => {
+    let make = (
+      ~multisig,
+      ~title=I18n.Title.approval_threshold_reached,
+      ~contentText=I18n.Expl.approval_threshold_reached,
+      ~signer: Account.t,
+      ~id,
+    ) => {
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
-      let title = I18n.Title.approval_threshold_reached
-      let contentText = I18n.Expl.approval_threshold_reached
       let cancelText = I18n.Btn.cancel
 
       let action =
@@ -544,20 +549,54 @@ module Pending = {
     }
   }
 
+  module ApproveWithReviewButton = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id) => {
+      let title = I18n.Title.unrecognized_operation
+      let contentText = I18n.Expl.unrecognized_operation
+      <ApproveWithConfirmationButton multisig signer id title contentText />
+    }
+  }
+
   module TransactionActionButtons = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit) => {
+    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit, ~unknown=false) => {
       <>
         {hasSigned
           ? <ApproveButton multisig signer id disabled=true />
           : canSubmit
           ? <ApproveWithConfirmationButton multisig signer id />
+          : unknown
+          ? <ApproveWithReviewButton multisig signer id />
           : <ApproveButton multisig signer id disabled=false />}
         <ExecuteButton multisig signer id disabled={!canSubmit} />
         //        <Buttons.SubmitPrimary
         //          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
         //        />
       </>
+    }
+  }
+
+  let codeView = pending =>
+    pending.Multisig.API.PendingOperation.raw
+    ->Js.Json.parseExn
+    ->Js.Json.stringifyWithSpace(4)
+    ->(text => <CodeView text />)
+
+  module UnknownDetails = {
+    @react.component
+    let make = (~children) => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <CellAction>
+        <IconButton size=34. icon=Icons.MagnifierPlus.build onPress={_ => openAction()} />
+        {wrapModal(
+          <ModalFormView
+            title=I18n.Title.unrecognized_operation closing=ModalFormView.Close(closeAction)>
+            {I18n.Expl.unrecognized_operation->Typography.body1(~style=FormStyles.textContent)}
+            children
+          </ModalFormView>,
+        )}
+      </CellAction>
     }
   }
 
@@ -612,7 +651,7 @@ module Pending = {
               d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
             )}
           </>
-        | _ => React.null // FIXME
+        | Unknown | _ => <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellAddress /> </>
         }}
         <CellSignatures style={Style.style(~flexDirection=#row, ())}>
           {
@@ -625,6 +664,10 @@ module Pending = {
             </>
           }
         </CellSignatures>
+        {switch pending.operation {
+        | Unknown => <UnknownDetails> {codeView(pending)} </UnknownDetails>
+        | _ => React.null
+        }}
       </Table.Row.Bordered>
     }
     <ContractRows.Collapsable header expanded=false>
@@ -707,7 +750,14 @@ module Pending = {
                   </View>
                   {switch PublicKeyHash.Map.get(accounts, owner) {
                   | Some(signer) =>
-                    <TransactionActionButtons signer multisig id=pending.id hasSigned canSubmit />
+                    <TransactionActionButtons
+                      signer
+                      multisig
+                      id=pending.id
+                      hasSigned
+                      canSubmit
+                      unknown={pending.operation == Unknown}
+                    />
                   | None => React.null
                   }}
                 </>

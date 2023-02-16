@@ -236,6 +236,7 @@ module API = {
       id: ReBigNumber.t,
       operation: operation,
       approvals: array<PublicKeyHash.t>,
+      raw: string,
     }
   }
 
@@ -440,6 +441,7 @@ module API = {
             PendingOperation.id: key,
             operation: payload,
             approvals: value.approvals,
+            raw: value.actions,
           })
         | _ => None
         }

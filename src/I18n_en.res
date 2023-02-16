@@ -413,6 +413,7 @@ module Title = {
   let owners = s => `Owners (${s})`
   let approval_threshold = "Approval threshold"
   let approval_threshold_reached = "Signature threshold reached"
+  let unrecognized_operation = "Unrecognized Operation"
 }
 
 module Expl = {
@@ -464,6 +465,7 @@ module Expl = {
   let review_multisig = `Please review the details of the multisig contract you are about to create.\\nYou can edit them before submitting by clicking the back button.\\nYou will receive an approval request from your wallet. Please confirm it to continue.`
   let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
   let signing_account = "Select signing account."
+  let unrecognized_operation = "Umami does not support this type of operation. Please review the details of the operation before signing it."
 }
 
 module Menu = {
@@ -694,6 +696,7 @@ let support_mailto_error_body = "The following error happened in Umami:"
 let download_question = "Do you want to download the latest update?"
 let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami."
 let unknown_operation = "Unknown"
+let unrecognized_operation = "Unrecognized Operation"
 let error404 = "404 - Route Not Found :("
 let no_balance_amount = "---- "
 let logs_no_recent = "No Recent Message"
