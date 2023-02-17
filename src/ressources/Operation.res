@@ -250,7 +250,7 @@ module Decode = {
     fee: (json |> optional(field("fee", string)))
       ->Option.mapWithDefault(Tez.zero, Tez.fromMutezString),
     hash: json |> field("hash", string),
-    id: json |> field("id", string), // Seems to always be "0"
+    id: json |> field("id", string),
     level: json |> field("level", string) |> int_of_string,
     op_id: json |> field("id", string) |> int_of_string,
     payload: json |> payload(json |> field("kind", string)),
