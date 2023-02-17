@@ -87,7 +87,7 @@ describe("API tests", ({testAsync}) => {
             "gas_limit": "10100",
             "storage_limit": "0",
             "op_id": 0,
-            "delegate": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"
+            "delegate": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3",
           },
           {
             "type": "transaction",
@@ -107,7 +107,7 @@ describe("API tests", ({testAsync}) => {
             "parameters": {
               "prim": "Unit"
             },
-            "entrypoint": "default"
+            "entrypoint": "default",
           }
         ]`
         Promise.value(Ok(data->Json.parseOrRaise))
@@ -127,6 +127,7 @@ describe("API tests", ({testAsync}) => {
         payload: Delegation({
           delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
         }),
+        internal: 0,
       },
       {
         id: "9216974000",
@@ -146,6 +147,7 @@ describe("API tests", ({testAsync}) => {
             entrypoint: Some("default"),
           }),
         ),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)
@@ -235,6 +237,7 @@ describe("API tests", ({testAsync}) => {
             public_key: "edpkuAjG6hyZ86JJ8TWBZ5j8txMX6ySsBFBcRRgmkKVBFDf3RJXfdx",
           }->Some,
         ),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)
@@ -332,6 +335,7 @@ describe("API tests", ({testAsync}) => {
             entrypoint: Some("default"),
           }),
         ),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)
@@ -422,6 +426,7 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(2065),
         payload: Origination({contract: "KT1EVkzesmiNL2GLzCn73WwiiwZf4R6AVW9x"}->Some),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)
@@ -506,6 +511,7 @@ describe("API tests", ({testAsync}) => {
         source: "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh,
         fee: Tez.fromMutezInt(1258),
         payload: Delegation({delegate: None}),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)
@@ -557,6 +563,7 @@ describe("API tests", ({testAsync}) => {
         payload: Delegation({
           delegate: Some("tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"->pkh),
         }),
+        internal: 0,
       },
     ]
     module UnderTest = ServerAPI.ExplorerMaker(Stub)

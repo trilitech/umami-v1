@@ -211,7 +211,7 @@ type t = {
   source: PublicKeyHash.t,
   status: status,
   timestamp: Js.Date.t,
-  // FIXME: add internal: int (i.e. the position of the operation in a list of internal operations. 0 by default)
+  internal: int,
 }
 
 let internal_op_id = op =>
@@ -245,6 +245,8 @@ module Decode = {
     Option.isNone(block_hash) ? Mempool : Chain
   }
 
+  let internal = json => (json |> optional(field("internal", int)))->Option.getWithDefault(0)
+
   let t = json => {
     block: json |> optional(field("block_hash", string)),
     fee: (json |> optional(field("fee", string)))
@@ -257,6 +259,7 @@ module Decode = {
     source: json |> source,
     status: status(json),
     timestamp: json |> field("op_timestamp", date),
+    internal: json |> internal,
   }
 
   module Tzkt = {
@@ -265,7 +268,7 @@ module Decode = {
       | "reveal" => None
       | "transaction" => Option.map(json->Transaction.Decode.Tzkt.t, t => Transaction(t))
       | "origination" => None
-      | "delegation" => (json->Delegation.Decode.Tzkt.t)->Delegation->Some
+      | "delegation" => json->Delegation.Decode.Tzkt.t->Delegation->Some
       | _ => None
       }
 
@@ -284,6 +287,7 @@ module Decode = {
         |> Result.getExn,
         status: json |> field("status", string) == "applied" ? Chain : Mempool,
         timestamp: json |> field("timestamp", date),
+        internal: json |> optional(field("initiator", Json.Decode.id)) == None ? 0 : 1, // Can't have a real position, only true or false
       })
   }
 }
