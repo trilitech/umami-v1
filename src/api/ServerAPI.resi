@@ -38,6 +38,8 @@ module URL: {
   let build_url: (string, list<(string, string)>) => string
 
   module Explorer: {
+
+    @ocaml.doc(" URL generators for TzKT API that can be used as fallback. ")
     module Tzkt: {
       let operations: (
         Network.t,
@@ -46,7 +48,7 @@ module URL: {
         ~destination: PublicKeyHash.t=?,
         ~limit: int=?,
         unit,
-      ) => t
+      ) => option<t>
     }
 
     let operations: (
@@ -132,6 +134,8 @@ module URL: {
 
 @ocaml.doc(" Mezos requests for mempool operations and classical operations. ")
 module type Explorer = {
+
+  @ocaml.doc(" Tzkt API requests that can be used as fallback. ")
   module Tzkt: {
     let getOperations: (
       Network.t,

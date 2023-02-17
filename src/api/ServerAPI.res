@@ -114,6 +114,15 @@ module URL = {
 
   module Explorer = {
     module Tzkt = {
+      let baseURL = (network: Network.network) => {
+        switch network.Network.chain {
+        | #Mainnet => "https://api.mainnet.tzkt.io/v1/"->Some
+        | #Ghostnet => "https://api.ghostnet.tzkt.io/v1/"->Some
+        | #Limanet => "https://api.limanet.tzkt.io/v1/"->Some
+        | _ => None
+        }
+      }
+
       let operations = (
         network: Network.network,
         account: PublicKeyHash.t,
@@ -122,23 +131,19 @@ module URL = {
         ~limit: option<int>=?,
         (),
       ) => {
-        let args = {
-          open List.Infix
-          \"@?"(
-            types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+        baseURL(network)->Option.map(baseURL => {
+          let args = {
+            open List.Infix
             \"@?"(
-              limit->arg_opt("limit", lim => lim->Js.Int.toString),
-              \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
-            ),
-          )
-        }
-        build_url(
-          "https://api." ++
-          network.Network.name ++
-          ".tzkt.io/v1/accounts/" ++
-          (account :> string) ++ "/operations",
-          args,
-        )
+              types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+              \"@?"(
+                limit->arg_opt("limit", lim => lim->Js.Int.toString),
+                \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
+              ),
+            )
+          }
+          build_url(baseURL ++ "accounts/" ++ (account :> string) ++ "/operations", args)
+        })
       }
     }
 
@@ -477,20 +482,23 @@ module ExplorerMaker = (
       ~limit: option<int>=?,
       (),
     ) =>
-      network
-      ->URL.Explorer.Tzkt.operations(account, ~types?, ~destination?, ~limit?, ())
-      ->Get.get
-      ->Promise.flatMapOk(res =>
-        res
-        ->Result.fromExn({
-          open Json.Decode
-          array(Operation.Decode.Tzkt.t)
-        })
-        ->Result.map(array => Array.keepMap(array, x => x))
-        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-        ->Promise.value
+      Option.mapWithDefault(
+        URL.Explorer.Tzkt.operations(network, account, ~types?, ~destination?, ~limit?, ()),
+        Result.Error(Errors.Generic("Unsupported network"))->Promise.value,
+        url =>
+          Get.get(url)
+          ->Promise.flatMapOk(res =>
+            res
+            ->Result.fromExn({
+              open Json.Decode
+              array(Operation.Decode.Tzkt.t)
+            })
+            ->Result.map(array => Array.keepMap(array, x => x))
+            ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+            ->Promise.value
+          )
+          ->Promise.mapOk(filterMalformedDuplicates),
       )
-      ->Promise.mapOk(filterMalformedDuplicates)
   }
 
   let getOperations = (
