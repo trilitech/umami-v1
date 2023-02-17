@@ -248,18 +248,20 @@ module Decode = {
   let internal = json => (json |> optional(field("internal", int)))->Option.getWithDefault(0)
 
   let t = json => {
-    block: json |> optional(field("block_hash", string)),
-    fee: (json |> optional(field("fee", string)))
-      ->Option.mapWithDefault(Tez.zero, Tez.fromMutezString),
-    hash: json |> field("hash", string),
-    id: json |> field("id", string),
-    level: json |> field("level", string) |> int_of_string,
-    op_id: json |> field("id", string) |> int_of_string,
-    payload: json |> payload(json |> field("kind", string)),
-    source: json |> source,
-    status: status(json),
-    timestamp: json |> field("op_timestamp", date),
-    internal: json |> internal,
+    let internal = json |> internal
+    {
+      block: json |> optional(field("block_hash", string)),
+      fee: internal == 0 ? (json |> optional(field("fee", string)))->Option.mapWithDefault(Tez.zero, Tez.fromMutezString) : Tez.zero,
+      hash: json |> field("hash", string),
+      id: json |> field("id", string),
+      level: json |> field("level", string) |> int_of_string,
+      op_id: json |> field("id", string) |> int_of_string,
+      payload: json |> payload(json |> field("kind", string)),
+      source: json |> source,
+      status: status(json),
+      timestamp: json |> field("op_timestamp", date),
+      internal: internal,
+    }
   }
 
   module Tzkt = {
