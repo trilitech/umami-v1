@@ -47,11 +47,9 @@ module Transaction = {
     contract: PublicKeyHash.t,
   }
 
-  type internal_op_id = int
-
   type t =
     | Tez(common)
-    | Token(common, token_info, option<internal_op_id>)
+    | Token(common, token_info)
 
   type tokenKind = TokenContract.kind
 
@@ -60,7 +58,7 @@ module Transaction = {
   module Accessor = {
     let destination = x =>
       switch x {
-      | Token({destination, _}, _, _)
+      | Token({destination, _}, _)
       | Tez({destination, _}) => destination
       }
   }
@@ -82,8 +80,6 @@ module Transaction = {
 
     let token_id = json =>
       (json |> field("data", field("token_id", string)))->int_of_string_opt->Option.getExn
-
-    let internal_op_id = json => json |> field("data", optional(field("internal_op_id", int)))
 
     let token_info = (json, kind) => {
       let kind = switch kind {
@@ -116,7 +112,7 @@ module Transaction = {
     let t = json => {
       let token = json->token_kind
       switch token {
-      | #...tokenKind as kind => Token(common(json), token_info(json, kind), internal_op_id(json))
+      | #...tokenKind as kind => Token(common(json), token_info(json, kind))
       | #KTez => Tez(common(json))
       }
     }
@@ -214,15 +210,9 @@ type t = {
   internal: int,
 }
 
-let internal_op_id = op =>
-  switch op.payload {
-  | Transaction(Token(_, _, internal_op_id)) => internal_op_id
-  | _ => None
-  }
-
-let uniqueId = op => (op.hash, op.id, internal_op_id(op))
+let uniqueId = op => (op.hash, op.id, op.internal)
 let uniqueIdToString = ((hash, id, iid)) =>
-  hash ++ (id ++ iid->Option.mapWithDefault("", Int.toString))
+  hash ++ id ++ iid->Int.toString
 
 type operation = t
 

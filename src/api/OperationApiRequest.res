@@ -95,7 +95,7 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
           x.source == address ||
             switch x.payload {
             | Transaction(Tez({destination}))
-            | Transaction(Token({destination}, _, _)) =>
+            | Transaction(Token({destination}, _)) =>
               destination == address
             | Delegation({delegate}) => delegate == Some(address)
             | _ => true
