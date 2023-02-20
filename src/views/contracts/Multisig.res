@@ -234,7 +234,7 @@ module API = {
 
     type t = {
       id: ReBigNumber.t,
-      operation: operation,
+      operations: array<operation>,
       approvals: array<PublicKeyHash.t>,
       raw: string,
     }
@@ -294,136 +294,156 @@ module API = {
 
     // See MANAGER_LAMBDA.setDelegate
     // [
-    // 0 {prim: 'DROP'},
-    // 1 {prim: 'NIL', args: [{ prim: 'operation' }]},
-    // 2 {prim: 'PUSH', args: [{ prim: 'key_hash' }, { string: key }]},
-    // 3 {prim: 'SOME'},
-    // 4 {prim: 'SET_DELEGATE'},
-    // 5 {prim: 'CONS'},
+    //   {prim: 'DROP'},
+    //   {prim: 'NIL', args: [{ prim: 'operation' }]},
+    // 0 {prim: 'PUSH', args: [{ prim: 'key_hash' }, { string: key }]},
+    // 1 {prim: 'SOME'},
+    // 2 {prim: 'SET_DELEGATE'},
+    //   {prim: 'CONS'},
     // ]
-    let setDelegate = (json: Js.Json.t) => {
-      Js.Json.decodeArray(json)->Option.flatMap(array => {
-        let check = (pos, value) => check(array, pos, value)
-        Array.length(array) == 6 &&
-        check(0, {"prim": "DROP"}) &&
-        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
-        check(3, {"prim": "SOME"}) &&
-        check(4, {"prim": "SET_DELEGATE"}) &&
-        check(5, {"prim": "CONS"})
-          ? array[2]->Option.flatMap(recipient("key_hash", ReTaquitoUtils.encodeKeyHash))
-          : None
-      })
+    let setDelegate = (array: array<Js.Json.t>, start) => {
+      let check = (pos, value) => check(array, pos, value)
+      check(start + 1, {"prim": "SOME"}) && check(start + 2, {"prim": "SET_DELEGATE"})
+        ? array[start]
+          ->Option.flatMap(recipient("key_hash", ReTaquitoUtils.encodeKeyHash))
+          ->Option.map(res => (res, start + 3))
+        : None
     }
 
     // See MANAGER_LAMBDA.removeDelegate
     // [
-    // 0 { prim: 'DROP' },
-    // 1 { prim: 'NIL', args: [{ prim: 'operation' }] },
-    // 2 { prim: 'NONE', args: [{ prim: 'key_hash' }] },
-    // 3 { prim: 'SET_DELEGATE' },
-    // 4 { prim: 'CONS' },
+    //   { prim: 'DROP' },
+    //   { prim: 'NIL', args: [{ prim: 'operation' }] },
+    // 0 { prim: 'NONE', args: [{ prim: 'key_hash' }] },
+    // 1 { prim: 'SET_DELEGATE' },
+    //   { prim: 'CONS' },
     // ]
-    let removeDelegate = (json: Js.Json.t) => {
-      Js.Json.decodeArray(json)->Option.flatMap(array => {
-        let check = (pos, value) => check(array, pos, value)
-        Array.length(array) == 5 &&
-        check(0, {"prim": "DROP"}) &&
-        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
-        check(2, {"prim": "NONE", "args": [{"prim": "key_hash"}]}) &&
-        check(3, {"prim": "SET_DELEGATE"}) &&
-        check(4, {"prim": "CONS"})
-          ? Some()
-          : None
-      })
+    let removeDelegate = (array: array<Js.Json.t>, start) => {
+      let check = (pos, value) => check(array, pos, value)
+      check(start, {"prim": "NONE", "args": [{"prim": "key_hash"}]}) &&
+      check(start + 1, {"prim": "SET_DELEGATE"})
+        ? Some(start + 2)
+        : None
     }
 
     // See MANAGER_LAMBDA.transferImplicit
     // [
-    // 0 {prim: "DROP"},
-    // 1 {prim: "NIL", args: [{prim: "operation"}]},
-    // 2 {prim: "PUSH", args: [{prim: "key_hash"}, {string: <RECIPIENT>}]},
-    // 3 {prim: "IMPLICIT_ACCOUNT"},
-    // 4 {prim: "PUSH", args: [{prim: "mutez"}, {int: <AMOUNT>}]},
-    // 5 {prim: "UNIT"},
-    // 6 {prim: "TRANSFER_TOKENS"},
-    // 7 {prim: "CONS"},
+    //   {prim: "DROP"},
+    //   {prim: "NIL", args: [{prim: "operation"}]},
+    // 0 {prim: "PUSH", args: [{prim: "key_hash"}, {string: <RECIPIENT>}]},
+    // 1 {prim: "IMPLICIT_ACCOUNT"},
+    // 2 {prim: "PUSH", args: [{prim: "mutez"}, {int: <AMOUNT>}]},
+    // 3 {prim: "UNIT"},
+    // 4 {prim: "TRANSFER_TOKENS"},
+    //   {prim: "CONS"},
     // ]
-    let transferImplicit = (json: Js.Json.t) => {
-      Js.Json.decodeArray(json)->Option.flatMap(array => {
-        let check = (pos, value) => check(array, pos, value)
-        Array.length(array) == 8 &&
-        check(0, {"prim": "DROP"}) &&
-        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
-        check(3, {"prim": "IMPLICIT_ACCOUNT"}) &&
-        check(5, {"prim": "UNIT"}) &&
-        check(6, {"prim": "TRANSFER_TOKENS"}) &&
-        check(7, {"prim": "CONS"})
-          ? recipient_amount(2, "key_hash", ReTaquitoUtils.encodeKeyHash, 4, array)
-          : None
-      })
+    let transferImplicit = (array: array<Js.Json.t>, start) => {
+      let check = (pos, value) => check(array, pos, value)
+      check(start + 1, {"prim": "IMPLICIT_ACCOUNT"}) &&
+      check(start + 3, {"prim": "UNIT"}) &&
+      check(start + 4, {"prim": "TRANSFER_TOKENS"})
+        ? recipient_amount(
+            start,
+            "key_hash",
+            ReTaquitoUtils.encodeKeyHash,
+            start + 2,
+            array,
+          )->Option.map(res => (res, start + 5))
+        : None
     }
 
     // See MANAGER_LAMBDA.transferToContract
     // [
-    // 0 { prim: 'DROP' },
-    // 1 { prim: 'NIL', args: [{ prim: 'operation' }] },
-    // 2 { prim: 'PUSH', args: [{ prim: 'address' }, { string: key }], },
-    // 3 { prim: 'CONTRACT', args: [{ prim: 'unit' }] },
-    // 4 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []], }, ],
-    // 5 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: `${amount}` }], },
-    // 6 { prim: 'UNIT' },
-    // 7 { prim: 'TRANSFER_TOKENS' },
-    // 8 { prim: 'CONS' },
+    //   { prim: 'DROP' },
+    //   { prim: 'NIL', args: [{ prim: 'operation' }] },
+    // 0 { prim: 'PUSH', args: [{ prim: 'address' }, { string: key }], },
+    // 1 { prim: 'CONTRACT', args: [{ prim: 'unit' }] },
+    // 2 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []], }, ],
+    // 3 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: `${amount}` }], },
+    // 4 { prim: 'UNIT' },
+    // 5 { prim: 'TRANSFER_TOKENS' },
+    //   { prim: 'CONS' },
     // ]
-    let transferToContract = (json: Js.Json.t) => {
-      Js.Json.decodeArray(json)->Option.flatMap(array => {
-        let check = (pos, value) => check(array, pos, value)
-        Array.length(array) == 9 &&
-        check(0, {"prim": "DROP"}) &&
-        check(1, {"prim": "NIL", "args": [{"prim": "operation"}]}) &&
-        check(3, {"prim": "CONTRACT", "args": [{"prim": "unit"}]}) &&
-        check(4, [{"prim": "IF_NONE", "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]}]) &&
-        check(6, {"prim": "UNIT"}) &&
-        check(7, {"prim": "TRANSFER_TOKENS"}) &&
-        check(8, {"prim": "CONS"})
-          ? recipient_amount(2, "address", ReTaquitoUtils.encodePubKey, 5, array)
-          : None
-      })
+    let transferToContract = (array: array<Js.Json.t>, start) => {
+      let check = (pos, value) => check(array, pos, value)
+      check(start + 1, {"prim": "CONTRACT", "args": [{"prim": "unit"}]}) &&
+      check(
+        start + 2,
+        [{"prim": "IF_NONE", "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]}],
+      ) &&
+      check(start + 4, {"prim": "UNIT"}) &&
+      check(start + 5, {"prim": "TRANSFER_TOKENS"})
+        ? recipient_amount(
+            start,
+            "address",
+            ReTaquitoUtils.encodePubKey,
+            start + 3,
+            array,
+          )->Option.map(res => (res, start + 6))
+        : None
     }
 
-    let transfer = (json: Js.Json.t): option<recipient_amount> =>
-      switch transferImplicit(json) {
-      | None => transferToContract(json)
+    let transfer = (array: array<Js.Json.t>, start): option<(recipient_amount, int)> =>
+      switch transferImplicit(array, start) {
+      | None => transferToContract(array, start)
       | x => x
       }
 
-    let delegate = (json: Js.Json.t): option<option<PublicKeyHash.t>> =>
-      switch setDelegate(json) {
-      | None => removeDelegate(json)->Option.map(() => None)
-      | x => Some(x)
+    let delegate = (array: array<Js.Json.t>, start): option<(option<PublicKeyHash.t>, int)> =>
+      switch setDelegate(array, start) {
+      | None => removeDelegate(array, start)->Option.map(next => (None, next))
+      | Some(x, next) => Some(Some(x), next)
       }
+
+    let parseOperationsList = (json: Js.Json.t) => {
+      Js.Json.decodeArray(json)->Option.flatMap(array => {
+        let last = Array.length(array) - 1
+        let check = (pos, value) => check(array, pos, value)
+        check(0, {"prim": "DROP"}) && check(1, {"prim": "NIL", "args": [{"prim": "operation"}]})
+          ? {
+              let rec parse = (acc, instr) => {
+                instr == 2 || check(instr, {"prim": "CONS"})
+                  ? instr == last
+                      ? Some(acc)
+                      : {
+                          let instr = instr == 2 ? 2 : instr + 1
+                          open Operation
+                          switch transfer(array, instr)->Option.map(res => {
+                            let ({amount, recipient}, next) = res
+                            (
+                              Transaction.Tez({
+                                amount: amount,
+                                destination: recipient,
+                                parameters: None,
+                                entrypoint: None,
+                              })->Transaction,
+                              next,
+                            )
+                          }) {
+                          | Some(x, next) => parse(Js.Array.concat(acc, [x]), next)
+                          | None =>
+                            delegate(array, instr)
+                            ->Option.map(x => {
+                              let (delegate, next) = x
+                              ({Delegation.delegate: delegate}->Delegation, next)
+                            })
+                            ->Option.mapWithDefault(Some([Unknown]), x => {
+                              let (x, next) = x
+                              parse(Js.Array.concat(acc, [x]), next)
+                            })
+                          }
+                        }
+                  : None
+              }
+              parse([], 2)
+            }
+          : None
+      })
+    }
   }
 
-  let parseActions = (actions): option<Operation.payload> => {
-    actions
-    ->Json.parse
-    ->Option.map(x => {
-      open Operation
-      switch LAMBDA_PARSER.transfer(x)->Option.map(({amount, recipient}) =>
-        Transaction.Tez({
-          amount: amount,
-          destination: recipient,
-          parameters: None,
-          entrypoint: None,
-        })->Transaction
-      ) {
-      | None =>
-        LAMBDA_PARSER.delegate(x)->Option.mapWithDefault(Unknown, delegate =>
-          {Delegation.delegate: delegate}->Delegation
-        )
-      | Some(x) => x
-      }
-    })
+  let parseActions = (actions): option<array<Operation.payload>> => {
+    actions->Json.parse->Option.flatMap(LAMBDA_PARSER.parseOperationsList)
   }
 
   let getPendingOperations = (network: Network.t, ~bigmap: int) =>
@@ -437,9 +457,9 @@ module API = {
       entries->Array.keepMap(entry => {
         switch (entry.active, entry.key, entry.value) {
         | (true, Some(key), Some(value)) =>
-          parseActions(value.actions)->Option.map(payload => {
+          parseActions(value.actions)->Option.map(operations => {
             PendingOperation.id: key,
-            operation: payload,
+            operations: operations,
             approvals: value.approvals,
             raw: value.actions,
           })

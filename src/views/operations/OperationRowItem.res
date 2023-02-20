@@ -665,8 +665,8 @@ module Pending = {
       <Table.Row.Bordered ?rowStyle>
         <CellExpandToggle> {collapseButton} </CellExpandToggle>
         <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
-        {switch pending.operation {
-        | Transaction(transaction) => <>
+        {switch pending.operations {
+        | [Transaction(transaction)] => <>
             <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
             <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
             <CellAddress>
@@ -677,7 +677,7 @@ module Pending = {
               )}
             </CellAddress>
           </>
-        | Delegation({delegate}) => <>
+        | [Delegation({delegate})] => <>
             {cellType(I18n.operation_delegation)}
             <CellAmount />
             {delegate->Option.mapWithDefault(
@@ -687,7 +687,7 @@ module Pending = {
               d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
             )}
           </>
-        | Unknown | _ => <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellAddress /> </>
+        | [Unknown] | _ => <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellAddress /> </>
         }}
         <CellSignatures style={Style.style(~flexDirection=#row, ())}>
           {
@@ -700,10 +700,9 @@ module Pending = {
             </>
           }
         </CellSignatures>
-        {switch pending.operation {
-        | Unknown => <UnknownDetails> {codeView(pending)} </UnknownDetails>
-        | _ => React.null
-        }}
+        {Array.length(pending.operations) > 1 || pending.operations == [Unknown]
+          ? <UnknownDetails> {codeView(pending)} </UnknownDetails>
+          : React.null}
       </Table.Row.Bordered>
     }
     <ContractRows.Collapsable header expanded=false>
@@ -792,7 +791,7 @@ module Pending = {
                       id=pending.id
                       hasSigned
                       canSubmit
-                      unknown={pending.operation == Unknown}
+                      unknown={pending.operations == [Unknown]}
                     />
                   | None => React.null
                   }}
