@@ -44,12 +44,16 @@ module GenericRowItem = {
     ~icon_isHD=false,
     ~description: option<React.element>=?,
     ~children: React.element,
-    ~justifyContent=#flexStart,
   ) => {
     open Style
     <RowItem.Bordered
       minHeight=90.
-      innerStyle={style(~alignSelf=#flexStart, ~paddingVertical=8.->dp, ~justifyContent, ())}>
+      innerStyle={style(
+        ~alignSelf=#flexStart,
+        ~paddingVertical=8.->dp,
+        ~justifyContent=#spaceBetween,
+        (),
+      )}>
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo
@@ -109,7 +113,7 @@ module MultisigRowItem = {
 @react.component
 let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
   let account = Alias.fromAccount(account)
-  <GenericRowItem account ?token icon_isHD=isHD justifyContent=#spaceBetween>
+  <GenericRowItem account ?token icon_isHD=isHD>
     {<Delegate account />->ReactUtils.onlyWhen(token == None)}
   </GenericRowItem>
 }
