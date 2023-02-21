@@ -123,9 +123,117 @@ module Multisig = {
     Array.concat(hd, tl->Array.sliceToEnd(2))->jsonToMichelson
   }
 
-  @ocaml.doc(
-    " Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] "
-  )
+  module Lambda = {
+    include ReTaquitoTypes.Lambda
+
+    module Parameter = {
+      module Type = {
+        type t
+
+        let fa2Transfer: t = %raw(`{
+          "prim": "list",
+          "args": [
+            {
+              "prim": "pair",
+              "args": [
+                {"prim": "address", "annots": ["%from_"]},
+                {
+                  "prim": "list",
+                  "args": [
+                    {
+                      "prim": "pair",
+                      "args": [
+                        {"prim": "address", "annots": ["%to_"]},
+                        {
+                          "prim": "pair",
+                          "args": [
+                            {"prim": "nat", "annots": ["%token_id"]},
+                            {"prim": "nat", "annots": ["%amount"]}
+                          ]
+                        }
+                      ]
+                    }
+                  ],
+                  "annots": ["%txs"]
+                }
+              ]
+            }
+          ],
+          "annots": ["%transfer"]
+        }`)
+      }
+  
+      module Value = {
+        type t
+
+        let fa2Transfer: ReTaquitoTypes.FA2.transferParam => t = parameters => {
+          %raw(`[
+            {
+              "prim": "Pair",
+              "args": [
+                {"string": "tz1Te4MXuNYxyyuPqmAQdnKwkD8ZgSF9M7d6"},
+                [
+                  {
+                    "prim": "Pair",
+                    "args": [
+                      {"string": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
+                      {
+                        "prim": "Pair",
+                        "args": [{"int": "0"}, {"int": "10000000"}]
+                      }
+                    ]
+                  }
+                ]
+              ]
+            }
+          ]`)
+        }
+      }
+
+      type t = (Type.t, Value.t)
+
+      let fa2Transfer: (ReTaquitoTypes.FA2.transferParam) => t = parameters => {
+        (Type.fa2Transfer, Value.fa2Transfer(parameters))
+      }
+    }
+
+    let call: (PublicKeyHash.t, ReBigNumber.t, string, array<Parameter.t>) => t = (
+      _recipient,
+      _amount,
+      _entrypoint,
+      parameters
+    ) => {
+      let parameterTypes = parameters->Array.map((type_, _) => type_)
+      let parameterValues = parameters->Array.map((_, value) => value)
+      %raw(`[
+        {"prim": "DROP"},
+        {"prim": "NIL", "args": [{"prim": "operation"}]},
+        {
+          "prim": "PUSH",
+          "args": [{"prim": "address"}, {"string": _recipient + "%" + _entrypoint}]
+        },
+        {
+          "prim": "CONTRACT",
+          "args": parameterTypes
+        },
+        [
+          {
+            "prim": "IF_NONE",
+            "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]
+          }
+        ],
+        {
+          "prim": "PUSH",
+          "args": [{"prim": "mutez"}, {"int": _amount.toString()}]
+        },
+        {"prim": "UNIT"},
+        {"prim": "TRANSFER_TOKENS"},
+        {"prim": "CONS"}
+      ]`)
+    }
+  }
+
+  @ocaml.doc(" Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] ")
   let call = (~entrypoint, ~parameter, ~destination): array<Protocol.manager> => {
     [
       Protocol.Transfer(

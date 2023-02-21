@@ -1593,45 +1593,43 @@ let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage
   _threshold,
 ) => {
   signers->SortArray.stableSortInPlaceBy((a, b) =>
-      (a :> string)
-      ->ReTaquitoUtils.b58decode
-      ->String.compare((b :> string)->ReTaquitoUtils.b58decode)
-    )
+    (a :> string)->ReTaquitoUtils.b58decode->String.compare((b :> string)->ReTaquitoUtils.b58decode)
+  )
   %raw(`{
-  "prim": "Pair",
-  "args": [
-    {
-      "string": _owner
-    },
-    {
-      "prim": "Pair",
-      "args": [
-        signers.map(signer => ({"string": signer})),
-        {
-          "prim": "Pair",
-          "args": [
-            {
-              "int": _threshold.toString()
-            },
-            {
-              "prim": "Pair",
-              "args": [
-                {
-                  "int": "0"
-                },
-                {
-                  "prim": "Pair",
-                  "args": [
-                    [],
-                    []
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}`)
+    "prim": "Pair",
+    "args": [
+      {
+        "string": _owner
+      },
+      {
+        "prim": "Pair",
+        "args": [
+          signers.map(signer => ({"string": signer})),
+          {
+            "prim": "Pair",
+            "args": [
+              {
+                "int": _threshold.toString()
+              },
+              {
+                "prim": "Pair",
+                "args": [
+                  {
+                    "int": "0"
+                  },
+                  {
+                    "prim": "Pair",
+                    "args": [
+                      [],
+                      []
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }`)
 }
