@@ -279,10 +279,8 @@ let keep: (array<Umami.FormUtils.Alias.any>, Umami.Alias.t) => bool = (formValue
     }
   )
 
-  // Only keep aliases that are:
-  // - not contract (= implicit)
-  // - not already added in form
-  a.address->PublicKeyHash.isImplicit && !(addressesInForm->Array.some(f => f === a.address))
+  // Only keep aliases that are not already added in form
+  !(addressesInForm->Array.some(f => f === a.address))
 }
 module Step2 = {
   let renderItem = item =>
@@ -624,9 +622,9 @@ let make = (~source: Account.t, ~closeAction) => {
     | CreateStep => <CreateView currentStep form setCurrentStep />
     | SourceStep(state, raiseSubmitFailed) =>
       <SourceSelector
-        source
+        source={Alias.fromAccount(source)} //FIXME
         loading={operationSimulateRequest->ApiRequest.isLoading}
-        onSubmit={handleSource(state, raiseSubmitFailed)}
+        onSubmit={source => handleSource(state, raiseSubmitFailed, source->Alias.toAccountExn)} //FIXME
       />
     | SigningStep(_, _, operations, dryRun) =>
       <SignView

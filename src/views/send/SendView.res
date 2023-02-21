@@ -77,21 +77,16 @@ module FormGroupAmountWithTokenSelector = {
 
 type step =
   | SendStep
-  | SigningStep(
-      SendForm.validState,
-      Account.t,
-      array<Protocol.manager>,
-      Protocol.Simulation.results,
-    )
+  | SigningStep(Account.t, array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
-  | SourceStep(SendForm.validState, option<Account.t>)
+  | SourceStep
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
   | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
-  | SourceStep(_) => "sourcestep"
+  | SourceStep => "sourcestep"
   }
 
 module Form = {
@@ -263,31 +258,25 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
     ->Promise.tapOk(_ => updateAccount(sender.Alias.address))
 
   let (batch, _) = React.useState(_ => list{})
+  let (_, setStack) as stackState = React.useState(_ => list{})
 
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
   let submitAction = React.useRef(#SubmitAll)
 
-  let onSubmitBatch = (account, state, batch) => {
-    let transaction = SendForm.buildTransaction(batch)
+  let onSubmitBatch = (account, batch) => {
+    let transaction = SendForm.buildTransactions(batch)
     sendOperationSimulate(account, transaction)->Promise.getOk(dryRun => {
-      setModalStep(_ => SigningStep(state, account, transaction, dryRun))
+      setModalStep(_ => SigningStep(account, transaction, dryRun))
     })
   }
 
   let onSubmitMultisig = (state: SendForm.validState) => {
-    setModalStep(_ => SourceStep(state, None))
-  }
-
-  let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
-    let operations =
-      ProtocolHelper.Multisig.transfer(
-        state.recipient->FormUtils.Alias.address,
-        state.amount,
-      )->ProtocolHelper.Multisig.propose(state.sender.Alias.address)
-    sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
-      setModalStep(_ => SigningStep(state, source, operations, dryRun))
-    })
+    let action = [SendForm.buildTransaction(state)]
+    let initiator = state.sender.Alias.address
+    let state = (initiator, action, None)
+    setStack(_ => list{state})
+    setModalStep(_ => SourceStep)
   }
 
   let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
@@ -300,11 +289,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
       switch state.values.sender.kind {
       | Some(Alias.Multisig) => onSubmitMultisig(validState)
       | Some(Account(_)) =>
-        onSubmitBatch(
-          state.values.sender->Alias.toAccountExn,
-          validState,
-          list{validState, ...batch},
-        )
+        onSubmitBatch(state.values.sender->Alias.toAccountExn, list{validState, ...batch})
       | _ => assert false
       }
     | #AddToBatch =>
@@ -333,10 +318,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
   | AdvancedOptStep(_) => None
   | SummaryStep =>
     switch (form.formState, modalStep, (signerState: option<SigningBlock.state>)) {
-    | (_, SigningStep(_, {kind: Ledger}, _, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep({kind: Ledger}, _, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
 
-    | (_, SigningStep(_, {kind: CustomAuth({provider})}, _, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep({kind: CustomAuth({provider})}, _, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(
         I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName),
       )->Some
@@ -347,20 +332,20 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
     }
   }
 
-  let back = switch modalStep {
-  | SigningStep(state, source, _, _) =>
-    switch sign {
-    | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
-    | SummaryStep =>
-      Some(
-        () =>
-          setModalStep(_ =>
-            senderIsMultisig(state.sender) ? SourceStep(state, Some(source)) : SendStep
-          ),
-      )
+  let back = {
+    let source_back = () => {
+      let default = () => setModalStep(_ => SendStep)
+      SourceStepView.back(~default, stackState)
     }
-  | SourceStep(_) => Some(() => setModalStep(_ => SendStep))
-  | _ => None
+    switch modalStep {
+    | SigningStep(_, _, _) =>
+      switch sign {
+      | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+      | SummaryStep => source_back()
+      }
+    | SourceStep => source_back()
+    | _ => None
+    }
   }
 
   let onPressCancel = _ => {
@@ -374,7 +359,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
 
   let title = switch modalStep {
   | SendStep
-  | SourceStep(_) =>
+  | SourceStep =>
     Some(I18n.Title.send)
   | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
@@ -397,7 +382,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
               loading=loadingSimulate
               simulatingBatch=isSimulating
             />
-          | SigningStep(_, source, operations, dryRun) =>
+          | SigningStep(source, operations, dryRun) =>
             <SignOperationView
               proposal={senderIsMultisig(form.state.values.sender)}
               signer=source
@@ -408,13 +393,12 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
               sendOperation={sendOperation(~sender=form.state.values.sender)}
               loading
             />
-          | SourceStep(state, source) =>
-            <SourceStepView
-              multisig=state.sender.address
-              ?source
-              sender=state.sender
-              onSubmit={onSubmitProposal(state)}
-            />
+          | SourceStep =>
+            let callback = (account, operations) =>
+              sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(account, operations, dryRun))
+              })
+            <SourceStepView stack=stackState callback />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

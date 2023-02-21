@@ -400,7 +400,10 @@ let make = memo((
 })
 
 type pending_step =
-  Simulation | Sign(Protocol.Simulation.results, array<Protocol.manager>) | Done(string)
+  | Simulation
+  | SourceStep
+  | SigningStep(Umami.Account.t, array<Protocol.manager>, Protocol.Simulation.results)
+  | SubmittedStep(string)
 
 module Pending_SignView = {
   @react.component
@@ -412,7 +415,7 @@ module Pending_SignView = {
       sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
         hash,
       }) => {
-        setStep(Done(hash))
+        setStep(SubmittedStep(hash))
       })
     }
     let loading = operationRequest->ApiRequest.isLoading
@@ -433,8 +436,8 @@ module Pending = {
       ~entrypoint,
       ~text,
       ~multisig: PublicKeyHash.t,
-      ~signer: Account.t,
-      ~id: ReBigNumber.t,
+      ~signer: Alias.t,
+      ~id,
       ~disabled,
       ~callback=() => (),
       ~title=?,
@@ -443,6 +446,7 @@ module Pending = {
         sendOperationSimulateRequest,
         sendOperationSimulate,
       ) = StoreContext.Operations.useSimulate()
+      let (_, setStack) as stackState = React.useState(_ => list{})
       let (modalStep, setModalStep) = React.useState(() => Simulation)
       let setStep = x => {setModalStep(_ => x)}
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
@@ -454,20 +458,39 @@ module Pending = {
         sendOperationSimulateRequest->ApiRequest.isLoading &&
           {
             switch modalStep {
-            | Done(_) => false
+            | SubmittedStep(_) => false
             | _ => true
             }
           }
-      let onPress = _ => {
-        let operations = entrypoint(id, multisig)
-        let source = signer
+      let parameter =
+        id
+        ->ReBigNumber.toString
+        ->Michelson.MichelsonV1Expression.int
+        ->ProtocolHelper.Multisig.jsonToMichelson0
+      let onSubmitMultisig = () => {
+        let action = [ProtocolHelper.Multisig.call(~entrypoint, ~parameter, multisig)]
+        let initiator = signer.Alias.address
+        setStack(_ => list{(initiator, action, None)})
+        setModalStep(_ => SourceStep)
+      }
+      let onSubmitImplicit = () => {
+        let operations = [ProtocolHelper.Multisig.call(~parameter, ~entrypoint, multisig)]
+        let source = signer->Alias.toAccountExn
         sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
-          setStep(Sign(dryRun, operations))
+          setStep(SigningStep(source, operations, dryRun))
           openAction()
         })
       }
+      let onPress = _ => {
+        PublicKeyHash.isContract(signer.address)
+          ? {
+              onSubmitMultisig()
+              openAction()
+            }
+          : onSubmitImplicit()
+      }
       let title = switch modalStep {
-      | Done(_) => None
+      | SubmittedStep(_) => None
       | _ => title
       }
       <>
@@ -476,8 +499,15 @@ module Pending = {
           <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
             | Simulation => <LoadingView />
-            | Sign(dryRun, operations) => <Pending_SignView signer dryRun operations setStep />
-            | Done(hash) =>
+            | SourceStep =>
+              let callback = (account, operations) =>
+                sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+                  setModalStep(_ => SigningStep(account, operations, dryRun))
+                })
+              <SourceStepView stack=stackState callback />
+            | SigningStep(source, operations, dryRun) =>
+              <Pending_SignView signer=source dryRun operations setStep />
+            | SubmittedStep(hash) =>
               <SubmittedView
                 hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations
               />
@@ -492,7 +522,7 @@ module Pending = {
     @react.component
     let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
       <ActionButton
-        entrypoint=ProtocolHelper.Multisig.approve
+        entrypoint="approve"
         ?style
         title=I18n.Title.confirm_operation_approval
         text
@@ -511,7 +541,7 @@ module Pending = {
       ~multisig,
       ~title=I18n.Title.approval_threshold_reached,
       ~contentText=I18n.Expl.approval_threshold_reached,
-      ~signer: Account.t,
+      ~signer: Alias.t,
       ~id,
     ) => {
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
@@ -531,9 +561,9 @@ module Pending = {
 
   module ExecuteButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
+    let make = (~multisig, ~signer: Alias.t, ~id, ~disabled) => {
       <ActionButton
-        entrypoint=ProtocolHelper.Multisig.execute
+        entrypoint="execute"
         title=I18n.Title.confirm_operation_execution
         text=I18n.Btn.submit
         multisig
@@ -546,7 +576,7 @@ module Pending = {
 
   module AddToBatchButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
+    let make = (~multisig, ~signer: Alias.t, ~id, ~disabled) => {
       let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
 
       let handlePress = _ => {
@@ -554,7 +584,7 @@ module Pending = {
         let destination = multisig
 
         let p: ProtocolOptions.parameter = {
-          entrypoint: Multisig.executionEntrypoint->Some,
+          entrypoint: Multisig.Entrypoint.execute->Some,
           value: parameter->Some,
         }
 
@@ -576,7 +606,7 @@ module Pending = {
   }
   module ApproveWithReviewButton = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id) => {
+    let make = (~multisig, ~signer: Alias.t, ~id) => {
       let title = I18n.Title.unrecognized_operation
       let contentText = I18n.Expl.unrecognized_operation
       <ApproveWithConfirmationButton multisig signer id title contentText />
@@ -587,7 +617,7 @@ module Pending = {
     @react.component
     let make = (
       ~multisig: PublicKeyHash.t,
-      ~signer: Account.t,
+      ~signer: Alias.t,
       ~id,
       ~hasSigned,
       ~canSubmit,
@@ -708,7 +738,7 @@ module Pending = {
   @react.component
   let make = (~multisig, ~pending: Multisig.API.PendingOperation.t) => {
     let theme = ThemeContext.useTheme()
-    let accounts = StoreContext.Accounts.useGetAll()
+    let accounts = StoreContext.AccountsMultisigs.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
     let tokens = StoreContext.Tokens.useGetAll()
 

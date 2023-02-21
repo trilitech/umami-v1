@@ -134,7 +134,29 @@ module Multisig = {
     Array.concat(hd, tl->Array.sliceToEnd(2))->jsonToMichelson
   }
 
-  module Lambda = {
+  let lambdaContractCall = (
+    ~amount=ReBigNumber.zero,
+    ~entrypoint,
+    ~arg_type,
+    ~arg_value,
+    contract: PublicKeyHash.t,
+  ) => {
+    [
+      _DROP,
+      _NIL(operation),
+      _PUSH(address, string((contract :> string) ++ "%" ++ entrypoint)),
+      _CONTRACT(arg_type),
+      [_IF_NONE([[_UNIT, _FAILWITH]->seq]->seq, []->seq)]->seq,
+      _PUSH(mutez, int(amount->ReBigNumber.toString)),
+      _PUSH(arg_type, arg_value),
+      _TRANSFER_TOKENS,
+      _CONS,
+    ]
+    ->seq
+    ->jsonToMichelson0
+  }
+
+  module FA = {
     module Parameters = {
       module Type = {
         type t = Js.Json.t
@@ -189,32 +211,14 @@ module Multisig = {
       amount: ReBigNumber.t,
       entrypoint: string,
       parameters: Parameters.t,
-    ): ReTaquitoTypes.Lambda.t => {
-      [
-        _DROP,
-        _NIL(operation),
-        _PUSH(address, string((recipient :> string) ++ "%" ++ entrypoint)),
-        _CONTRACT(parameters.type_),
-        [_IF_NONE([[_UNIT, _FAILWITH]->seq]->seq, []->seq)]->seq,
-        _PUSH(mutez, int(amount->ReBigNumber.toString)),
-        _PUSH(parameters.type_, parameters.value),
-        _TRANSFER_TOKENS,
-        _CONS,
-      ]
-      ->seq
-      ->jsonToMichelson0
-    }
-  }
-
-  @ocaml.doc(
-    " Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] "
-  )
-  let call = (~entrypoint, ~parameter, ~destination): array<Protocol.manager> => {
-    [
-      Protocol.Transfer(
-        Transfer.makeSimpleTez(~parameter, ~entrypoint, ~destination, ~amount=Tez.zero, ()),
-      ),
-    ]
+    ): ReTaquitoTypes.Lambda.t =>
+      lambdaContractCall(
+        recipient,
+        ~amount,
+        ~entrypoint,
+        ~arg_type=parameters.type_,
+        ~arg_value=parameters.value,
+      )
   }
 
   @ocaml.doc(" Create lambda from a list of FA2 transfers ")
@@ -236,8 +240,8 @@ module Multisig = {
         from_: k,
         txs: List.toArray(v),
       })
-      ->Lambda.Parameters.fa2Transfer
-    Lambda.makeCall(batch.address, ReBigNumber.zero, "transfer", parameter)
+      ->FA.Parameters.fa2Transfer
+    FA.makeCall(batch.address, ReBigNumber.zero, "transfer", parameter)
   }
 
   @ocaml.doc(" Create lambda to send [amount] tez or token from [sender] to [recipient] ")
@@ -252,9 +256,9 @@ module Multisig = {
       open ReTaquitoTypes.BigNumber
       let amount = amount->TokenRepr.Unit.toBigNumber->toFixed
       let parameter = switch token.kind {
-      | FA1_2 => Lambda.Parameters.fa12Transfer(~from_=source, ~to_=recipient, ~amount)
+      | FA1_2 => FA.Parameters.fa12Transfer(~from_=source, ~to_=recipient, ~amount)
       | FA2(tokenID) =>
-        Lambda.Parameters.fa2Transfer([
+        FA.Parameters.fa2Transfer([
           {
             from_: source,
             txs: [
@@ -263,8 +267,29 @@ module Multisig = {
           },
         ])
       }
-      Lambda.makeCall(token.address, ReBigNumber.zero, "transfer", parameter)
+      FA.makeCall(token.address, ReBigNumber.zero, "transfer", parameter)
     }
+
+  @ocaml.doc(
+    " Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] "
+  )
+  let call = (~entrypoint, ~parameter, destination) => {
+    Protocol.Transfer(
+      Transfer.makeSimpleTez(~parameter, ~entrypoint, ~destination, ~amount=Tez.zero, ()),
+    )
+  }
+
+  let lambdaPropose = (~contract, ~value) => {
+    let arg_type = lambda(unit, list(operation))
+    let arg_value = value->michelsonToJson0
+    lambdaContractCall(contract, ~entrypoint="propose", ~arg_type, ~arg_value)
+  }
+
+  let lambdaApproveOrExecute = (~contract, ~entrypoint, ~value) => {
+    let arg_type = nat
+    let arg_value = value->michelsonToJson0
+    lambdaContractCall(contract, ~entrypoint, ~arg_type, ~arg_value)
+  }
 
   @ocaml.doc(" Convert a Protocol.manager into a lambda ")
   let fromManager = (manager: Protocol.manager): ReTaquito.Toolkit.Lambda.t =>
@@ -272,6 +297,16 @@ module Multisig = {
     | Delegation({delegate: Delegate(baker)}) =>
       ReTaquito.Toolkit.Lambda.setDelegate((baker :> string))
     | Delegation({delegate: Undelegate(_)}) => ReTaquito.Toolkit.Lambda.removeDelegate()
+    | Transfer({
+        data: Simple({destination}),
+        parameter: {entrypoint: Some("propose"), value: Some(value)},
+      }) =>
+      lambdaPropose(~contract=destination, ~value)
+    | Transfer({
+        data: Simple({destination}),
+        parameter: {entrypoint: Some(("approve" | "execute") as entrypoint), value: Some(value)},
+      }) =>
+      lambdaApproveOrExecute(~contract=destination, ~entrypoint, ~value)
     | Transfer({data: Simple({destination, amount})}) => transfer(destination, amount)
     | Transfer({data: FA2Batch(batch)}) => batchFA2(batch)
     | _ => failwith(__LOC__ ++ ": unsupported")
@@ -283,23 +318,6 @@ module Multisig = {
       let lambda = fromManager(manager)
       appendLambda(acc, lambda)
     })
-
-  @ocaml.doc(" Wrap lambda into a single 'propose' call for 'destination' multisig ")
-  let propose = (parameter, destination) => {
-    call(~parameter, ~entrypoint="propose", ~destination)
-  }
-
-  @ocaml.doc(" Create and wrap lambda for a single 'approve' call for 'destination' multisig ")
-  let approve = (parameter: ReBigNumber.t, destination) => {
-    let parameter = {"int": parameter->ReBigNumber.toString}->Obj.magic
-    call(~parameter, ~entrypoint="approve", ~destination)
-  }
-
-  @ocaml.doc(" Create and wrap lambda for a single 'execute' call for 'destination' multisig ")
-  let execute = (parameter: ReBigNumber.t, destination) => {
-    let parameter = {"int": parameter->ReBigNumber.toString}->Obj.magic
-    call(~parameter, ~entrypoint="execute", ~destination)
-  }
 }
 
 module Origination = {

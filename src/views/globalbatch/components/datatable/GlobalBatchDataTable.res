@@ -144,7 +144,7 @@ module TransferRowDisplay = {
     let isContractCall = ProtocolHelper.Transfer.isNonNativeContractCall(recipient, amount)
 
     // Disabled edit on all contact calls on just on multisig ?
-    let isExecuteMultisig = parameter.entrypoint == Multisig.executionEntrypoint->Some
+    let isExecuteMultisig = parameter.entrypoint == Multisig.Entrypoint.execute->Some
 
     let matchPos = wanted =>
       switch fa2Position {

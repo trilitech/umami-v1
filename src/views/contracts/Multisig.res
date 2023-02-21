@@ -241,9 +241,7 @@ module API = {
   }
 
   let parseActions = (actions): option<array<Operation.payload>> => {
-    actions
-    ->Json.parse
-    ->Option.flatMap(Michelson.LAMBDA_PARSER.parseOperationsList)
+    actions->Json.parse->Option.flatMap(Michelson.LAMBDA_PARSER.parseOperationsList)
   }
 
   let getPendingOperations = (network: Network.t, ~bigmap: int) =>
@@ -287,4 +285,8 @@ module API = {
   }
 }
 
-let executionEntrypoint: ReTaquitoTypes.Transfer.Entrypoint.t = "execute"
+module Entrypoint = {
+  let propose: ReTaquitoTypes.Transfer.Entrypoint.t = "propose"
+  let approve: ReTaquitoTypes.Transfer.Entrypoint.t = "approve"
+  let execute: ReTaquitoTypes.Transfer.Entrypoint.t = "execute"
+}

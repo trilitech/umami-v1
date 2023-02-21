@@ -166,10 +166,10 @@ module Toolkit = {
     include Types.Lambda
 
     @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
-    external setDelegate: (string) => t = "setDelegate"
+    external setDelegate: string => t = "setDelegate"
 
     @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
-    external removeDelegate: () => t = "removeDelegate"
+    external removeDelegate: unit => t = "removeDelegate"
 
     @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
     external transferImplicit: (string, ReBigNumber.t) => t = "transferImplicit"

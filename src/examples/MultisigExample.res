@@ -28,6 +28,14 @@ let multisigs = MultisigApiRequest.Base.getMultisigsConcerningAddresses(
 )
 
 // 5 - Approve/Execute multisig
-let proposalId = ReBigNumber.fromInt(3)
-let approval = ProtocolHelper.Multisig.approve(proposalId, contractAddress)
-let execution = ProtocolHelper.Multisig.execute(proposalId, contractAddress)
+let parameter = Michelson.MichelsonV1Expression.int("3")->ProtocolHelper.Multisig.jsonToMichelson0
+let approval = ProtocolHelper.Multisig.call(
+  ~entrypoint=Multisig.Entrypoint.approve,
+  ~parameter,
+  contractAddress,
+)
+let execution = ProtocolHelper.Multisig.call(
+  ~entrypoint=Multisig.Entrypoint.execute,
+  ~parameter,
+  contractAddress,
+)

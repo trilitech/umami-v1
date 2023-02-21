@@ -32,36 +32,35 @@ module SignStep = {
 }
 
 type step =
-  | SourceStep(array<Protocol.manager>)
+  | SourceStep
   | SigningStep(Account.t, array<Protocol.manager>, option<Umami.Protocol.Simulation.results>)
 
 module Content = {
   @react.component
   let make = (~account, ~dryRun, ~operations, ~resetGlobalBatch, ~closeAction) => {
     let (_, sendOperationSimulate) = StoreContext.Operations.useSimulate()
+    let (_, setStack) as stackState = React.useState(_ => list{})
+
     let (step, setStep) = React.useState(() =>
       switch Alias.toAccount(account) {
       | Ok(account) => SigningStep(account, operations, dryRun)
-      | Error(_) => SourceStep(operations)
+      | Error(_) =>
+        let state = (account.Alias.address, operations, None)
+        setStack(_ => list{state})
+        SourceStep
       }
     )
     switch step {
     | SigningStep(source, operations, dryRun) =>
       <SignStep source dryRun operations resetGlobalBatch closeAction />
-    | SourceStep(operations) =>
-      module PM = ProtocolHelper.Multisig
-      let onSubmit = (source: Account.t) => {
-        let operations =
-          ProtocolHelper.Multisig.batch(operations)->ProtocolHelper.Multisig.propose(
-            account.Alias.address,
-          )
-        sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
-          setStep(_ => SigningStep(source, operations, Some(dryRun)))
+    | SourceStep =>
+      let callback = (account, operations) =>
+        sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+          setStep(_ => SigningStep(account, operations, dryRun->Some))
         })
-      }
       <ModalFormView
         title=I18n.Title.propose_batch closing={ModalFormView.Close(_ => closeAction())}>
-        <SourceStepView multisig=account.address sender=account onSubmit />
+        <SourceStepView stack=stackState callback />
       </ModalFormView>
     }
   }

@@ -100,11 +100,19 @@ module Implicits = {
 }
 
 @react.component
-let make = (~label, ~value: element, ~handleChange, ~disabled=?, ~token: option<Token.t>=?) => {
+let make = (
+  ~label,
+  ~value: element,
+  ~handleChange,
+  ~disabled=?,
+  ~token: option<Token.t>=?,
+  ~filter=_ => true,
+) => {
   let items =
     StoreContext.useGetAccountsMultisigsAliasesAsAliases()
     ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
     ->PublicKeyHash.Map.valuesToArray
+    ->Js.Array2.filter(x => filter(x.Alias.address))
     ->SortArray.stableSortBy(Alias.compareName)
   <Base label value items handleChange ?disabled ?token />
 }

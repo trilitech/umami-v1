@@ -49,7 +49,7 @@ let stepToString = step =>
 @react.component
 let make = (~closeAction, ~account, ~delegate) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep)
-
+  let (_, setStack) as stackState = React.useState(_ => list{})
   let (signStep, _) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
@@ -61,23 +61,28 @@ let make = (~closeAction, ~account, ~delegate) => {
 
   let (_, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
+  let makeOperation = () =>
+    {
+      open Protocol.Delegation
+      {
+        delegate: Undelegate(Some(delegate)),
+        options: ProtocolOptions.make(),
+      }
+    }->Protocol.Delegation
+
   React.useEffect0(() => {
     switch account.Alias.kind {
     | Some(Account(_)) =>
       let account = Alias.toAccountExn(account)
-      let operations = [
-        {
-          open Protocol.Delegation
-          {
-            delegate: Undelegate(Some(delegate)),
-            options: ProtocolOptions.make(),
-          }
-        }->Protocol.Delegation,
-      ]
+      let operations = [makeOperation()]
       sendOperationSimulate(account, operations)->Promise.getOk(dryRun =>
         setModalStep(_ => SigningStep(account, operations, dryRun))
       )
-    | Some(Multisig) => setModalStep(_ => SourceStep)
+    | Some(Multisig) =>
+      let action = [makeOperation()]
+      let initiator = account.address
+      setStack(_ => list{(initiator, action, None)})
+      setModalStep(_ => SourceStep)
     | _ => assert false
     }
     None
@@ -94,7 +99,10 @@ let make = (~closeAction, ~account, ~delegate) => {
 
   let back = SignOperationView.back(signOpStep, () =>
     switch modalStep {
-    | SigningStep(_) => Some(() => setModalStep(_ => SendStep))
+    | SourceStep
+    | SigningStep(_) =>
+      let default = () => setModalStep(_ => SendStep)
+      SourceStepView.back(~default, stackState)
     | _ => None
     }
   )
@@ -107,16 +115,11 @@ let make = (~closeAction, ~account, ~delegate) => {
           | SubmittedStep(hash) => <SubmittedView hash onPressCancel={_ => closeAction()} />
           | SendStep => <LoadingView style={styles["deleteLoading"]} />
           | SourceStep =>
-            let onSubmit = source => {
-              let operations =
-                ReTaquito.Toolkit.Lambda.removeDelegate()->ProtocolHelper.Multisig.propose(
-                  account.address,
-                )
-              sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
-                setModalStep(_ => SigningStep(source, operations, dryRun))
+            let callback = (account, operations) =>
+              sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(account, operations, dryRun))
               })
-            }
-            <SourceStepView multisig=account.address sender=account onSubmit />
+            <SourceStepView stack=stackState callback />
           | SigningStep(signer, operations, dryRun) =>
             let loading = operationRequest->ApiRequest.isLoading
             <SignOperationView signer signOpStep dryRun operations sendOperation loading />

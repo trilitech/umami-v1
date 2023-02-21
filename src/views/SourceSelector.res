@@ -26,13 +26,15 @@
 open ReactNative
 
 @react.component
-let make = (~loading=?, ~onSubmit, ~source, ~filter=?) => {
+let make = (~multisig=?, ~loading=?, ~onSubmit, ~source, ~filter=?) => {
   let (selectedAccount, setSelectedAccount) = React.useState(_ => source)
   <>
     <View style=FormStyles.header>
-      <Typography.Overline1> {I18n.Expl.signing_account->React.string} </Typography.Overline1>
+      {Option.mapWithDefault(multisig, I18n.Expl.signing_account, x =>
+        I18n.Expl.signing_account_multisig((x: PublicKeyHash.t :> string))
+      )->Typography.overline1}
     </View>
-    <FormGroupAccountSelector.Implicits
+    <FormGroupAccountSelector
       ?filter
       label=I18n.Label.signing_account
       value=selectedAccount

@@ -42,7 +42,9 @@ type validState = {
 }
 
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
-  amount: state.amount->FormUtils.parseAmount(state.sender.address, token)->FormUtils.Unsafe.getAmount,
+  amount: state.amount
+  ->FormUtils.parseAmount(state.sender.address, token)
+  ->FormUtils.Unsafe.getAmount,
   sender: state.sender,
   recipient: state.recipient->FormUtils.Unsafe.account,
   entrypoint: None,
@@ -57,14 +59,13 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses)
 
-let buildTransaction = (batch: list<validState>) =>
-  batch
-  ->List.map((t: validState) => {
-    let destination = t.recipient->FormUtils.Alias.address
-    let data = {
-      open Transfer
-      {destination: destination, amount: t.amount}
-    }
-    ProtocolHelper.Transfer.makeSimple(~data, ())->Protocol.Transfer
-  })
-  ->List.toArray
+let buildTransaction = (t: validState) => {
+  let destination = t.recipient->FormUtils.Alias.address
+  let data = {
+    open Transfer
+    {destination: destination, amount: t.amount}
+  }
+  ProtocolHelper.Transfer.makeSimple(~data, ())->Protocol.Transfer
+}
+
+let buildTransactions = (batch: list<validState>) => batch->List.map(buildTransaction)->List.toArray
