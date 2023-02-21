@@ -472,3 +472,5 @@ module API = {
     }
   }
 }
+
+let executionEntrypoint: ReTaquitoTypes.Transfer.Entrypoint.t = "execute"

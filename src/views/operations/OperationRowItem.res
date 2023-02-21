@@ -538,7 +538,7 @@ module Pending = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
       <ActionButton
-        entrypoint="execute"
+        entrypoint=Multisig.executionEntrypoint
         title=I18n.Title.confirm_operation_execution
         text=I18n.Btn.submit
         multisig
@@ -549,6 +549,41 @@ module Pending = {
     }
   }
 
+  module AddToBatchButton = {
+    @react.component
+    let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
+      let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
+
+      let handlePress = _ => {
+        let parameter =
+          ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
+            id->ReBigNumber.toString,
+          )
+          ->Result.getExn
+          ->Option.getExn
+        let destination = multisig.Multisig.address
+
+        let p: ProtocolOptions.parameter = {
+          entrypoint: Multisig.executionEntrypoint->Some,
+          value: parameter->Some,
+        }
+
+        let transferPayload: GlobalBatchTypes.transferPayload = (
+          ProtocolAmount.Tez(Tez.zero),
+          destination,
+          p,
+        )
+
+        addTransfer(transferPayload, signer, () => ())
+      }
+      <Buttons.SubmitPrimary
+        text=I18n_en.global_batch_add_multisig_exectute
+        onPress=handlePress
+        style=btnStyle
+        disabled={disabled || isSimulating}
+      />
+    }
+  }
   module ApproveWithReviewButton = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id) => {
@@ -570,6 +605,7 @@ module Pending = {
           ? <ApproveWithReviewButton multisig signer id />
           : <ApproveButton multisig signer id disabled=false />}
         <ExecuteButton multisig signer id disabled={!canSubmit} />
+        <AddToBatchButton multisig signer id disabled={!canSubmit} />
         //        <Buttons.SubmitPrimary
         //          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
         //        />
