@@ -730,7 +730,7 @@ let global_batch_recipient = "RECIPIENT"
 let global_batch_fee = "FEE"
 let global_batch_delete_all = "DELETE ALL"
 let global_batch_add = "INSERT TRANSACTION INTO BATCH"
-let global_batch_add_multisig_exectute = "Add to batch"
+let global_batch_add_multisig_exectute = "ADD TO BATCH"
 let state_mempool = "Mempool"
 let state_levels = (a, b) => `${string_of_int(a)}/${string_of_int(b)} blocks`
 let state_confirmed = "Confirmed"
