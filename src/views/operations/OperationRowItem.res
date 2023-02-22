@@ -636,6 +636,70 @@ module Pending = {
     }
   }
 
+  module PendingOperationInfo = {
+    @react.component
+    let make = (
+      ~account: Alias.t,
+      ~aliases,
+      ~tokens,
+      ~tooltipSuffix,
+      ~pending: Operation.payload,
+    ) => {
+      switch pending {
+      | Transaction(transaction) => <>
+          <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
+          <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
+          <CellAddress>
+            {getContactOrRaw(
+              aliases,
+              tokens,
+              Operation.Transaction.Accessor.destination(transaction),
+            )}
+          </CellAddress>
+        </>
+      | Delegation({delegate}) => <>
+          {cellType(I18n.operation_delegation)}
+          <CellAmount />
+          {delegate->Option.mapWithDefault(
+            <CellAddress>
+              {I18n.delegation_removal->Typography.body1(~numberOfLines=1)}
+            </CellAddress>,
+            d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
+          )}
+        </>
+      | Origination(_)
+      | Reveal(_)
+      | Unknown => <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellAddress /> </>
+      }
+    }
+  }
+
+  module OperationListDetails = {
+    @react.component
+    let make = (
+      ~account: Alias.t,
+      ~aliases,
+      ~tokens,
+      ~tooltipSuffix,
+      ~operations: array<Operation.payload>,
+    ) => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <CellAction>
+        <IconButton size=34. icon=Icons.MagnifierPlus.build onPress={_ => openAction()} />
+        {wrapModal(
+          <ModalFormView title=I18n.operation_batch closing=ModalFormView.Close(closeAction)>
+            {Array.mapWithIndex(operations, (i, pending) => {
+              let tooltipSuffix = tooltipSuffix ++ "_" ++ string_of_int(i)
+              <Table.Row.Bordered key=tooltipSuffix>
+                <PendingOperationInfo pending account aliases tokens tooltipSuffix />
+              </Table.Row.Bordered>
+            })->React.array}
+          </ModalFormView>,
+        )}
+      </CellAction>
+    }
+  }
+
   @react.component
   let make = (~account: Alias.t, ~pending: Multisig.API.PendingOperation.t) => {
     let theme = ThemeContext.useTheme()
@@ -666,28 +730,8 @@ module Pending = {
         <CellExpandToggle> {collapseButton} </CellExpandToggle>
         <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
         {switch pending.operations {
-        | [Transaction(transaction)] => <>
-            <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
-            <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
-            <CellAddress>
-              {getContactOrRaw(
-                aliases,
-                tokens,
-                Operation.Transaction.Accessor.destination(transaction),
-              )}
-            </CellAddress>
-          </>
-        | [Delegation({delegate})] => <>
-            {cellType(I18n.operation_delegation)}
-            <CellAmount />
-            {delegate->Option.mapWithDefault(
-              <CellAddress>
-                {I18n.delegation_removal->Typography.body1(~numberOfLines=1)}
-              </CellAddress>,
-              d => <CellAddress> {getContactOrRaw(aliases, tokens, d)} </CellAddress>,
-            )}
-          </>
-        | [Unknown] | _ => <> {cellType(I18n.unknown_operation)} <CellAmount /> <CellAddress /> </>
+        | [pending] => <PendingOperationInfo pending account aliases tokens tooltipSuffix />
+        | _ => <> {cellType(I18n.operation_batch)} <CellAmount /> <CellAddress /> </>
         }}
         <CellSignatures style={Style.style(~flexDirection=#row, ())}>
           {
@@ -700,7 +744,11 @@ module Pending = {
             </>
           }
         </CellSignatures>
-        {Array.length(pending.operations) > 1 || pending.operations == [Unknown]
+        {Array.length(pending.operations) > 1
+          ? <OperationListDetails
+              operations=pending.operations account aliases tokens tooltipSuffix
+            />
+          : pending.operations == [Unknown]
           ? <UnknownDetails> {codeView(pending)} </UnknownDetails>
           : React.null}
       </Table.Row.Bordered>
