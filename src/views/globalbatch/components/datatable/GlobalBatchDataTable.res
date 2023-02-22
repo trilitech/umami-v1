@@ -125,6 +125,9 @@ module TransferRowDisplay = {
 
     let isContractCall = ProtocolHelper.Transfer.isNonNativeContractCall(recipient, amount)
 
+    // Disabled edit on all contact calls on just on multisig ?
+    let isExecuteMultisig = parameter.entrypoint == Multisig.executionEntrypoint->Some
+
     let matchPos = wanted =>
       switch fa2Position {
       | Some(actual) => actual == wanted
@@ -233,7 +236,9 @@ module TransferRowDisplay = {
       {makeGenericRowCell(
         <View style={style(~display=#flex, ~justifyContent=#flexEnd, ~flexDirection=#row, ())}>
           <View>
-            <BatchView.BuildingBatchMenu onDetails onEdit={isNFT ? None : Some(onEdit)} onDelete />
+            <BatchView.BuildingBatchMenu
+              onDetails onEdit={isNFT || isExecuteMultisig ? None : Some(onEdit)} onDelete
+            />
           </View>
         </View>,
         10.,
