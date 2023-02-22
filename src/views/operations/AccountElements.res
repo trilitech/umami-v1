@@ -186,10 +186,11 @@ module Selector = {
   module Simple = {
     open Style
     @react.component
-    let make = (~account: item, ~style=?) => {
+    let make = (~account: item, ~style=?, ~implicitOnly=false) => {
       let items =
         StoreContext.useGetAccountsMultisigsAliasesAsAliases()
         ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+        ->PublicKeyHash.keepImplicit(implicitOnly)
         ->PublicKeyHash.Map.valuesToArray
         ->SortArray.stableSortBy(Alias.compareName)
 

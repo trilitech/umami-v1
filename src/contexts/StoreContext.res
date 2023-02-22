@@ -1185,10 +1185,13 @@ let useGetImplicitFromAlias = () => {
 }
 
 module SelectedAccount = {
-  let useGetAtInit = () => {
+  let useGetAtInit = (~implicitOnly=false, ()) => {
     let store = useStoreContext()
     let accounts =
-      useGetAccountsMultisigsAliasesAsAliases()->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      useGetAccountsMultisigsAliasesAsAliases()
+      ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      ->PublicKeyHash.keepImplicit(implicitOnly)
+
     let (selected, _set) = store.selectedAccountState
     let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
     switch selected {
