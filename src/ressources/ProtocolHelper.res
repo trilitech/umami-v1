@@ -126,7 +126,7 @@ module Multisig = {
   module Lambda = {
     include ReTaquitoTypes.Lambda
 
-    module Parameter = {
+    module Parameters = {
       module Type = {
         type t
 
@@ -136,75 +136,77 @@ module Multisig = {
             {
               "prim": "pair",
               "args": [
-                {"prim": "address", "annots": ["%from_"]},
+                {"prim": "address"},
                 {
                   "prim": "list",
                   "args": [
                     {
                       "prim": "pair",
                       "args": [
-                        {"prim": "address", "annots": ["%to_"]},
+                        {"prim": "address"},
                         {
                           "prim": "pair",
                           "args": [
-                            {"prim": "nat", "annots": ["%token_id"]},
-                            {"prim": "nat", "annots": ["%amount"]}
+                            {"prim": "nat"},
+                            {"prim": "nat"}
                           ]
                         }
                       ]
                     }
-                  ],
-                  "annots": ["%txs"]
+                  ]
                 }
               ]
             }
-          ],
-          "annots": ["%transfer"]
+          ]
         }`)
       }
-  
+
       module Value = {
         type t
 
-        let fa2Transfer: ReTaquitoTypes.FA2.transferParam => t = parameters => {
-          %raw(`[
-            {
-              "prim": "Pair",
-              "args": [
-                {"string": "tz1Te4MXuNYxyyuPqmAQdnKwkD8ZgSF9M7d6"},
-                [
-                  {
-                    "prim": "Pair",
-                    "args": [
-                      {"string": "tz1LbSsDSmekew3prdDGx1nS22ie6jjBN6B3"},
-                      {
-                        "prim": "Pair",
-                        "args": [{"int": "0"}, {"int": "10000000"}]
-                      }
-                    ]
-                  }
+        let fa2Transfer: array<ReTaquitoTypes.FA2.transferParam> => t = _parameters => {
+          %raw(`
+            _parameters.map(x => {
+              return {
+                "prim": "Pair",
+                "args": [
+                  {"string": x.from_},
+                  x.txs.map(x => {
+                    return {
+                      "prim": "Pair",
+                      "args": [
+                        {"string": x.to_},
+                        {
+                          "prim": "Pair",
+                          "args": [{"int": x.token_id.toString()}, {"int": x.amount.toString()}]
+                        }
+                      ]
+                    }
+                  })
                 ]
-              ]
-            }
-          ]`)
+              }
+            })
+          `)
         }
       }
 
-      type t = (Type.t, Value.t)
+      type t = {
+        type_: Type.t,
+        value: Value.t,
+      }
 
-      let fa2Transfer: (ReTaquitoTypes.FA2.transferParam) => t = parameters => {
-        (Type.fa2Transfer, Value.fa2Transfer(parameters))
+      let fa2Transfer: array<ReTaquitoTypes.FA2.transferParam> => t = parameters => {
+        type_: Type.fa2Transfer,
+        value: Value.fa2Transfer(parameters),
       }
     }
 
-    let call: (PublicKeyHash.t, ReBigNumber.t, string, array<Parameter.t>) => t = (
-      _recipient,
-      _amount,
-      _entrypoint,
-      parameters
-    ) => {
-      let parameterTypes = parameters->Array.map((type_, _) => type_)
-      let parameterValues = parameters->Array.map((_, value) => value)
+    let makeCall = (
+      _recipient: PublicKeyHash.t,
+      _amount: ReBigNumber.t,
+      _entrypoint: string,
+      _parameters: Parameters.t,
+    ): t => {
       %raw(`[
         {"prim": "DROP"},
         {"prim": "NIL", "args": [{"prim": "operation"}]},
@@ -214,7 +216,7 @@ module Multisig = {
         },
         {
           "prim": "CONTRACT",
-          "args": parameterTypes
+          "args": [_parameters.type_]
         },
         [
           {
@@ -226,14 +228,22 @@ module Multisig = {
           "prim": "PUSH",
           "args": [{"prim": "mutez"}, {"int": _amount.toString()}]
         },
-        {"prim": "UNIT"},
+        {
+            "prim": "PUSH",
+            "args": [
+              _parameters.type_,
+              _parameters.value
+            ]
+        },
         {"prim": "TRANSFER_TOKENS"},
         {"prim": "CONS"}
       ]`)
     }
   }
 
-  @ocaml.doc(" Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] ")
+  @ocaml.doc(
+    " Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] "
+  )
   let call = (~entrypoint, ~parameter, ~destination): array<Protocol.manager> => {
     [
       Protocol.Transfer(
@@ -242,28 +252,66 @@ module Multisig = {
     ]
   }
 
-  @ocaml.doc(" Create lambda to send [amount] tez from [sender] to [recipient] ")
-  let transfer = (recipient: PublicKeyHash.t, amount: ProtocolAmount.t) => {
-    let amount = amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
-    PublicKeyHash.isImplicit(recipient)
-      ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
-      : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
+  @ocaml.doc(" Create lambda from a list of FA2 transfers ")
+  let batchFA2 = (source: PublicKeyHash.t, batch: Protocol.Transfer.batchFA2) => {
+    open ReTaquitoTypes.BigNumber
+    let parameter = Lambda.Parameters.fa2Transfer([
+      {
+        from_: source,
+        txs: batch.transfers
+        ->List.toArray
+        ->Array.map(transfer => {
+          ReTaquitoTypes.FA2.to_: transfer.content.destination,
+          token_id: transfer.tokenId->Int64.of_int->fromInt64->toFixed,
+          amount: transfer.content.amount.amount->TokenRepr.Unit.toBigNumber->toFixed,
+        }),
+      },
+    ])
+    Lambda.makeCall(batch.address, ReBigNumber.zero, "transfer", parameter)
   }
 
+  @ocaml.doc(" Create lambda to send [amount] tez or token from [sender] to [recipient] ")
+  let transfer = (source: PublicKeyHash.t, recipient: PublicKeyHash.t, amount: ProtocolAmount.t) =>
+    switch amount {
+    | Tez(amount) =>
+      let amount = amount->Tez.toBigNumber
+      PublicKeyHash.isImplicit(recipient)
+        ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
+        : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
+    | Token({amount, token}) =>
+      open ReTaquitoTypes.BigNumber
+      let tokenID = token.kind->TokenRepr.kindId->Int64.of_int->fromInt64->toFixed
+      let amount = amount->TokenRepr.Unit.toBigNumber->toFixed
+      let parameter = Lambda.Parameters.fa2Transfer([
+        {
+          from_: source,
+          txs: [{to_: recipient, token_id: tokenID, amount: amount}],
+        },
+      ])
+      Lambda.makeCall(token.address, ReBigNumber.zero, "transfer", parameter)
+    }
+
   @ocaml.doc(" Convert a Protocol.manager into a lambda ")
-  let fromManager = (manager: Protocol.manager): ReTaquito.Toolkit.Lambda.t =>
+  let fromManager = (
+    source: PublicKeyHash.t,
+    manager: Protocol.manager,
+  ): ReTaquito.Toolkit.Lambda.t =>
     switch manager {
     | Delegation({delegate: Delegate(baker)}) =>
       ReTaquito.Toolkit.Lambda.setDelegate((baker :> string))
     | Delegation({delegate: Undelegate(_)}) => ReTaquito.Toolkit.Lambda.removeDelegate()
-    | Transfer({data: Simple({destination, amount})}) => transfer(destination, amount)
+    | Transfer({data: Simple({destination, amount})}) => transfer(source, destination, amount)
+    | Transfer({data: FA2Batch(batch)}) => batchFA2(source, batch)
     | _ => failwith(__LOC__ ++ ": unsupported")
     }
 
   @ocaml.doc(" Create lambda from a list of operations ")
-  let batch = (array: array<Protocol.manager>): ReTaquitoTypes.MichelsonV1Expression.t =>
+  let batch = (
+    source: PublicKeyHash.t,
+    array: array<Protocol.manager>,
+  ): ReTaquitoTypes.MichelsonV1Expression.t =>
     Array.reduce(array, emptyLambda, (acc, manager) => {
-      let lambda = fromManager(manager)
+      let lambda = fromManager(source, manager)
       appendLambda(acc, lambda)
     })
 
