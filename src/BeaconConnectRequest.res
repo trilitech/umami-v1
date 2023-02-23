@@ -93,7 +93,7 @@ module ErrorView = {
 }
 
 type request =
-  | Op(Beacon.Message.Request.operationRequest, Protocol.batch)
+  | Op(Beacon.Message.Request.operationRequest, array<Protocol.manager>)
   | Other(Beacon.Message.Request.t)
 
 @react.component
@@ -110,15 +110,9 @@ let make = (~account) => {
   let requestData = React.useMemo1(() =>
     switch request {
     | Some(Ok(OperationRequest(request))) =>
-      StoreContext.Accounts.useGetFromAddress(request.sourceAddress->PublicKeyHash.unsafeBuild)
-      ->Result.fromOption(LocalStorage.NotFound((request.sourceAddress :> string)))
-      ->Result.flatMap(account => BeaconApiRequest.requestToBatch(account, request))
-      ->Result.map(batch => Op(request, batch))
-      ->Some
-
+      BeaconApiRequest.requestToBatch(request)->Result.map(batch => Op(request, batch))->Some
     | Some(Ok(request)) => Some(Ok(Other(request)))
     | Some(Error(e)) => Some(Error(e))
-
     | _ => None
     }
   , [request])

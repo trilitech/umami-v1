@@ -31,7 +31,7 @@ let make = (
   ~ledgerState,
   ~dryRun,
   ~secondaryButton=?,
-  ~operation: Protocol.batch,
+  ~operations: array<Protocol.manager>,
   ~sendOperation,
   ~loading,
   ~setAdvancedOptions,
@@ -47,11 +47,12 @@ let make = (
     <View style=FormStyles.header>
       <Typography.Overline1> {I18n.Expl.global_batch->React.string} </Typography.Overline1>
     </View>
-    {switch operation.managers {
+    {switch operations {
     | [Delegation(_)] => React.null
     | _ =>
       <OperationSummaryView.Batch
-        operation
+        signer=source
+        operations
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
@@ -63,7 +64,7 @@ let make = (
       state=ledgerState
       ?secondaryButton
       loading
-      sendOperation={sendOperation(~operation)}
+      sendOperation={sendOperation(~operations)}
     />
   </ModalFormView>
 </>

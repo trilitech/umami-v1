@@ -46,8 +46,10 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
-@ocaml.doc(" Cast Beacon.MichelineMichelsonV1Expression.t into ReTaquitoTypes.MichelsonV1Expression.t ")
-// This is okay, because:
+@ocaml.doc(
+  " Cast Beacon.MichelineMichelsonV1Expression.t into ReTaquitoTypes.MichelsonV1Expression.t "
+)
+external // This is okay, because:
 //
 // Beacon:
 // export type MichelineMichelsonV1Expression =
@@ -73,10 +75,11 @@ let () = Errors.registerHandler("BeaconAPI", x =>
 //   annots?: string[];
 // }
 // export type MichelsonV1Expression = MichelsonV1ExpressionBase | MichelsonV1ExpressionExtended | MichelsonV1Expression[];
-external beaconToTaquito: (Beacon.MichelineMichelsonV1Expression.t) => ReTaquitoTypes.MichelsonV1Expression.t = "%identity";
+beaconToTaquito: Beacon.MichelineMichelsonV1Expression.t => ReTaquitoTypes.MichelsonV1Expression.t =
+  "%identity"
 
 open Beacon.Message.Request
-let requestToBatch = (account, {operationDetails}) => {
+let requestToBatch = ({operationDetails}) => {
   let managers = operationDetails->Array.map(o =>
     switch Beacon.Message.Request.PartialOperation.classify(o) {
     | Origination(orig) =>
@@ -111,12 +114,7 @@ let requestToBatch = (account, {operationDetails}) => {
     }
   )
 
-  managers
-  ->Result.collectArray
-  ->Result.map(managers => {
-    open Protocol
-    {source: account, managers: managers}
-  })
+  managers->Result.collectArray
 }
 
 let useNextRequestState = (client, peersRequestState) => {

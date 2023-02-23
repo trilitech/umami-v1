@@ -541,7 +541,11 @@ module Operations = {
     )
   }
 
-  let useSimulate = () => OperationApiRequest.useSimulate()
+  let useSimulate = () => {
+    let (operationSimulateRequest, sendOperationSimulate) = OperationApiRequest.useSimulate()
+    let sendOperationSimulate = (source, managers) => sendOperationSimulate((source, managers))
+    (operationSimulateRequest, sendOperationSimulate)
+  }
 }
 
 module Bakers = {

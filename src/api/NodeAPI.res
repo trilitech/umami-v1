@@ -68,13 +68,13 @@ module Simulation = {
       )
     }
 
-  let run = (config: ConfigContext.env, ops: Protocol.batch) => {
-    let customValues = ops.managers->Array.map(op => op->extractCustomValues)
+  let run = (config: ConfigContext.env, source, ops: array<Protocol.manager>) => {
+    let customValues = ops->Array.map(op => op->extractCustomValues)
 
     TaquitoAPI.Batch.Estimate.run(
       ~endpoint=config.network.endpoint,
       ~baseDir=config.baseDir(),
-      ~source=ops.source.Account.address,
+      ~source=source.Account.address,
       ~customValues,
       ~ops,
       (),
@@ -193,11 +193,11 @@ module DelegateMaker = (
 module OperationRepr = Operation
 
 module Operation = {
-  let run = (config: ConfigContext.env, ops: Protocol.batch, ~signingIntent) =>
+  let run = (config: ConfigContext.env, source, ops: array<Protocol.manager>, ~signingIntent) =>
     TaquitoAPI.Batch.run(
       ~endpoint=config.network.endpoint,
       ~baseDir=config.baseDir(),
-      ~source=ops.source.address,
+      ~source=source.Account.address,
       ~ops,
       ~signingIntent,
       (),

@@ -38,14 +38,14 @@ let styles = {
 type step =
   | SendStep
   | SourceStep(DelegateForm.state)
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(Account.t, array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
   | SourceStep(_) => "sourceStep"
-  | SigningStep(_, _) => "signingstep"
+  | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
   }
 
@@ -198,17 +198,18 @@ let make = (~closeAction, ~action) => {
     switch state.values.sender.Alias.kind {
     | Some(Account(_)) =>
       let source = Alias.toAccountExn(state.values.sender)
-      let infos = {
-        open Protocol.Delegation
+      let operations = [
         {
-          delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
-          options: ProtocolOptions.make(),
-        }
-      }
-      let operation = ProtocolHelper.Delegation.makeSingleton(~source, ~infos, ())
+          open Protocol.Delegation
+          {
+            delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
+            options: ProtocolOptions.make(),
+          }
+        }->Protocol.Delegation,
+      ]
       Promise.async(() =>
-        sendOperationSimulate(operation)->Promise.mapOk(dryRun =>
-          setModalStep(_ => SigningStep(operation, dryRun))
+        sendOperationSimulate(source, operations)->Promise.mapOk(dryRun =>
+          setModalStep(_ => SigningStep(source, operations, dryRun))
         )
       )
     | Some(Multisig) => setModalStep(_ => SourceStep(state))
@@ -221,7 +222,7 @@ let make = (~closeAction, ~action) => {
   let (signStep, _) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 
   let title = switch (modalStep, action) {
-  | (SigningStep(_, _), _) =>
+  | (SigningStep(_), _) =>
     let summaryTitle = I18n.Title.confirm_delegate
     SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some
   | (SendStep | SourceStep(_), Create(_)) => I18n.Title.delegate->Some
@@ -232,9 +233,9 @@ let make = (~closeAction, ~action) => {
   let (signingState, _) as state = React.useState(() => None)
 
   let closing = switch (modalStep, (signingState: option<SigningBlock.state>)) {
-  | (SigningStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({kind: Ledger}, _, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
-  | (SigningStep({source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({kind: CustomAuth({provider})}, _, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName))
   | _ => ModalFormView.Close(closeAction)
   }
@@ -262,18 +263,19 @@ let make = (~closeAction, ~action) => {
               let destination = state.values.sender.address
               let parameter = ReTaquito.Toolkit.Lambda.setDelegate(state.values.baker)
               let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operation = ProtocolHelper.Multisig.wrap(~source, [proposal])
-              sendOperationSimulate(operation)->Promise.getOk(dryRun => {
-                setModalStep(_ => SigningStep(operation, dryRun))
+              let operations =
+                [proposal]
+                ->ProtocolHelper.Multisig.toTransfers
+                ->Array.map(x => x->Protocol.Transfer)
+              sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(source, operations, dryRun))
               })
             }
             <SourceStepView
               multisig=state.values.sender.address sender=state.values.sender onSubmit
             />
-          | SigningStep(operation, dryRun) =>
-            <SignOperationView
-              signer=operation.source signOpStep dryRun state operation sendOperation loading
-            />
+          | SigningStep(signer, operations, dryRun) =>
+            <SignOperationView signer signOpStep dryRun state operations sendOperation loading />
           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>

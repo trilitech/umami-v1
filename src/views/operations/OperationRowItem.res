@@ -395,15 +395,16 @@ let make = memo((
   </Table.Row.Bordered>
 })
 
-type pending_step = Simulation | Sign(Protocol.Simulation.results, Protocol.batch) | Done(string)
+type pending_step =
+  Simulation | Sign(Protocol.Simulation.results, array<Protocol.manager>) | Done(string)
 
 module Pending_SignView = {
   @react.component
-  let make = (~signer, ~dryRun, ~operation, ~setStep) => {
+  let make = (~signer, ~dryRun, ~operations, ~setStep) => {
     let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
     let state = React.useState(() => None)
     let signOpStep = React.useState(() => SignOperationView.SummaryStep)
-    let sendOperation = (~operation: Protocol.batch, signingIntent) => {
+    let sendOperation = (~operation, signingIntent) => {
       sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(({
         hash,
       }) => {
@@ -411,7 +412,7 @@ module Pending_SignView = {
       })
     }
     let loading = operationRequest->ApiRequest.isLoading
-    <SignOperationView signer state signOpStep dryRun operation sendOperation loading />
+    <SignOperationView signer state signOpStep dryRun operations sendOperation loading />
   }
 }
 
@@ -462,12 +463,11 @@ module Pending = {
           ->Option.getExn
         let destination = multisig.Multisig.address
         let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
-        let transfers = [transfer]
+        let managers =
+          [transfer]->ProtocolHelper.Multisig.toTransfers->Array.map(x => x->Protocol.Transfer)
         let source = signer
-        let operation = ProtocolHelper.Multisig.wrap(~source, transfers)
-
-        sendOperationSimulate(operation)->Promise.getOk(dryRun => {
-          setStep(Sign(dryRun, operation))
+        sendOperationSimulate(source, managers)->Promise.getOk(dryRun => {
+          setStep(Sign(dryRun, managers))
           openAction()
         })
       }
@@ -481,7 +481,7 @@ module Pending = {
           <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
             | Simulation => <LoadingView />
-            | Sign(dryRun, operation) => <Pending_SignView signer dryRun operation setStep />
+            | Sign(dryRun, operations) => <Pending_SignView signer dryRun operations setStep />
             | Done(hash) =>
               <SubmittedView
                 hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations
@@ -574,7 +574,7 @@ module Pending = {
           p,
         )
 
-        addTransfer(transferPayload, signer, () => ())
+        addTransfer(transferPayload, signer.address, () => ())
       }
       <Buttons.SubmitPrimary
         text=I18n_en.global_batch_add_multisig_exectute

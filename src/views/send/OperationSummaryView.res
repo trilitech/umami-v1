@@ -399,7 +399,10 @@ module Batch = {
       }
     )
 
-  let buildSummaryContent = (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
+  let buildSummaryContent = (
+    operations: array<Protocol.manager>,
+    dryRun: Protocol.Simulation.results,
+  ) => {
     let feeSum = dryRun.simulations->ProtocolHelper.Simulation.sumFees
 
     let partialFee = (I18n.Label.fee, list{Amount.Tez(feeSum)})
@@ -413,7 +416,7 @@ module Batch = {
     let totalFees = dryRun->ProtocolHelper.Simulation.getTotalFees
 
     let amounts =
-      operation.managers
+      operations
       ->filterTransfers
       ->ProtocolHelper.Transfer.reduceArray((acc, t) => \"@:"(t.Transfer.amount, acc))
 
@@ -450,7 +453,8 @@ module Batch = {
   let make = (
     ~style=?,
     ~proposal=false,
-    ~operation: Protocol.batch,
+    ~signer,
+    ~operations: array<Protocol.manager>,
     ~dryRun: Protocol.Simulation.results,
     ~editAdvancedOptions,
     ~advancedOptionsDisabled,
@@ -458,10 +462,10 @@ module Batch = {
     ~icon=?,
     ~name=?,
   ) => {
-    let content = buildSummaryContent(operation, dryRun)
+    let content = buildSummaryContent(operations, dryRun)
     open Operations
 
-    let destinations = operation.managers->Array.mapWithIndex((i, m) =>
+    let destinations = operations->Array.mapWithIndex((i, m) =>
       switch m {
       | Transfer({options, parameter, data: Simple(t: Protocol.Transfer.generic<_>)}) => {
           title: I18n.Label.send_recipient,
@@ -528,17 +532,18 @@ module Batch = {
       />
     }
 
-    let smallest = switch operation.source.kind {
-    | CustomAuth(_)
-    | Ledger => true
-    | Galleon
-    | Encrypted
-    | Unencrypted => false
-    }
-
+    // FIXME:
+    // let smallest = switch operation.source.kind {
+    // | CustomAuth(_)
+    // | Ledger => true
+    // | Galleon
+    // | Encrypted
+    // | Unencrypted => false
+    // }
+    let smallest = false
     <Base
       ?style
-      signer=(operation.source, proposal ? I18n.account : I18n.Title.sender_account)
+      signer=(signer, proposal ? I18n.account : I18n.Title.sender_account)
       destinations={hideBatchDetails || proposal
         ? React.null
         : Base.buildDestinations(smallest, destinations, Some(batchAdvancedOptions))}

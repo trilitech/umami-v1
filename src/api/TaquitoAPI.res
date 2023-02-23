@@ -408,11 +408,11 @@ module Batch = {
     | OriginationParams(Toolkit.originateParams)
     | TransferParams(Toolkit.transferParams)
 
-  let prepareOperations = (op: Protocol.batch, endpoint, source) => {
+  let prepareOperations = (managers: array<Protocol.manager>, endpoint, source) => {
     let fa12Cache = endpoint->Toolkit.create->FA12Cache.make
     let fa2Cache = endpoint->Toolkit.create->FA2Cache.make
 
-    op.managers->Array.map(x =>
+    managers->Array.map(x =>
       switch x {
       | Protocol.Origination(o) => Origination.prepare(~source, o)->OriginationParams->Promise.ok
       | Protocol.Delegation(d) => Delegation.prepareSet(~source, d)->DelegationParams->Promise.ok
@@ -555,7 +555,7 @@ module Batch = {
       ->Promise.flatMapOk(alias => KeyWallet.pkFromAlias(~dirpath=baseDir, ~alias))
       ->Promise.flatMapOk(publicKey => inject(~endpoint, ~publicKey, ~source, ~ops))
       ->Promise.flatMapOk(res =>
-        extractBatchRevealEstimation(~batchSize=ops.managers->Array.length, res)->Promise.value
+        extractBatchRevealEstimation(~batchSize=ops->Array.length, res)->Promise.value
       )
       ->Promise.mapOk(((simulations, reveal)) =>
         handleEstimationResults(simulations, reveal, customValues)

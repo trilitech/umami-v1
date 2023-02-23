@@ -477,19 +477,13 @@ module API = {
     "Generate the operation to be used for simulation/signed/sent in order to create (originate) a new multisig contract"
   )
   let origination = (~source, ~ownerAddresses, ~threshold) => {
-    open Protocol
-    {
-      source: source,
-      managers: [
-        ProtocolHelper.Origination.make(
-          ~balance=Tez.zero,
-          ~code=MultisigMicheline.code,
-          ~storage=MultisigMicheline.storage(source.address, ownerAddresses, threshold),
-          ~delegate=None,
-          (),
-        ),
-      ],
-    }
+    ProtocolHelper.Origination.make(
+      ~balance=Tez.zero,
+      ~code=MultisigMicheline.code,
+      ~storage=MultisigMicheline.storage(source.Account.address, ownerAddresses, threshold),
+      ~delegate=None,
+      (),
+    )
   }
 }
 

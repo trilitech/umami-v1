@@ -57,14 +57,11 @@ module RightCol = {
 module TransactionCounter = {
   @react.component
   let make = (~batch) => {
-    let getTransactionCount = (b: option<Protocol.batch>) =>
-      switch b {
-      | Some(b) => b.managers->Array.length
-      | None => 0
-      }
-    let count = getTransactionCount(batch)
-    let transactionsDisplay = age => "Transactions (" ++ (Int.toString(age) ++ ")") // Interpolation as described in docs not working
-
+    let count = switch batch {
+    | Some(b) => Array.length(b)
+    | None => 0
+    }
+    let transactionsDisplay = age => "Transactions (" ++ Int.toString(age) ++ ")" // Interpolation as described in docs not working
     <Typography.Overline2
       style={
         open Style
@@ -123,8 +120,7 @@ let make = () => {
     setBatchAndSim,
   } = GlobalBatchContext.useGlobalBatchContext()
 
-  let selectedAccountOpt =
-    StoreContext.SelectedAccount.useGetImplicit()->Option.map(Alias.fromAccount)
+  let selectedAccountOpt = StoreContext.SelectedAccount.useGetImplicit()
 
   let onAddCSVList = (csvRows: CSVEncoding.t) => csvRows->csvRowToTransferPayloads->addTransfers
 
@@ -138,7 +134,8 @@ let make = () => {
       <Container>
         <LeftCol>
           <AccountElements.Selector.Simple
-            account keep={(a: Alias.t) => a.address->PublicKeyHash.isImplicit}
+            account={Alias.fromAccount(account)}
+            keep={(a: Alias.t) => a.address->PublicKeyHash.isImplicit}
           />
           <Wrapper>
             <TransactionCounter batch /> <CSVPicker onAddCSVList /> <CSVFormatLink />
@@ -146,6 +143,7 @@ let make = () => {
           {batch->Option.mapWithDefault(<BatchEmptyView />, batch =>
             dryRun->Option.mapWithDefault(React.null, dryRun =>
               <GlobalBatchDataTableWithModals
+                account
                 batch
                 onDeleteAll=resetGlobalBatch
                 dryRun
@@ -158,7 +156,7 @@ let make = () => {
           )}
         </LeftCol>
         <RightCol>
-          <SubmitGlobalBatchButton dryRun operation=batch resetGlobalBatch />
+          <SubmitGlobalBatchButton dryRun source=account operations=batch resetGlobalBatch />
           {summary->Option.mapWithDefault(React.null, summary =>
             <GlobalBatchSummaryColumn content=summary />
           )}

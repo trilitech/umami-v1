@@ -128,7 +128,7 @@ module Form = {
 
 type step =
   | SendStep
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
@@ -159,10 +159,11 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
-  let sendTransfer = (~operation: Protocol.batch, signingIntent) =>
+  let sendTransfer = (~operation, signingIntent) => {
     sendOperation({operation: operation, signingIntent: signingIntent})->Promise.tapOk(result =>
       setModalStep(_ => SubmittedStep(result.hash))
     )
+  }
 
   let isForGlobalBatch = React.useRef(false)
 
@@ -175,20 +176,17 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
       ~token=nft,
       (),
     )
-
-    let transaction = ProtocolHelper.Transfer.makeBatch(~source, ~transfers=[transfer], ())
-
-    sendOperationSimulate(transaction)->Promise.getOk(dryRun =>
-      setModalStep(_ => SigningStep(transaction, dryRun))
+    let managers = [Protocol.Transfer(transfer)]
+    sendOperationSimulate(source, managers)->Promise.getOk(dryRun =>
+      setModalStep(_ => SigningStep(managers, dryRun))
     )
-    ()
   }
 
   let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) =>
     if isForGlobalBatch.current {
       let validState = unsafeExtractValidState(state, nft, source)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender->Alias.toAccountExn, closeAction)
+      addTransfer(p, validState.sender.address, closeAction)
     } else {
       nominalSubmit(state)
     }
@@ -233,13 +231,13 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
             loading=loadingSimulate
             simulatingBatch=isSimulating
           />
-        | SigningStep(operation, dryRun) =>
+        | SigningStep(operations, dryRun) =>
           <SignOperationView
-            signer=operation.source
+            signer=source
             state=signingState
             signOpStep
             dryRun
-            operation
+            operations
             sendOperation=sendTransfer
             loading
           />

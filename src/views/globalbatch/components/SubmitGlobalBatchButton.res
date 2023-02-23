@@ -26,10 +26,10 @@
 open ReactNative
 
 @react.component
-let make = (~dryRun, ~operation, ~resetGlobalBatch) => {
+let make = (~source, ~dryRun, ~operations, ~resetGlobalBatch) => {
   let (openModal, closeModal, inModal) = ModalAction.useModal()
 
-  let disabled = switch operation {
+  let disabled = switch operations {
   | None => true
   | Some(_) => false
   }
@@ -38,6 +38,6 @@ let make = (~dryRun, ~operation, ~resetGlobalBatch) => {
   let ledgerState = React.useState(() => None)
   <>
     <View> <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled /> </View>
-    {inModal(<SignGlobalBatch dryRun operation resetGlobalBatch closeModal ledgerState />)}
+    {inModal(<SignGlobalBatch dryRun source operations resetGlobalBatch closeModal ledgerState />)}
   </>
 }

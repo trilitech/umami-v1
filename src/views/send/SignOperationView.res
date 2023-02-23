@@ -58,13 +58,13 @@ let make = (
   ~signOpStep as (step, setStep),
   ~dryRun,
   ~secondaryButton=?,
-  ~operation,
+  ~operations,
   ~sendOperation: (~operation: Protocol.batch, TaquitoAPI.Signer.intent) => Promise.t<_>,
   ~loading,
   ~icon=?,
   ~name=?,
 ) => {
-  let ((operation: Protocol.batch, dryRun), setOp) = React.useState(() => (operation, dryRun))
+  let ((operations, dryRun), setOp) = React.useState(() => (operations, dryRun))
 
   let theme = ThemeContext.useTheme()
 
@@ -106,7 +106,8 @@ let make = (
       <View style=FormStyles.header> {subtitle->Typography.overline1} </View>
       <OperationSummaryView.Batch
         ?proposal
-        operation
+        signer
+        operations
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
@@ -117,7 +118,7 @@ let make = (
         style={styles["advancedOptions"]}
         disabled=advancedOptionsDisabled
         text=I18n.Label.advanced_options
-        stateIcon={optionsSet(operation.managers) == Some(true)
+        stateIcon={optionsSet(operations) == Some(true)
           ? <Icons.Edit style={styles["edited"]} size=25. color=theme.colors.iconPrimary />
           : React.null}
         onPress={_ => setAdvancedOptions(None)}
@@ -127,11 +128,14 @@ let make = (
         state
         ?secondaryButton
         loading
-        sendOperation={sendOperation(~operation)}
+        sendOperation={signingIntent => {
+          let operation = {Protocol.source: signer, managers: operations}
+          sendOperation(~operation, signingIntent)
+        }}
       />
     </>
 
   | AdvancedOptStep(index) =>
-    <AdvancedOptionsView operation dryRun ?index onSubmit=onAdvOptSubmit token=None />
+    <AdvancedOptionsView signer operations dryRun ?index onSubmit=onAdvOptSubmit token=None />
   }
 }

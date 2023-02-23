@@ -188,7 +188,7 @@ module Form = {
       }
     )
 
-  let originationOperation = (t: state, ~source) =>
+  let originationOperation = (t: state, ~source: Account.t) =>
     Multisig.API.origination(
       ~source,
       ~ownerAddresses=t->ownerAddresses,
@@ -457,7 +457,12 @@ module Step3 = {
 type step =
   | CreateStep
   | SourceStep(Form.state, option<string> => unit)
-  | SigningStep(Form.state, option<string> => unit, Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(
+      Form.state,
+      option<string> => unit,
+      array<Protocol.manager>,
+      Protocol.Simulation.results,
+    )
   | SubmittedStep(string)
 
 let stepToString = step =>
@@ -494,7 +499,7 @@ module SignView = {
     ~state,
     ~signOpStep,
     ~dryRun,
-    ~operation,
+    ~operations,
     ~sendOperation,
     ~setModalStep,
     ~form: Form.api,
@@ -510,7 +515,7 @@ module SignView = {
       dryRun
       signOpStep
       state
-      operation
+      operations
       sendOperation={(~operation, signingIntent) =>
         sendOperation({
           operation: operation,
@@ -611,24 +616,24 @@ let make = (~source: Account.t, ~closeAction) => {
       <SourceSelector
         source
         loading={operationSimulateRequest->ApiRequest.isLoading}
-        onSubmit={source => {
-          let operation = state->Form.originationOperation(~source)
-          sendOperationSimulate(operation)->Promise.get(x => {
+        onSubmit={(source: Account.t) => {
+          let operations = [state->Form.originationOperation(~source)]
+          sendOperationSimulate(source, operations)->Promise.get(x => {
             switch x {
             | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
             | Ok(dryRun) =>
-              setModalStep(_ => SigningStep(state, raiseSubmitFailed, operation, dryRun))
+              setModalStep(_ => SigningStep(state, raiseSubmitFailed, operations, dryRun))
             }
           })
         }}
       />
-    | SigningStep(_, _, operation, dryRun) =>
+    | SigningStep(_, _, operations, dryRun) =>
       <SignView
-        account=operation.source
+        account=source
         state
         signOpStep
         dryRun
-        operation
+        operations
         sendOperation
         setModalStep
         form

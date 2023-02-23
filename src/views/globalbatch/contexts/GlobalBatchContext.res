@@ -24,15 +24,15 @@
 /* *************************************************************************** */
 
 open GlobalBatchTypes
-type batchAndSim = (Protocol.batch, Umami.Protocol.Simulation.results)
+type batchAndSim = (PublicKeyHash.t, array<Protocol.manager>, option<Protocol.Simulation.results>)
 
 type state = {
   isSimulating: bool,
-  addTransfer: (transferPayload, Account.t, unit => unit) => unit,
+  addTransfer: (transferPayload, PublicKeyHash.t, unit => unit) => unit,
   addTransfers: array<transferPayload> => unit,
-  dryRun: option<Umami.Protocol.Simulation.results>,
+  dryRun: option<Protocol.Simulation.results>,
   setBatchAndSim: batchAndSim => unit,
-  batch: option<Protocol.batch>,
+  batch: option<array<Protocol.manager>>,
   resetGlobalBatch: unit => unit,
   removeBatchItem: GlobalBatchTypes.managerCoords => unit,
   replaceBatchItem: (GlobalBatchTypes.rowData, unit => unit) => unit,
@@ -53,22 +53,22 @@ let initialState = {
 let context = React.createContext(initialState)
 
 let getBatch = (account, all: array<batchAndSim>) =>
-  all->Array.getBy(((b, _)) => b.source == account)
+  all->Array.getBy(((pkh, _, _)) => pkh == account)
 
-let updatedBatchAndSims = ((batch, sim): batchAndSim, allBatches: array<batchAndSim>) => {
-  let accountToAdd = batch.source
+let updatedBatchAndSims = ((pkh, batch, sim): batchAndSim, allBatches: array<batchAndSim>) => {
+  let accountToAdd = pkh
 
-  let accountHasBatch = allBatches->Array.some(((b, _)) => b.source == accountToAdd)
+  let accountHasBatch = allBatches->Array.some(((pkh, _, _)) => pkh == accountToAdd)
 
   if accountHasBatch {
-    allBatches->Array.map(((b, s)) => b.source == accountToAdd ? (batch, sim) : (b, s))
+    allBatches->Array.map(((pkh, b, s)) => pkh == accountToAdd ? (pkh, batch, sim) : (pkh, b, s))
   } else {
-    allBatches->Array.concat([(batch, sim)])
+    allBatches->Array.concat([(pkh, batch, sim)])
   }
 }
 
-let removeBatchAndSim = (account: Account.t, allBatches: array<batchAndSim>) =>
-  allBatches->Array.keep(((b, _)) => b.source != account)
+let removeBatchAndSim = (account: PublicKeyHash.t, allBatches: array<batchAndSim>) =>
+  allBatches->Array.keep(((pkh, _, _)) => pkh != account)
 module Provider = {
   let makeProps = (~value, ~children, ()) =>
     {
@@ -81,7 +81,7 @@ module Provider = {
 
 module ProviderPrivate = {
   @react.component
-  let make = (~children, ~selectedAccount: Account.t) => {
+  let make = (~children, ~selectedAccount: PublicKeyHash.t) => {
     let addToast = LogsContext.useToast()
     let (operationSimulate, sendOperationSimulate) = StoreContext.Operations.useSimulate()
     let isSimulating = operationSimulate->ApiRequest.isLoading
@@ -89,8 +89,10 @@ module ProviderPrivate = {
     let (allBatchAndSim, setAllBatchAndSim) = React.useState(() => [])
 
     let batchAndSim = getBatch(selectedAccount, allBatchAndSim)
-    let batch = batchAndSim->Option.map(((b, _)) => b)
-    let dryRun = batchAndSim->Option.map(((_, s)) => s)
+    let (batch, dryRun) = switch batchAndSim {
+    | Some(_pkh, batch, dryRun) => (Some(batch), dryRun)
+    | None => (None, None)
+    }
 
     // Reset globalBatch for selected account
     // by removing his batchAndSim from allBatchAndSims
@@ -107,23 +109,29 @@ module ProviderPrivate = {
       ()
     }
 
-    let simulateThenSet = (b, onSucces) => {
-      sendOperationSimulate(b)->Promise.getOk(dryRun => {
-        let updatedBatches = updatedBatchAndSims((b, dryRun), allBatchAndSim)
-
+    let simulateThenSet = (managers, onSucces) => {
+      let update = dryRun => {
+        let updatedBatches = updatedBatchAndSims(
+          (selectedAccount, managers, dryRun),
+          allBatchAndSim,
+        )
         setAllBatchAndSim(_ => updatedBatches)
         onSucces()
-      })
-      ()
+      }
+      PublicKeyHash.isImplicit(selectedAccount)
+        ? {Account.address: selectedAccount, name: "", kind: Encrypted} // FIXME: kind?
+          ->sendOperationSimulate(managers)
+          ->Promise.getOk(dryRun => update(Some(dryRun)))
+        : update(None)
     }
 
     // We can define account from outside when adding
-    let addTransfer = (payload: transferPayload, account: Account.t, onDone) => {
+    let addTransfer = (payload: transferPayload, account: PublicKeyHash.t, onDone) => {
       let existingBatchAndSim = getBatch(account, allBatchAndSim)
 
       let newBatch = switch existingBatchAndSim {
-      | Some((b, _)) => GlobalBatchUtils.addToExistingOrNew(account, Some(b), payload)
-      | None => GlobalBatchUtils.addToExistingOrNew(account, None, payload)
+      | Some((_, b, _)) => GlobalBatchUtils.addToExistingOrNew(Some(b), payload)
+      | None => GlobalBatchUtils.addToExistingOrNew(None, payload)
       }
 
       simulateThenSet(newBatch, () => {
@@ -137,7 +145,7 @@ module ProviderPrivate = {
       | Some(batch) =>
         let newBatch = GlobalBatchUtils.remove(~batch, ~coords)
 
-        if newBatch.managers->Array.length > 0 {
+        if newBatch->Array.length > 0 {
           simulateThenSet(newBatch, () => ())
         } else {
           resetGlobalBatch()
@@ -151,18 +159,13 @@ module ProviderPrivate = {
         let (coords, payload) = rowData
         let newBatch = GlobalBatchUtils.set(batch, coords, payload)
         simulateThenSet(newBatch, onSuccess)
-        ()
       | None => ()
       }
 
     let addTransfers = (trs: array<transferPayload>) =>
-      Some(selectedAccount)
-      ->Option.flatMap(sender =>
-        trs->Array.reduce(batch, (acc, curr) =>
-          GlobalBatchUtils.addToExistingOrNew(sender, acc, curr)->Some
-        )
-      )
-      ->Option.map(b => simulateThenSet(b, () => ()))
+      trs
+      ->Array.reduce(batch, (acc, curr) => GlobalBatchUtils.addToExistingOrNew(acc, curr)->Some)
+      ->Option.map(acc => simulateThenSet(acc, () => ()))
       ->ignore
 
     <Provider
@@ -184,9 +187,9 @@ module ProviderPrivate = {
 
 @react.component
 let make = (~children) => {
-  let selectedAccount = StoreContext.SelectedAccount.useGetImplicit()
+  let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()
   switch selectedAccount {
-  | Some(account) => <ProviderPrivate selectedAccount=account> children </ProviderPrivate>
+  | Some(account) => <ProviderPrivate selectedAccount=account.address> children </ProviderPrivate>
   | None => children
   }
 }

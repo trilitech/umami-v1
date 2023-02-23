@@ -35,7 +35,7 @@ let styles = {
 type step =
   | SendStep
   | SourceStep
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
+  | SigningStep(Account.t, array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
@@ -65,13 +65,18 @@ let make = (~closeAction, ~account, ~delegate) => {
     switch account.Alias.kind {
     | Some(Account(_)) =>
       let account = Alias.toAccountExn(account)
-      let delegate = Protocol.Delegation.Undelegate(Some(delegate))
-      let op = ProtocolHelper.Delegation.makeSingleton(
-        ~source=account,
-        ~infos={delegate: delegate, options: ProtocolOptions.make()},
-        (),
+      let operations = [
+        {
+          open Protocol.Delegation
+          {
+            delegate: Undelegate(Some(delegate)),
+            options: ProtocolOptions.make(),
+          }
+        }->Protocol.Delegation,
+      ]
+      sendOperationSimulate(account, operations)->Promise.getOk(dryRun =>
+        setModalStep(_ => SigningStep(account, operations, dryRun))
       )
-      sendOperationSimulate(op)->Promise.getOk(dryRun => setModalStep(_ => SigningStep(op, dryRun)))
     | Some(Multisig) => setModalStep(_ => SourceStep)
     | _ => assert false
     }
@@ -106,17 +111,18 @@ let make = (~closeAction, ~account, ~delegate) => {
               let destination = account.address
               let parameter = ReTaquito.Toolkit.Lambda.removeDelegate()
               let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operation = ProtocolHelper.Multisig.wrap(~source, [proposal])
-              sendOperationSimulate(operation)->Promise.getOk(dryRun => {
-                setModalStep(_ => SigningStep(operation, dryRun))
+              let operations =
+                [proposal]
+                ->ProtocolHelper.Multisig.toTransfers
+                ->Array.map(x => x->Protocol.Transfer)
+              sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(source, operations, dryRun))
               })
             }
             <SourceStepView multisig=account.address sender=account onSubmit />
-          | SigningStep(operation, dryRun) =>
+          | SigningStep(signer, operations, dryRun) =>
             let loading = operationRequest->ApiRequest.isLoading
-            <SignOperationView
-              signer=operation.source signOpStep dryRun operation sendOperation loading
-            />
+            <SignOperationView signer signOpStep dryRun operations sendOperation loading />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

@@ -94,12 +94,8 @@ describe("GlobalBatchUtils", () => {
         data: FA2Batch(batchFA2),
         parameter: parameter,
       })
-      let expected: Umami.Protocol.batch = {
-        source: mockAccount,
-        managers: [manager],
-      }
+      let expected: array<Protocol.manager> = [manager]
       let result = GlobalBatchUtils.addToExistingOrNew(
-        mockAccount,
         None,
         (mockToken, mockAlias->FormUtils.Alias.address, dummyParam),
       )
@@ -119,15 +115,12 @@ describe("GlobalBatchUtils", () => {
         ~data={destination: mockAddress, amount: tezAmount2},
         (),
       )->Transfer
-    let batchWithATezTransaction = {
-      source: mockAccount,
-      managers: [manager],
-    }
+    let batchWithATezTransaction = [manager]
     let result = GlobalBatchUtils.add(
       ~payload=(tezAmount2, mockAddress, dummyParam),
       ~batch=batchWithATezTransaction,
     )
-    let expected = {source: mockAccount, managers: [manager, manager2]}
+    let expected = [manager, manager2]
     expect(result)->toEqual(expected)
   })
 
@@ -138,8 +131,7 @@ describe("GlobalBatchUtils", () => {
       GlobalBatchXfs.transferPayloadToTransferData((mockTez, mockRecipient, dummyParam))
       ->GlobalBatchXfs.transferDataToTransfer
       ->Transfer
-    let batch = {source: mockAccount, managers: [tezManager]}
-    let result = GlobalBatchXfs.batchToIndexedRows(batch)
+    let result = GlobalBatchXfs.batchToIndexedRows([tezManager])
     expect(result)->toEqual([((0, None), (makeMockTezAmount(3344), mockRecipient, dummyParam))])
   })
 })

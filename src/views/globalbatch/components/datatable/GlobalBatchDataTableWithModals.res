@@ -100,20 +100,23 @@ module EditView = {
     ~recipient,
     ~account,
     ~parameter,
-    ~operation,
+    ~operations: option<array<Umami.Protocol.manager>>,
     ~dryRun,
     ~onAdvancedSubmit,
     ~onNominalEdit,
     ~onClose,
   ) => {
     let dummyIndex = 3
+    let signer = account
+    let account = Alias.fromAccount(signer)
     advancedEditMode
       ? {
           open ModalFormView
-          operation->Option.mapWithDefault(React.null, operation =>
+          operations->Option.mapWithDefault(React.null, operations =>
             <ModalFormView title=I18n.Label.advanced_options closing=Close(onClose)>
               <AdvancedOptionsView
-                operation
+                signer
+                operations
                 dryRun
                 index=managerIndex
                 onSubmit={(batch, dryRun) => onAdvancedSubmit(batch, dryRun)}
@@ -137,7 +140,8 @@ let indexToCoords = (i, vs) => vs->Array.get(i)->Option.map(((coords, _)) => coo
 
 @react.component
 let make = (
-  ~batch,
+  ~account: Account.t,
+  ~batch: array<Umami.Protocol.manager>,
   ~simulations: array<Umami.Protocol.Simulation.resultElt>,
   ~replaceBatchItem: (Umami.GlobalBatchTypes.rowData, unit => unit) => unit,
   ~removeBatchItem,
@@ -187,7 +191,7 @@ let make = (
   }
 
   let handleAdvancedSubmit = (batch, dryRun) => {
-    setBatchAndSim((batch, dryRun))
+    setBatchAndSim((account.address, batch, Some(dryRun)))
     resetEdit()
   }
 
@@ -239,8 +243,8 @@ let make = (
         amount
         parameter
         recipient
-        account=(batch.source->Alias.fromAccount)
-        operation=Some(batch)
+        account
+        operations=Some(batch)
         dryRun
         onAdvancedSubmit=handleAdvancedSubmit
         onNominalEdit={vs => handleNominalSubmit(coords, vs)}

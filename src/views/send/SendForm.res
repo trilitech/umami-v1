@@ -57,26 +57,14 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses)
 
-let buildTransfer = (inputTransfers, source) => {
-  let transfers =
-    inputTransfers
-    ->List.map((t: validState) => {
-      let destination = t.recipient->FormUtils.Alias.address
-      let data = {
-        open Transfer
-        {destination: destination, amount: t.amount}
-      }
-      ProtocolHelper.Transfer.makeSimple(~data, ())
-    })
-    ->List.toArray
-
-  ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
-}
-
-let buildTransaction = (batch: list<validState>, getImplicitFromAlias) =>
-  switch batch {
-  | list{} => assert false
-  | list{first, ..._} as inputTransfers =>
-    let source = getImplicitFromAlias(first.sender)
-    buildTransfer(inputTransfers, source)
-  }
+let buildTransaction = (batch: list<validState>) =>
+  batch
+  ->List.map((t: validState) => {
+    let destination = t.recipient->FormUtils.Alias.address
+    let data = {
+      open Transfer
+      {destination: destination, amount: t.amount}
+    }
+    ProtocolHelper.Transfer.makeSimple(~data, ())->Protocol.Transfer
+  })
+  ->List.toArray

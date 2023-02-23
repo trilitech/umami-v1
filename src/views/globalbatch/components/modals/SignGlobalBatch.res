@@ -26,16 +26,18 @@
 let useSendTransfer = () => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
 
-  let sendTransfer = (~operation: Protocol.batch, signingIntent) =>
+  let sendTransfer = (~source, ~operations, signingIntent) => {
+    let operation = {Protocol.source: source, managers: operations}
     sendOperation({operation: operation, signingIntent: signingIntent})
-
+  }
   (operationRequest, sendTransfer)
 }
 
 @react.component
 let make = (
+  ~source,
+  ~operations:option<array<Protocol.manager>>,
   ~dryRun,
-  ~operation: option<Protocol.batch>,
   ~closeModal,
   ~resetGlobalBatch,
   ~ledgerState,
@@ -51,15 +53,15 @@ let make = (
   }
 
   let renderSummary = () =>
-    operation->Option.mapWithDefault(React.null, operation =>
+    operations->Option.mapWithDefault(React.null, operations =>
       dryRun->Option.mapWithDefault(React.null, dryRun =>
         <GlobalBatchSummary
-          source=operation.source
+          source
           loading
           ledgerState
           dryRun
-          operation
-          sendOperation=sendTransfer
+          operations=operations
+          sendOperation=sendTransfer(~source)
           setAdvancedOptions={_ => ()}
           advancedOptionsDisabled=true
           onClose=closeModal
