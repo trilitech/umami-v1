@@ -186,12 +186,12 @@ module Selector = {
   module Simple = {
     open Style
     @react.component
-    let make = (~account: item, ~style=?, ~implicitOnly=false) => {
+    let make = (~account: item, ~style=?, ~keep=_ => true) => {
       let items =
         StoreContext.useGetAccountsMultisigsAliasesAsAliases()
         ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
-        ->PublicKeyHash.keepImplicit(implicitOnly)
         ->PublicKeyHash.Map.valuesToArray
+        ->Belt.Array.keep(keep)
         ->SortArray.stableSortBy(Alias.compareName)
 
       let updateAccount = StoreContext.SelectedAccount.useSet()

@@ -123,9 +123,8 @@ let make = () => {
     setBatchAndSim,
   } = GlobalBatchContext.useGlobalBatchContext()
 
-  let implicitOnly = true
-
-  let selectedAccountOpt = StoreContext.SelectedAccount.useGetAtInit(~implicitOnly, ())
+  let selectedAccountOpt =
+    StoreContext.SelectedAccount.useGetImplicit()->Option.map(Alias.fromAccount)
 
   let onAddCSVList = (csvRows: CSVEncoding.t) => csvRows->csvRowToTransferPayloads->addTransfers
 
@@ -138,7 +137,9 @@ let make = () => {
       </Typography.Headline>
       <Container>
         <LeftCol>
-          <AccountElements.Selector.Simple implicitOnly account />
+          <AccountElements.Selector.Simple
+            account keep={(a: Alias.t) => a.address->PublicKeyHash.isImplicit}
+          />
           <Wrapper>
             <TransactionCounter batch /> <CSVPicker onAddCSVList /> <CSVFormatLink />
           </Wrapper>

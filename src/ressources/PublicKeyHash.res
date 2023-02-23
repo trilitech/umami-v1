@@ -154,9 +154,6 @@ module Comparator = Belt.Id.MakeComparable({
 
 module Map = Map.Make(Comparator)
 
-let keepImplicit = (map, implicitOnly) =>
-  map->Map.keep((pkh, _) => implicitOnly ? isImplicit(pkh) : true)
-
 let encoder = address => Json.Encode.string(address)
 let decoder = json => json |> Json.Decode.string |> build |> JsonEx.getExn
 

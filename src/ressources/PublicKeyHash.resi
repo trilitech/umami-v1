@@ -81,5 +81,4 @@ let encoder: Json.Encode.encoder<t>
 let decoder: Json.Decode.decoder<t>
 module Map: Map.S with module Key := Comparator
 
-let keepImplicit: (Map.t<t, 'a, 'b>, bool) => Map.t<t, 'a, 'b>
 let unsafeBuild: string => t
