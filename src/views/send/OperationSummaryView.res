@@ -532,15 +532,14 @@ module Batch = {
       />
     }
 
-    // FIXME:
-    // let smallest = switch operation.source.kind {
-    // | CustomAuth(_)
-    // | Ledger => true
-    // | Galleon
-    // | Encrypted
-    // | Unencrypted => false
-    // }
-    let smallest = false
+    let smallest = switch signer.Account.kind {
+    | CustomAuth(_)
+    | Ledger => true
+    | Galleon
+    | Encrypted
+    | Unencrypted => false
+    }
+
     <Base
       ?style
       signer=(signer, proposal ? I18n.account : I18n.Title.sender_account)

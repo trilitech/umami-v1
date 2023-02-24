@@ -101,7 +101,6 @@ let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) =>
 
 type indexedValidStates = array<((int, option<int>), Umami.SendForm.validState)>
 
-// FIXME: dry run in the case of multisig?
 @react.component
 let make = () => {
   let {
