@@ -500,57 +500,41 @@ module SignView = {
     ~signOpStep,
     ~dryRun,
     ~operations,
-    ~sendOperation,
-    ~setModalStep,
-    ~form: Form.api,
-    ~config: Umami.ConfigContext.env,
-    ~updateMultisig,
-    ~operationRequest,
-    ~multisigRequest,
-    ~theme: Umami.ThemeContext.theme,
+    ~name,
+    ~loading,
+    ~onOperationAndSigningIntent,
   ) => {
-    open OperationApiRequest
+    let theme = ThemeContext.useTheme()
     <SignOperationView
       signer=account
       dryRun
       signOpStep
       state
       operations
-      sendOperation={(~operation, signingIntent) =>
-        sendOperation({
-          operation: operation,
-          signingIntent: signingIntent,
-        })
-        ->Promise.tapOk((result: Umami.ReTaquito.Toolkit.Operation.result) =>
-          setModalStep(_ => SubmittedStep(result.hash))
-        )
-        ->Promise.flatMapOk(result =>
-          result.results[0]
-          ->Option.map(ReTaquitoTypes.Operation.classifiy)
-          ->Option.flatMap(result =>
-            switch result {
-            | Origination(result) => result.metadata.operation_result.originated_contracts[0]
-            }
-          )
-          ->Promise.fromOption(~error=AddressNotFound)
-        )
-        ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
-        ->Promise.mapOk(address =>
-          form.state->Form.toMultisig(~address, ~chain=config.network.chain->Network.getChainId)
-        )
-        ->Promise.tapOk(multisig => multisig->updateMultisig)}
-      loading={operationRequest->ApiRequest.isLoading || multisigRequest->ApiRequest.isLoading}
+      sendOperation={onOperationAndSigningIntent}
+      loading
       icon={_ => Some(
         Icons.Key.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis),
       )}
-      name={_ => Some(form.values.name)}
+      name
     />
   }
 }
 
+let getAddress = (result: ReTaquito.Toolkit.Operation.result) => {
+  result.results[0]
+  ->Option.map(ReTaquitoTypes.Operation.classifiy)
+  ->Option.flatMap(result =>
+    switch result {
+    | Origination(result) => result.metadata.operation_result.originated_contracts[0]
+    }
+  )
+  ->Promise.fromOption(~error=AddressNotFound)
+  ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
+}
+
 @react.component
 let make = (~source: Account.t, ~closeAction) => {
-  let theme = ThemeContext.useTheme()
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
   let (modalStep, setModalStep) = React.useState(_ => CreateStep)
@@ -609,6 +593,32 @@ let make = (~source: Account.t, ~closeAction) => {
   | SubmittedStep(_) => None
   }
 
+  let handleSource = (state, raiseSubmitFailed, source: Umami.Account.t) => {
+    let operations = [state->Form.originationOperation(~source)]
+    sendOperationSimulate(source, operations)->Promise.get(x => {
+      switch x {
+      | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
+      | Ok(dryRun) => setModalStep(_ => SigningStep(state, raiseSubmitFailed, operations, dryRun))
+      }
+    })
+  }
+
+  let handleOperationAndSigningIntent = (~operation, signingIntent) => {
+    sendOperation({
+      operation: operation,
+      signingIntent: signingIntent,
+    })->Promise.tapOk((result: ReTaquito.Toolkit.Operation.result) => {
+      setModalStep(_ => SubmittedStep(result.hash))
+      result
+      ->getAddress
+      ->Promise.mapOk(address =>
+        form.state
+        ->Form.toMultisig(~address, ~chain=config.network.chain->Network.getChainId)
+        ->updateMultisig
+      )
+    })
+  }
+
   <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
     {switch modalStep {
     | CreateStep => <CreateView currentStep form setCurrentStep />
@@ -616,16 +626,7 @@ let make = (~source: Account.t, ~closeAction) => {
       <SourceSelector
         source
         loading={operationSimulateRequest->ApiRequest.isLoading}
-        onSubmit={(source: Account.t) => {
-          let operations = [state->Form.originationOperation(~source)]
-          sendOperationSimulate(source, operations)->Promise.get(x => {
-            switch x {
-            | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
-            | Ok(dryRun) =>
-              setModalStep(_ => SigningStep(state, raiseSubmitFailed, operations, dryRun))
-            }
-          })
-        }}
+        onSubmit={handleSource(state, raiseSubmitFailed)}
       />
     | SigningStep(_, _, operations, dryRun) =>
       <SignView
@@ -634,14 +635,9 @@ let make = (~source: Account.t, ~closeAction) => {
         signOpStep
         dryRun
         operations
-        sendOperation
-        setModalStep
-        form
-        config
-        updateMultisig
-        operationRequest
-        multisigRequest
-        theme
+        name={_ => Some(form.values.name)}
+        loading={operationRequest->ApiRequest.isLoading || multisigRequest->ApiRequest.isLoading}
+        onOperationAndSigningIntent=handleOperationAndSigningIntent
       />
 
     | SubmittedStep(hash) =>
