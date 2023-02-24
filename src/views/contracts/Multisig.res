@@ -407,7 +407,7 @@ module API = {
   let parseActions = (actions): option<Operation.payload> => {
     actions
     ->Json.parse
-    ->Option.flatMap(x => {
+    ->Option.map(x => {
       open Operation
       switch LAMBDA_PARSER.transfer(x)->Option.map(({amount, recipient}) =>
         Transaction.Tez({
@@ -418,10 +418,10 @@ module API = {
         })->Transaction
       ) {
       | None =>
-        LAMBDA_PARSER.delegate(x)->Option.map(delegate =>
+        LAMBDA_PARSER.delegate(x)->Option.mapWithDefault(Unknown, delegate =>
           {Delegation.delegate: delegate}->Delegation
         )
-      | x => x
+      | Some(x) => x
       }
     })
   }
