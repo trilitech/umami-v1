@@ -83,7 +83,6 @@ type step =
       array<Protocol.manager>,
       Protocol.Simulation.results,
     )
-  | EditStep(int, SendForm.validState)
   | SubmittedStep(string)
   | SourceStep(SendForm.validState, option<Account.t>)
 
@@ -91,7 +90,6 @@ let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
   | SigningStep(_) => "signingstep"
-  | EditStep(_) => "editstep"
   | SubmittedStep(_) => "submittedstep"
   | SourceStep(_) => "sourcestep"
   }
@@ -213,8 +211,7 @@ module Form = {
                 style=FormStyles.formSecondary
                 text=I18n.global_batch_add
                 onPress={_ => addToBatch()}
-                disabled={!formFieldsAreValids ||
-                (form.values.sender.address :> string)->PublicKeyHash.buildContract->Result.isOk}
+                disabled={!formFieldsAreValids}
               />
             )}
           </View>
@@ -226,26 +223,30 @@ module Form = {
 
 module EditionView = {
   @react.component
-  let make = (~account, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~closeAction, ~account, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token = switch initValues.SendForm.amount {
     | Protocol.Amount.Tez(_) => None
     | Token({token}) => Some(token)
     }
-
     let (token, _) as tokenState = React.useState(() => token)
-
+    let onSubmit = (_, {state}: SendForm.onSubmitAPI) => {
+      let validState = SendForm.unsafeExtractValidState(token, state.values)
+      onSubmit(validState)
+    }
     let initValues = initValues->SendForm.toState
-
     let form = Form.use(~initValues, account, token, onSubmit(token))
-
-    <Form.View tokenState ?token form mode=Form.View.Edition(index) loading />
+    let closing = ModalFormView.confirm(~actionText=I18n.Btn.send_cancel, closeAction)
+    let title = I18n.Title.send
+    <ModalFormView title /* back=None */ closing titleStyle=FormStyles.headerMarginBottom8>
+      <Form.View tokenState ?token form mode=Form.View.Edition(index) loading />
+    </ModalFormView>
   }
 }
 
 let senderIsMultisig = (sender: Alias.t) => PublicKeyHash.isContract(sender.address)
 
 @react.component
-let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
+let make = (~account, ~closeAction, ~initalStep=SendStep) => {
   let initToken = StoreContext.SelectedToken.useGet()
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
@@ -326,11 +327,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     form.submit()
   }
 
-  let onEdit = (_, token, {state}: SendForm.onSubmitAPI) => {
-    let validState = SendForm.unsafeExtractValidState(token, state.values)
-    onEdit(validState)
-  }
-
   let (signerState, _) as state = React.useState(() => None)
 
   let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
@@ -380,7 +376,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let title = switch modalStep {
   | SendStep
-  | EditStep(_)
   | SourceStep(_) =>
     Some(I18n.Title.send)
   | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
@@ -394,9 +389,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
           {switch modalStep {
           | SubmittedStep(hash) =>
             <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
-          | EditStep(index, initValues) =>
-            let onSubmit = form => onEdit(index, form)
-            <EditionView account initValues onSubmit index loading=isSimulating />
           | SendStep =>
             <Form.View
               proposal={senderIsMultisig(form.state.values.sender)}
