@@ -186,7 +186,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
     if isForGlobalBatch.current {
       let validState = unsafeExtractValidState(state, nft, source)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender.address, closeAction)
+      addTransfer(validState.sender.address, p, closeAction)
     } else {
       nominalSubmit(state)
     }

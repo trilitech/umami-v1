@@ -112,6 +112,7 @@ module Btn = {
   let sign = "SIGN"
   let sign_anyway = "SIGN ANYWAY"
   let global_batch_add_short = "INSERT INTO BATCH"
+  let update_cancel = "CANCEL UPDATE"
 }
 
 module Tooltip = {

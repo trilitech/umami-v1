@@ -225,7 +225,7 @@ module Empty = {
 let make = (~account: Alias.t, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme()
 
-  let {batch} = GlobalBatchContext.useGlobalBatchContext()
+  let batch = GlobalBatchContext.useGlobalBatchContext().batch(account.Alias.address)
 
   let hasBatchItems = batch != None
   <View

@@ -36,9 +36,9 @@ let useSendTransfer = () => {
 @react.component
 let make = (
   ~source,
-  ~operations:option<array<Protocol.manager>>,
+  ~operations: array<Protocol.manager>,
   ~dryRun,
-  ~closeModal,
+  ~closeAction,
   ~resetGlobalBatch,
   ~ledgerState,
 ) => {
@@ -47,37 +47,31 @@ let make = (
   let loading = sendTransferState->ApiRequest.isLoading
 
   let handlePressCancel = _ => {
-    closeModal()
+    closeAction()
     open Routes
     push(Operations)
   }
 
   let renderSummary = () =>
-    operations->Option.mapWithDefault(React.null, operations =>
-      dryRun->Option.mapWithDefault(React.null, dryRun =>
-        <GlobalBatchSummary
-          source
-          loading
-          ledgerState
-          dryRun
-          operations=operations
-          sendOperation=sendTransfer(~source)
-          setAdvancedOptions={_ => ()}
-          advancedOptionsDisabled=true
-          onClose=closeModal
-        />
-      )
+    dryRun->Option.mapWithDefault(React.null, dryRun =>
+      <GlobalBatchSummary
+        source
+        loading
+        ledgerState
+        dryRun
+        operations
+        sendOperation={sendTransfer(~source)}
+        setAdvancedOptions={_ => ()}
+        advancedOptionsDisabled=true
+        onClose=closeAction
+      />
     )
 
   switch sendTransferState {
   | Done(Ok({hash}), _) =>
     resetGlobalBatch()
 
-    <ModalFormView
-      closing={
-        open ModalFormView
-        Close(_ => closeModal())
-      }>
+    <ModalFormView closing={ModalFormView.Close(_ => closeAction())}>
       <SubmittedView hash onPressCancel=handlePressCancel submitText=I18n.Btn.go_operations />
     </ModalFormView>
   | _ => renderSummary()

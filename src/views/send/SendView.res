@@ -235,7 +235,7 @@ module EditionView = {
     }
     let initValues = initValues->SendForm.toState
     let form = Form.use(~initValues, account, token, onSubmit(token))
-    let closing = ModalFormView.confirm(~actionText=I18n.Btn.send_cancel, closeAction)
+    let closing = ModalFormView.confirm(~actionText=I18n.Btn.update_cancel, closeAction)
     let title = I18n.Title.send
     <ModalFormView title /* back=None */ closing titleStyle=FormStyles.headerMarginBottom8>
       <Form.View tokenState ?token form mode=Form.View.Edition(index) loading />
@@ -283,10 +283,8 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
     let recipient = state.recipient->FormUtils.Alias.address
     let amount = state.amount
     let sender = state.sender.Alias.address
-    let transfers =
-      [ProtocolHelper.Multisig.makeTransfer(~recipient, ~amount, ~sender)]
-      ->ProtocolHelper.Multisig.toTransfers
-      ->Array.map(x => x->Protocol.Transfer)
+    let proposal = ProtocolHelper.Multisig.makeTransfer(~recipient, ~amount, ~sender)
+    let transfers = [Protocol.Transfer(proposal)]
     sendOperationSimulate(source, transfers)->Promise.getOk(dryRun => {
       setModalStep(_ => SigningStep(state, source, transfers, dryRun))
     })
@@ -311,7 +309,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
       }
     | #AddToBatch =>
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender.address, closeAction)
+      addTransfer(validState.sender.address, p, closeAction)
     }
   }
 

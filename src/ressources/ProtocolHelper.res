@@ -97,14 +97,44 @@ module Transfer = {
 }
 
 module Multisig = {
-  type call
+  type call = Protocol.Transfer.t
   external fromTransfer: Protocol.Transfer.t => call = "%identity"
-  external toTransfers: array<call> => array<Protocol.Transfer.t> = "%identity"
+  external jsonToMichelson0: Js.Json.t => ReTaquitoTypes.MichelsonV1Expression.t = "%identity"
+  external michelsonToJson0: ReTaquitoTypes.MichelsonV1Expression.t => Js.Json.t = "%identity"
+  let jsonToMichelson = array => {
+    array->Js.Json.array->jsonToMichelson0
+  }
+  let michelsonToJson = lambda => {
+    lambda->michelsonToJson0->Js.Json.decodeArray->Option.getExn
+  }
 
-  @ocaml.doc(" Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] ")
+  let emptyLambda: ReTaquitoTypes.MichelsonV1Expression.t =
+    [
+      {"prim": "DROP"}->Obj.magic,
+      {"prim": "NIL", "args": [{"prim": "operation"}->Obj.magic]->Obj.magic},
+    ]->Obj.magic
+
+  @ocaml.doc(" Concatenate two lists of operations ")
+  let appendLambda = (
+    hd: ReTaquitoTypes.MichelsonV1Expression.t,
+    tl: ReTaquitoTypes.MichelsonV1Expression.t,
+  ): ReTaquitoTypes.MichelsonV1Expression.t => {
+    let hd = michelsonToJson(hd)
+    let tl = michelsonToJson(tl)
+    Array.concat(hd, tl->Array.sliceToEnd(2))->jsonToMichelson
+  }
+
+  @ocaml.doc(
+    " Create a 0 tez transaction which call [entrypoint] of [destination] with [parameter] "
+  )
   let makeCall = (~entrypoint, ~parameter, ~destination): call => {
-    Transfer.makeSimpleTez(~parameter, ~entrypoint, ~destination, ~amount=Tez.zero, ())
-    ->fromTransfer
+    Transfer.makeSimpleTez(
+      ~parameter,
+      ~entrypoint,
+      ~destination,
+      ~amount=Tez.zero,
+      (),
+    )->fromTransfer
   }
 
   @ocaml.doc(" Call 'propose' entrypoint of [destination] with [parameter] lambda ")
@@ -112,18 +142,37 @@ module Multisig = {
     makeCall(~parameter, ~entrypoint="propose", ~destination)
   }
 
-  @ocaml.doc(" Handle lambda and proposal creation to send [amount] tez from [sender] to [recipient] ")
-  let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~sender) : call => {
+  let makeTransfer0 = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t) => {
     let amount = amount->ProtocolAmount.getTez->Option.getWithDefault(Tez.zero)->Tez.toBigNumber
-    let lambda = PublicKeyHash.isImplicit(recipient)
+    PublicKeyHash.isImplicit(recipient)
       ? ReTaquito.Toolkit.Lambda.transferImplicit((recipient :> string), amount)
       : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
+  }
+
+  @ocaml.doc(
+    " Handle lambda and proposal creation to send [amount] tez from [sender] to [recipient] "
+  )
+  let makeTransfer = (~recipient: PublicKeyHash.t, ~amount: ProtocolAmount.t, ~sender): call => {
+    let lambda = makeTransfer0(~recipient, ~amount)
     makeProposal(~parameter=lambda, ~destination=sender)
   }
 
-  @ocaml.doc(" Wrap a list of calls into a batch to be able to use regular operation submission flow ")
+  @ocaml.doc(" Convert a Protocol.manager into a lambda ")
+  let fromManager = (manager: Protocol.manager): ReTaquito.Toolkit.Lambda.t =>
+    switch manager {
+    | Delegation({delegate: Delegate(baker)}) =>
+      ReTaquito.Toolkit.Lambda.setDelegate((baker :> string))
+    | Delegation({delegate: Undelegate(_)}) => ReTaquito.Toolkit.Lambda.removeDelegate()
+    | Transfer({data: Simple({destination, amount})}) =>
+      makeTransfer0(~recipient=destination, ~amount)
+    | _ => failwith(__LOC__ ++ ": unsupported")
+    }
+
+  @ocaml.doc(
+    " Wrap a list of calls into a batch to be able to use regular operation submission flow "
+  )
   let wrap = (~source, transfers: array<call>) => {
-    Transfer.makeBatch(~source, ~transfers=(transfers->toTransfers), ())
+    Transfer.makeBatch(~source, ~transfers=(transfers :> array<Protocol.Transfer.t>), ())
   }
 }
 

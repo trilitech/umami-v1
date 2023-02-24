@@ -23,21 +23,63 @@
 /*  */
 /* *************************************************************************** */
 
-open ReactNative
+module SignStep = {
+  @react.component
+  let make = (~source, ~dryRun, ~operations, ~resetGlobalBatch, ~closeAction) => {
+    let ledgerState = React.useState(() => None)
+    <SignGlobalBatch dryRun source operations resetGlobalBatch closeAction ledgerState />
+  }
+}
+
+type step =
+  | SourceStep(array<Protocol.manager>)
+  | SigningStep(Account.t, array<Protocol.manager>, option<Umami.Protocol.Simulation.results>)
+
+module Content = {
+  @react.component
+  let make = (~account, ~dryRun, ~operations, ~resetGlobalBatch, ~closeAction) => {
+    let (_, sendOperationSimulate) = StoreContext.Operations.useSimulate()
+    let (step, setStep) = React.useState(() =>
+      switch Alias.toAccount(account) {
+      | Ok(account) => SigningStep(account, operations, dryRun)
+      | Error(_) => SourceStep(operations)
+      }
+    )
+    switch step {
+    | SigningStep(source, operations, dryRun) =>
+      Js.log(__LOC__)
+      <SignStep source dryRun operations resetGlobalBatch closeAction />
+    | SourceStep(operations) =>
+      Js.log(__LOC__)
+      module PM = ProtocolHelper.Multisig
+      let onSubmit = (source: Account.t) => {
+        let lambda = Array.reduce(operations, PM.emptyLambda, (acc, manager) => {
+          let lambda = PM.fromManager(manager)
+          PM.appendLambda(acc, lambda)
+        })
+        let parameter = lambda
+        let destination = account.Alias.address
+        let operations = [Protocol.Transfer(PM.makeProposal(~parameter, ~destination))]
+        sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
+          setStep(_ => SigningStep(source, operations, Some(dryRun)))
+        })
+      }
+      <ModalFormView closing={ModalFormView.Close(_ => closeAction())}>
+        <SourceStepView multisig=account.address sender=account onSubmit />
+      </ModalFormView>
+    }
+  }
+}
 
 @react.component
-let make = (~source, ~dryRun, ~operations, ~resetGlobalBatch) => {
-  let (openModal, closeModal, inModal) = ModalAction.useModal()
-
-  let disabled = switch operations {
-  | None => true
-  | Some(_) => false
-  }
-  let onPress = _ => openModal()
-
-  let ledgerState = React.useState(() => None)
+let make = (~account: Alias.t, ~dryRun, ~operations, ~resetGlobalBatch) => {
+  let (operationSimulateRequest, _) = StoreContext.Operations.useSimulate()
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+  let disabled = operations == []
+  let onPress = _ => openAction()
+  let loading = ApiRequest.isLoading(operationSimulateRequest)
   <>
-    <View> <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled /> </View>
-    {inModal(<SignGlobalBatch dryRun source operations resetGlobalBatch closeModal ledgerState />)}
+    <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled loading />
+    {wrapModal(<Content account dryRun operations resetGlobalBatch closeAction />)}
   </>
 }

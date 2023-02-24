@@ -56,19 +56,14 @@ module RightCol = {
 
 module TransactionCounter = {
   @react.component
-  let make = (~batch) => {
-    let count = switch batch {
-    | Some(b) => Array.length(b)
-    | None => 0
-    }
+  let make = (~operations) => {
+    let count = Array.length(operations)
     let transactionsDisplay = age => "Transactions (" ++ Int.toString(age) ++ ")" // Interpolation as described in docs not working
-    <Typography.Overline2
-      style={
-        open Style
-        style(~marginTop=4.->dp, ~marginBottom=4.->dp, ~position=#absolute, ~left=0.->dp, ())
-      }>
-      {React.string(transactionsDisplay(count))}
-    </Typography.Overline2>
+    let style = {
+      open Style
+      style(~marginTop=4.->dp, ~marginBottom=4.->dp, ~position=#absolute, ~left=0.->dp, ())
+    }
+    {transactionsDisplay(count)->Typography.overline2(~style)}
   }
 }
 
@@ -91,10 +86,8 @@ module Wrapper = {
 }
 let buildSummaryContent = OperationSummaryView.Batch.buildSummaryContent
 
-let buildSummary = (~dryRunOpt, ~operationOpt) =>
-  dryRunOpt->Option.flatMap(dryRun =>
-    operationOpt->Option.map(transfer => buildSummaryContent(transfer, dryRun))
-  )
+let buildSummary = (~dryRun, ~operations) =>
+  dryRun->Option.map(dryRun => buildSummaryContent(operations, dryRun))
 
 let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) =>
   csvRows
@@ -108,6 +101,7 @@ let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) =>
 
 type indexedValidStates = array<((int, option<int>), Umami.SendForm.validState)>
 
+// FIXME: dry run in the case of multisig?
 @react.component
 let make = () => {
   let {
@@ -120,48 +114,52 @@ let make = () => {
     setBatchAndSim,
   } = GlobalBatchContext.useGlobalBatchContext()
 
-  let selectedAccountOpt = StoreContext.SelectedAccount.useGetImplicit()
-
-  let onAddCSVList = (csvRows: CSVEncoding.t) => csvRows->csvRowToTransferPayloads->addTransfers
-
-  let summary = buildSummary(~dryRunOpt=dryRun, ~operationOpt=batch)
-
-  selectedAccountOpt->Option.mapWithDefault(React.null, account =>
+  StoreContext.SelectedAccount.useGetAtInit()->Option.mapWithDefault(React.null, account => {
+    let pkh = account.Alias.address
+    let onAddCSVList = (csvRows: CSVEncoding.t) =>
+      addTransfers(pkh, csvRows->csvRowToTransferPayloads)
+    let dryRun = dryRun(pkh)
+    let operations = batch(pkh)->Option.getWithDefault([])
+    let summary = account.kind == Some(Multisig) ? None : buildSummary(~dryRun, ~operations)
     <Page>
       <Typography.Headline style=Styles.title>
         {I18n.Title.global_batch->React.string}
       </Typography.Headline>
       <Container>
         <LeftCol>
-          <AccountElements.Selector.Simple
-            account={Alias.fromAccount(account)}
-            keep={(a: Alias.t) => a.address->PublicKeyHash.isImplicit}
-          />
+          <AccountElements.Selector.Simple account />
           <Wrapper>
-            <TransactionCounter batch /> <CSVPicker onAddCSVList /> <CSVFormatLink />
+            <TransactionCounter operations /> <CSVPicker onAddCSVList /> <CSVFormatLink />
           </Wrapper>
-          {batch->Option.mapWithDefault(<BatchEmptyView />, batch =>
-            dryRun->Option.mapWithDefault(React.null, dryRun =>
-              <GlobalBatchDataTableWithModals
-                account
-                batch
-                onDeleteAll=resetGlobalBatch
-                dryRun
-                removeBatchItem
-                replaceBatchItem
-                simulations=dryRun.simulations
-                setBatchAndSim
-              />
-            )
-          )}
+          {[] == operations
+            ? <BatchEmptyView />
+            : {
+                let removeBatchItem = removeBatchItem(pkh)
+                let replaceBatchItem = (a, b) => replaceBatchItem(pkh, a, b)
+                let onDeleteAll = () => resetGlobalBatch(pkh)
+                <GlobalBatchDataTableWithModals
+                  account
+                  batch=operations
+                  onDeleteAll
+                  dryRun
+                  removeBatchItem
+                  replaceBatchItem
+                  setBatchAndSim
+                />
+              }}
         </LeftCol>
         <RightCol>
-          <SubmitGlobalBatchButton dryRun source=account operations=batch resetGlobalBatch />
-          {summary->Option.mapWithDefault(React.null, summary =>
-            <GlobalBatchSummaryColumn content=summary />
-          )}
+          {
+            let resetGlobalBatch = () => resetGlobalBatch(pkh)
+            <>
+              <SubmitGlobalBatchButton dryRun account operations resetGlobalBatch />
+              {summary->Option.mapWithDefault(React.null, content =>
+                <GlobalBatchSummaryColumn content />
+              )}
+            </>
+          }
         </RightCol>
       </Container>
     </Page>
-  )
+  })
 }

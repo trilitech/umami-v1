@@ -463,8 +463,7 @@ module Pending = {
           ->Option.getExn
         let destination = multisig.Multisig.address
         let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
-        let managers =
-          [transfer]->ProtocolHelper.Multisig.toTransfers->Array.map(x => x->Protocol.Transfer)
+        let managers = [Protocol.Transfer(transfer)]
         let source = signer
         sendOperationSimulate(source, managers)->Promise.getOk(dryRun => {
           setStep(Sign(dryRun, managers))
@@ -574,7 +573,7 @@ module Pending = {
           p,
         )
 
-        addTransfer(transferPayload, signer.address, () => ())
+        addTransfer(signer.address, transferPayload, () => ())
       }
       <Buttons.SubmitPrimary
         text=I18n_en.global_batch_add_multisig_exectute

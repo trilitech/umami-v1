@@ -111,10 +111,7 @@ let make = (~closeAction, ~account, ~delegate) => {
               let destination = account.address
               let parameter = ReTaquito.Toolkit.Lambda.removeDelegate()
               let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operations =
-                [proposal]
-                ->ProtocolHelper.Multisig.toTransfers
-                ->Array.map(x => x->Protocol.Transfer)
+              let operations = [Protocol.Transfer(proposal)]
               sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(source, operations, dryRun))
               })

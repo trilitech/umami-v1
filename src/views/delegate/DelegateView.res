@@ -263,10 +263,7 @@ let make = (~closeAction, ~action) => {
               let destination = state.values.sender.address
               let parameter = ReTaquito.Toolkit.Lambda.setDelegate(state.values.baker)
               let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operations =
-                [proposal]
-                ->ProtocolHelper.Multisig.toTransfers
-                ->Array.map(x => x->Protocol.Transfer)
+              let operations = [Protocol.Transfer(proposal)]
               sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(source, operations, dryRun))
               })

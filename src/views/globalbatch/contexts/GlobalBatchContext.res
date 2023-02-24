@@ -28,32 +28,31 @@ type batchAndSim = (PublicKeyHash.t, array<Protocol.manager>, option<Protocol.Si
 
 type state = {
   isSimulating: bool,
-  addTransfer: (transferPayload, PublicKeyHash.t, unit => unit) => unit,
-  addTransfers: array<transferPayload> => unit,
-  dryRun: option<Protocol.Simulation.results>,
+  addTransfer: (PublicKeyHash.t, transferPayload, unit => unit) => unit,
+  addTransfers: (PublicKeyHash.t, array<transferPayload>) => unit,
+  dryRun: PublicKeyHash.t => option<Protocol.Simulation.results>,
   setBatchAndSim: batchAndSim => unit,
-  batch: option<array<Protocol.manager>>,
-  resetGlobalBatch: unit => unit,
-  removeBatchItem: GlobalBatchTypes.managerCoords => unit,
-  replaceBatchItem: (GlobalBatchTypes.rowData, unit => unit) => unit,
+  batch: PublicKeyHash.t => option<array<Protocol.manager>>,
+  resetGlobalBatch: PublicKeyHash.t => unit,
+  removeBatchItem: (PublicKeyHash.t, GlobalBatchTypes.managerCoords) => unit,
+  replaceBatchItem: (PublicKeyHash.t, GlobalBatchTypes.rowData, unit => unit) => unit,
 }
 
 let initialState = {
   isSimulating: false,
   addTransfer: (_, _, _) => (),
-  addTransfers: _ => (),
-  dryRun: None,
+  addTransfers: (_, _) => (),
+  dryRun: _ => None,
   setBatchAndSim: _ => (),
-  batch: None,
-  resetGlobalBatch: () => (),
-  removeBatchItem: _ => (),
-  replaceBatchItem: (_, _) => (),
+  batch: _ => None,
+  resetGlobalBatch: _ => (),
+  removeBatchItem: (_, _) => (),
+  replaceBatchItem: (_, _, _) => (),
 }
 
 let context = React.createContext(initialState)
 
-let getBatch = (account, all: array<batchAndSim>) =>
-  all->Array.getBy(((pkh, _, _)) => pkh == account)
+let getAux = (account, all: array<batchAndSim>) => all->Array.getBy(((pkh, _, _)) => pkh == account)
 
 let updatedBatchAndSims = ((pkh, batch, sim): batchAndSim, allBatches: array<batchAndSim>) => {
   let accountToAdd = pkh
@@ -81,25 +80,21 @@ module Provider = {
 
 module ProviderPrivate = {
   @react.component
-  let make = (~children, ~selectedAccount: PublicKeyHash.t) => {
+  let make = (~children) => {
     let addToast = LogsContext.useToast()
     let (operationSimulate, sendOperationSimulate) = StoreContext.Operations.useSimulate()
     let isSimulating = operationSimulate->ApiRequest.isLoading
 
     let (allBatchAndSim, setAllBatchAndSim) = React.useState(() => [])
 
-    let batchAndSim = getBatch(selectedAccount, allBatchAndSim)
-    let (batch, dryRun) = switch batchAndSim {
-    | Some(_pkh, batch, dryRun) => (Some(batch), dryRun)
-    | None => (None, None)
-    }
+    let batch = pkh => getAux(pkh, allBatchAndSim)->Option.map(((_, batch, _)) => batch)
+    let dryRun = pkh => getAux(pkh, allBatchAndSim)->Option.flatMap(((_, _, dryRun)) => dryRun)
 
-    // Reset globalBatch for selected account
+    // Reset globalBatch for `pkh`
     // by removing his batchAndSim from allBatchAndSims
-    let resetGlobalBatch = () =>
-      switch batchAndSim {
-      | Some(_) =>
-        setAllBatchAndSim(allBatchAndSim => removeBatchAndSim(selectedAccount, allBatchAndSim))
+    let resetGlobalBatch = pkh =>
+      switch batch(pkh) {
+      | Some(_) => setAllBatchAndSim(allBatchAndSim => removeBatchAndSim(pkh, allBatchAndSim))
       | None => ()
       }
 
@@ -109,64 +104,62 @@ module ProviderPrivate = {
       ()
     }
 
-    let simulateThenSet = (managers, onSucces) => {
+    let simulateThenSet = (pkh, managers, onSucces) => {
       let update = dryRun => {
-        let updatedBatches = updatedBatchAndSims(
-          (selectedAccount, managers, dryRun),
-          allBatchAndSim,
-        )
+        let updatedBatches = updatedBatchAndSims((pkh, managers, dryRun), allBatchAndSim)
         setAllBatchAndSim(_ => updatedBatches)
         onSucces()
       }
-      PublicKeyHash.isImplicit(selectedAccount)
-        ? {Account.address: selectedAccount, name: "", kind: Encrypted} // FIXME: kind?
+      PublicKeyHash.isImplicit(pkh)
+        ? {Account.address: pkh, name: "", kind: Encrypted} // FIXME: kind?
           ->sendOperationSimulate(managers)
           ->Promise.getOk(dryRun => update(Some(dryRun)))
         : update(None)
     }
 
     // We can define account from outside when adding
-    let addTransfer = (payload: transferPayload, account: PublicKeyHash.t, onDone) => {
-      let existingBatchAndSim = getBatch(account, allBatchAndSim)
-
+    let addTransfer = (pkh: PublicKeyHash.t, payload: transferPayload, onDone) => {
+      let existingBatchAndSim = batch(pkh)
       let newBatch = switch existingBatchAndSim {
-      | Some((_, b, _)) => GlobalBatchUtils.addToExistingOrNew(Some(b), payload)
+      | Some(b) => GlobalBatchUtils.addToExistingOrNew(Some(b), payload)
       | None => GlobalBatchUtils.addToExistingOrNew(None, payload)
       }
-
-      simulateThenSet(newBatch, () => {
+      simulateThenSet(pkh, newBatch, () => {
         addToast(Logs.info(~origin=Batch, "Transaction inserted into batch"))
         onDone()
       })
     }
 
-    let removeBatchItem = coords =>
-      switch batch {
+    let removeBatchItem = (pkh, coords) =>
+      switch batch(pkh) {
       | Some(batch) =>
         let newBatch = GlobalBatchUtils.remove(~batch, ~coords)
 
         if newBatch->Array.length > 0 {
-          simulateThenSet(newBatch, () => ())
+          simulateThenSet(pkh, newBatch, () => ())
         } else {
-          resetGlobalBatch()
+          resetGlobalBatch(pkh)
         }
       | None => ()
       }
 
-    let replaceBatchItem = (rowData: GlobalBatchTypes.rowData, onSuccess) =>
-      switch batch {
+    let replaceBatchItem = (pkh, rowData: GlobalBatchTypes.rowData, onSuccess) =>
+      switch batch(pkh) {
       | Some(batch) =>
         let (coords, payload) = rowData
         let newBatch = GlobalBatchUtils.set(batch, coords, payload)
-        simulateThenSet(newBatch, onSuccess)
+        simulateThenSet(pkh, newBatch, onSuccess)
       | None => ()
       }
 
-    let addTransfers = (trs: array<transferPayload>) =>
+    let addTransfers = (pkh, trs: array<transferPayload>) => {
       trs
-      ->Array.reduce(batch, (acc, curr) => GlobalBatchUtils.addToExistingOrNew(acc, curr)->Some)
-      ->Option.map(acc => simulateThenSet(acc, () => ()))
+      ->Array.reduce(batch(pkh), (acc, curr) =>
+        GlobalBatchUtils.addToExistingOrNew(acc, curr)->Some
+      )
+      ->Option.map(acc => simulateThenSet(pkh, acc, () => ()))
       ->ignore
+    }
 
     <Provider
       value={
@@ -187,10 +180,6 @@ module ProviderPrivate = {
 
 @react.component
 let make = (~children) => {
-  let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()
-  switch selectedAccount {
-  | Some(account) => <ProviderPrivate selectedAccount=account.address> children </ProviderPrivate>
-  | None => children
-  }
+  <ProviderPrivate> children </ProviderPrivate>
 }
 let useGlobalBatchContext = () => React.useContext(context)
