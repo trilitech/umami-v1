@@ -415,6 +415,7 @@ module Title = {
   let approval_threshold = "Approval threshold"
   let approval_threshold_reached = "Signature threshold reached"
   let unrecognized_operation = "Unrecognized Operation"
+  let submit_batch = "Submit Batch"
 }
 
 module Expl = {

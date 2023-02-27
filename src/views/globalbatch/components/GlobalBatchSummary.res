@@ -38,15 +38,8 @@ let make = (
   ~advancedOptionsDisabled=true,
   ~onClose,
 ) => <>
-  <ModalFormView
-    title=I18n.Title.confirm_batch
-    closing={
-      open ModalFormView
-      Close(_ => onClose())
-    }>
-    <View style=FormStyles.header>
-      <Typography.Overline1> {I18n.Expl.global_batch->React.string} </Typography.Overline1>
-    </View>
+  <ModalFormView title=I18n.Title.confirm_batch closing=ModalFormView.Close(_ => onClose())>
+    <View style=FormStyles.header> {I18n.Expl.global_batch->Typography.overline1} </View>
     {switch operations {
     | [Delegation(_)] => React.null
     | _ =>

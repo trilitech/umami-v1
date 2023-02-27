@@ -62,7 +62,8 @@ module Content = {
           setStep(_ => SigningStep(source, operations, Some(dryRun)))
         })
       }
-      <ModalFormView closing={ModalFormView.Close(_ => closeAction())}>
+      <ModalFormView
+        title=I18n.Title.submit_batch closing={ModalFormView.Close(_ => closeAction())}>
         <SourceStepView multisig=account.address sender=account onSubmit />
       </ModalFormView>
     }
