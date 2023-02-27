@@ -168,6 +168,13 @@ module Multisig = {
     | _ => failwith(__LOC__ ++ ": unsupported")
     }
 
+  @ocaml.doc(" Create lambda from a list of operations ")
+  let batch = (array: array<Protocol.manager>): ReTaquitoTypes.MichelsonV1Expression.t =>
+    Array.reduce(array, emptyLambda, (acc, manager) => {
+      let lambda = fromManager(manager)
+      appendLambda(acc, lambda)
+    })
+
   @ocaml.doc(
     " Wrap a list of calls into a batch to be able to use regular operation submission flow "
   )

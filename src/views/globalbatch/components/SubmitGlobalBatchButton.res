@@ -51,11 +51,7 @@ module Content = {
     | SourceStep(operations) =>
       module PM = ProtocolHelper.Multisig
       let onSubmit = (source: Account.t) => {
-        let lambda = Array.reduce(operations, PM.emptyLambda, (acc, manager) => {
-          let lambda = PM.fromManager(manager)
-          PM.appendLambda(acc, lambda)
-        })
-        let parameter = lambda
+        let parameter = ProtocolHelper.Multisig.batch(operations)
         let destination = account.Alias.address
         let operations = [Protocol.Transfer(PM.makeProposal(~parameter, ~destination))]
         sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
