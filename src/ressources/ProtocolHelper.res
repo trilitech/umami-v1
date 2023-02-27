@@ -124,11 +124,25 @@ module Multisig = {
   }
 
   module Lambda = {
-    include ReTaquitoTypes.Lambda
-
     module Parameters = {
       module Type = {
         type t
+
+        let fa12Transfer: t = %raw(`
+          {
+            "prim": "pair",
+            "args": [
+              {"prim": "address"},
+              {
+                "prim": "pair",
+                "args": [
+                  {"prim": "address"},
+                  {"prim": "nat"}
+                ]
+              }
+            ]
+          }
+        `)
 
         let fa2Transfer: t = %raw(`{
           "prim": "list",
@@ -164,6 +178,28 @@ module Multisig = {
       module Value = {
         type t
 
+        let fa12Transfer = (
+          _from: PublicKeyHash.t,
+          _to: PublicKeyHash.t,
+          _amount: ReTaquitoTypes.BigNumber.fixed,
+        ): t => {
+          %raw(`
+            {
+              "prim": "Pair",
+              "args": [
+                {"string": _from},
+                {
+                  "prim": "Pair",
+                  "args": [
+                    {"string": _to},
+                    {"int": _amount.toString()}
+                  ]
+                }
+              ]
+            }
+          `)
+        }
+
         let fa2Transfer: array<ReTaquitoTypes.FA2.transferParam> => t = _parameters => {
           %raw(`
             _parameters.map(x => {
@@ -195,6 +231,15 @@ module Multisig = {
         value: Value.t,
       }
 
+      let fa12Transfer = (
+        ~from_: PublicKeyHash.t,
+        ~to_: PublicKeyHash.t,
+        ~amount: ReTaquitoTypes.BigNumber.fixed,
+      ): t => {
+        type_: Type.fa12Transfer,
+        value: Value.fa12Transfer(from_, to_, amount),
+      }
+
       let fa2Transfer: array<ReTaquitoTypes.FA2.transferParam> => t = parameters => {
         type_: Type.fa2Transfer,
         value: Value.fa2Transfer(parameters),
@@ -206,7 +251,7 @@ module Multisig = {
       _amount: ReBigNumber.t,
       _entrypoint: string,
       _parameters: Parameters.t,
-    ): t => {
+    ): ReTaquitoTypes.Lambda.t => {
       %raw(`[
         {"prim": "DROP"},
         {"prim": "NIL", "args": [{"prim": "operation"}]},
@@ -280,14 +325,20 @@ module Multisig = {
         : ReTaquito.Toolkit.Lambda.transferToContract((recipient :> string), amount)
     | Token({amount, token}) =>
       open ReTaquitoTypes.BigNumber
-      let tokenID = token.kind->TokenRepr.kindId->Int64.of_int->fromInt64->toFixed
       let amount = amount->TokenRepr.Unit.toBigNumber->toFixed
-      let parameter = Lambda.Parameters.fa2Transfer([
-        {
-          from_: source,
-          txs: [{to_: recipient, token_id: tokenID, amount: amount}],
-        },
-      ])
+      let parameter = switch token.kind {
+      | FA1_2 =>
+        Lambda.Parameters.fa12Transfer(~from_=source, ~to_=recipient, ~amount)
+      | FA2(tokenID) =>
+        Lambda.Parameters.fa2Transfer([
+          {
+            from_: source,
+            txs: [
+              {to_: recipient, token_id: tokenID->Int64.of_int->fromInt64->toFixed, amount: amount},
+            ],
+          },
+        ])
+      }
       Lambda.makeCall(token.address, ReBigNumber.zero, "transfer", parameter)
     }
 
