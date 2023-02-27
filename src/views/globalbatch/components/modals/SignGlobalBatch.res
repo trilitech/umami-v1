@@ -37,7 +37,7 @@ let useSendTransfer = () => {
 let make = (
   ~source,
   ~operations: array<Protocol.manager>,
-  ~dryRun,
+  ~dryRun: option<Umami.Protocol.Simulation.results>,
   ~closeAction,
   ~resetGlobalBatch,
   ~ledgerState,
@@ -52,21 +52,6 @@ let make = (
     push(Operations)
   }
 
-  let renderSummary = () =>
-    dryRun->Option.mapWithDefault(React.null, dryRun =>
-      <GlobalBatchSummary
-        source
-        loading
-        ledgerState
-        dryRun
-        operations
-        sendOperation={sendTransfer(~source)}
-        setAdvancedOptions={_ => ()}
-        advancedOptionsDisabled=true
-        onClose=closeAction
-      />
-    )
-
   switch sendTransferState {
   | Done(Ok({hash}), _) =>
     resetGlobalBatch()
@@ -74,6 +59,17 @@ let make = (
     <ModalFormView closing={ModalFormView.Close(_ => closeAction())}>
       <SubmittedView hash onPressCancel=handlePressCancel submitText=I18n.Btn.go_operations />
     </ModalFormView>
-  | _ => renderSummary()
+  | _ =>
+    <GlobalBatchSummary
+      source
+      loading
+      ledgerState
+      dryRun
+      operations
+      sendOperation={sendTransfer(~source)}
+      setAdvancedOptions={_ => ()}
+      advancedOptionsDisabled=true
+      onClose=closeAction
+    />
   }
 }

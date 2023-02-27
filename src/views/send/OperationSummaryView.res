@@ -401,26 +401,25 @@ module Batch = {
 
   let buildSummaryContent = (
     operations: array<Protocol.manager>,
-    dryRun: Protocol.Simulation.results,
+    dryRun: option<Protocol.Simulation.results>,
   ) => {
-    let feeSum = dryRun.simulations->ProtocolHelper.Simulation.sumFees
-
-    let partialFee = (I18n.Label.fee, list{Amount.Tez(feeSum)})
-
-    let revealFee =
-      dryRun.revealSimulation->Option.map(({fee}) => (
+    let feeSum = Option.map(dryRun, ({simulations}) =>
+      simulations->ProtocolHelper.Simulation.sumFees
+    )
+    let partialFee = Option.map(feeSum, x => (I18n.Label.fee, list{Amount.Tez(x)}))
+    let revealFee = Option.flatMap(dryRun, ({revealSimulation}) =>
+      revealSimulation->Option.map(({fee}) => (
         I18n.Label.implicit_reveal_fee,
         list{Protocol.Amount.Tez(fee)},
       ))
+    )
+    let totalFees = Option.map(dryRun, ProtocolHelper.Simulation.getTotalFees)
 
-    let totalFees = dryRun->ProtocolHelper.Simulation.getTotalFees
-
-    let amounts =
+    let totals =
       operations
       ->filterTransfers
       ->ProtocolHelper.Transfer.reduceArray((acc, t) => \"@:"(t.Transfer.amount, acc))
-
-    let totals = amounts->Protocol.Amount.reduce
+      ->Protocol.Amount.reduce
 
     let subtotals = List.every(totals, Protocol.Amount.isZero)
       ? None
@@ -432,21 +431,23 @@ module Batch = {
       | t => (Tez.zero, t == list{})
       }
 
-      sub == Tez.zero && totalFees == feeSum
+      (sub == Tez.zero && totalFees == feeSum) ||
+        (noTokens && Option.mapWithDefault(totalFees, true, x => x == Tez.zero))
         ? None
         : Some(
             noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
             list{
               Protocol.Amount.Tez({
                 open Tez.Infix
-                sub + dryRun->ProtocolHelper.Simulation.getTotalFees
+                sub +
+                Option.mapWithDefault(dryRun, Tez.zero, ProtocolHelper.Simulation.getTotalFees)
               }),
             },
           )
     }
 
     open List.Infix
-    \"@?"(subtotals, \"@:"(partialFee, \"@?"(revealFee, \"@?"(totalTez, list{}))))
+    \"@?"(subtotals, \"@?"(partialFee, \"@?"(revealFee, \"@?"(totalTez, list{}))))
   }
 
   @react.component
@@ -455,7 +456,7 @@ module Batch = {
     ~proposal=false,
     ~signer,
     ~operations: array<Protocol.manager>,
-    ~dryRun: Protocol.Simulation.results,
+    ~dryRun: option<Protocol.Simulation.results>,
     ~editAdvancedOptions,
     ~advancedOptionsDisabled,
     ~hideBatchDetails=false,

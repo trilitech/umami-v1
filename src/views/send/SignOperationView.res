@@ -108,7 +108,7 @@ let make = (
         ?proposal
         signer
         operations
-        dryRun
+        dryRun=Some(dryRun)
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
         ?icon

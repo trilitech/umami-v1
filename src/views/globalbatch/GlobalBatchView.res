@@ -84,10 +84,6 @@ module Wrapper = {
       children
     </View>
 }
-let buildSummaryContent = OperationSummaryView.Batch.buildSummaryContent
-
-let buildSummary = (~dryRun, ~operations) =>
-  dryRun->Option.map(dryRun => buildSummaryContent(operations, dryRun))
 
 let csvRowToTransferPayloads = (csvRows: CSVEncoding.t) =>
   csvRows
@@ -119,7 +115,6 @@ let make = () => {
       addTransfers(pkh, csvRows->csvRowToTransferPayloads)
     let dryRun = dryRun(pkh)
     let operations = batch(pkh)->Option.getWithDefault([])
-    let summary = account.kind == Some(Multisig) ? None : buildSummary(~dryRun, ~operations)
     <Page>
       <Typography.Headline style=Styles.title>
         {I18n.Title.global_batch->React.string}
@@ -150,11 +145,10 @@ let make = () => {
         <RightCol>
           {
             let resetGlobalBatch = () => resetGlobalBatch(pkh)
+            let content = OperationSummaryView.Batch.buildSummaryContent(operations, dryRun)
             <>
               <SubmitGlobalBatchButton dryRun account operations resetGlobalBatch />
-              {summary->Option.mapWithDefault(React.null, content =>
-                <GlobalBatchSummaryColumn content />
-              )}
+              <GlobalBatchSummaryColumn content />
             </>
           }
         </RightCol>
