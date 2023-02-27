@@ -455,18 +455,10 @@ module Pending = {
             }
           }
       let onPress = _ => {
-        let parameter =
-          ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
-            id->ReBigNumber.toString,
-          )
-          ->Result.getExn
-          ->Option.getExn
-        let destination = multisig.Multisig.address
-        let transfer = ProtocolHelper.Multisig.makeCall(~parameter, ~entrypoint, ~destination)
-        let managers = [Protocol.Transfer(transfer)]
+        let operations = entrypoint(id, multisig.Multisig.address)
         let source = signer
-        sendOperationSimulate(source, managers)->Promise.getOk(dryRun => {
-          setStep(Sign(dryRun, managers))
+        sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
+          setStep(Sign(dryRun, operations))
           openAction()
         })
       }
@@ -496,7 +488,7 @@ module Pending = {
     @react.component
     let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
       <ActionButton
-        entrypoint="approve"
+        entrypoint=ProtocolHelper.Multisig.approve
         ?style
         title=I18n.Title.confirm_operation_approval
         text
@@ -537,7 +529,7 @@ module Pending = {
     @react.component
     let make = (~multisig, ~signer: Account.t, ~id, ~disabled) => {
       <ActionButton
-        entrypoint=Multisig.executionEntrypoint
+        entrypoint=ProtocolHelper.Multisig.execute
         title=I18n.Title.confirm_operation_execution
         text=I18n.Btn.submit
         multisig
@@ -554,12 +546,7 @@ module Pending = {
       let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
 
       let handlePress = _ => {
-        let parameter =
-          ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline(
-            id->ReBigNumber.toString,
-          )
-          ->Result.getExn
-          ->Option.getExn
+        let parameter = {"int": id->ReBigNumber.toString}->Obj.magic
         let destination = multisig.Multisig.address
 
         let p: ProtocolOptions.parameter = {

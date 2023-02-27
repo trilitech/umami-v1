@@ -108,10 +108,10 @@ let make = (~closeAction, ~account, ~delegate) => {
           | SendStep => <LoadingView style={styles["deleteLoading"]} />
           | SourceStep =>
             let onSubmit = source => {
-              let destination = account.address
-              let parameter = ReTaquito.Toolkit.Lambda.removeDelegate()
-              let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operations = [Protocol.Transfer(proposal)]
+              let operations =
+                ReTaquito.Toolkit.Lambda.removeDelegate()->ProtocolHelper.Multisig.propose(
+                  account.address,
+                )
               sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(source, operations, dryRun))
               })

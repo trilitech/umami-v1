@@ -260,10 +260,10 @@ let make = (~closeAction, ~action) => {
           | SendStep => <Form.View form action loading=loadingSimulate />
           | SourceStep(state) =>
             let onSubmit = source => {
-              let destination = state.values.sender.address
-              let parameter = ReTaquito.Toolkit.Lambda.setDelegate(state.values.baker)
-              let proposal = ProtocolHelper.Multisig.makeProposal(~parameter, ~destination)
-              let operations = [Protocol.Transfer(proposal)]
+              let operations =
+                ReTaquito.Toolkit.Lambda.setDelegate(
+                  state.values.baker,
+                )->ProtocolHelper.Multisig.propose(state.values.sender.address)
               sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(source, operations, dryRun))
               })

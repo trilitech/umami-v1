@@ -51,9 +51,10 @@ module Content = {
     | SourceStep(operations) =>
       module PM = ProtocolHelper.Multisig
       let onSubmit = (source: Account.t) => {
-        let parameter = ProtocolHelper.Multisig.batch(operations)
-        let destination = account.Alias.address
-        let operations = [Protocol.Transfer(PM.makeProposal(~parameter, ~destination))]
+        let operations =
+          operations
+          ->ProtocolHelper.Multisig.batch
+          ->ProtocolHelper.Multisig.propose(account.Alias.address)
         sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
           setStep(_ => SigningStep(source, operations, Some(dryRun)))
         })
