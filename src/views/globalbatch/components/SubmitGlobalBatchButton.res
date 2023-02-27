@@ -60,7 +60,7 @@ module Content = {
         })
       }
       <ModalFormView
-        title=I18n.Title.submit_batch closing={ModalFormView.Close(_ => closeAction())}>
+        title=I18n.Title.propose_batch closing={ModalFormView.Close(_ => closeAction())}>
         <SourceStepView multisig=account.address sender=account onSubmit />
       </ModalFormView>
     }
@@ -74,8 +74,9 @@ let make = (~account: Alias.t, ~dryRun, ~operations, ~resetGlobalBatch) => {
   let disabled = operations == []
   let onPress = _ => openAction()
   let loading = ApiRequest.isLoading(operationSimulateRequest)
+  let text = account.kind == Some(Multisig) ? I18n.Btn.batch_proposal : I18n.Btn.batch_submit
   <>
-    <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled loading />
+    <Buttons.SubmitPrimary text onPress disabled loading />
     {wrapModal(<Content account dryRun operations resetGlobalBatch closeAction />)}
   </>
 }

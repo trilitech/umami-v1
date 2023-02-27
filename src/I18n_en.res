@@ -72,6 +72,7 @@ module Btn = {
   let send_submit = "SUBMIT TRANSACTION"
   let proposal_submit = "PREPARE TRANSACTION"
   let batch_submit = "SUBMIT BATCH"
+  let batch_proposal = "PREPARE BATCH"
   let send_cancel = "CANCEL TRANSACTION"
   let delegation_submit = "CONFIRM DELEGATION"
   let delegated = "DELEGATED"
@@ -415,7 +416,7 @@ module Title = {
   let approval_threshold = "Approval threshold"
   let approval_threshold_reached = "Signature threshold reached"
   let unrecognized_operation = "Unrecognized Operation"
-  let submit_batch = "Submit Batch"
+  let propose_batch = "Prepare Batch"
 }
 
 module Expl = {
