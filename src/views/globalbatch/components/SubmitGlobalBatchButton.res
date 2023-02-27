@@ -47,10 +47,8 @@ module Content = {
     )
     switch step {
     | SigningStep(source, operations, dryRun) =>
-      Js.log(__LOC__)
       <SignStep source dryRun operations resetGlobalBatch closeAction />
     | SourceStep(operations) =>
-      Js.log(__LOC__)
       module PM = ProtocolHelper.Multisig
       let onSubmit = (source: Account.t) => {
         let lambda = Array.reduce(operations, PM.emptyLambda, (acc, manager) => {
