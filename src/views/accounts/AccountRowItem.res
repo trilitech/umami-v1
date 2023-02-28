@@ -104,7 +104,7 @@ module MultisigRowItem = {
       </Typography.Body2>
     }
     let account = Alias.fromMultisig(multisig)
-    <GenericRowItem account description>
+    <GenericRowItem account description ?token>
       {<Delegate account />->ReactUtils.onlyWhen(token == None)}
     </GenericRowItem>
   }

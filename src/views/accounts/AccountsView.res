@@ -216,7 +216,7 @@ module MultisigAccountList = {
   }
 
   @react.component
-  let make = () => {
+  let make = (~token=?) => {
     let multisigsRequest = StoreContext.Multisig.useRequest()
 
     let displayMultisigs = multisigs => {
@@ -232,7 +232,7 @@ module MultisigAccountList = {
           ->PublicKeyHash.Map.valuesToArray
           ->SortArray.stableSortBy(compare)
           ->Array.map(multisig => {
-            <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig />
+            <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig ?token />
           })
           ->React.array}
         </View>
@@ -344,6 +344,6 @@ let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode)
       ? <AccountsTreeList />
       : accountType == Individual
       ? <AccountsFlatList ?token />
-      : <MultisigAccountList />}
+      : <MultisigAccountList ?token />}
   </Page>
 }
