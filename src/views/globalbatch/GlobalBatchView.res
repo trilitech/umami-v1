@@ -129,7 +129,7 @@ let make = () => {
             ? <BatchEmptyView />
             : {
                 let removeBatchItem = removeBatchItem(pkh)
-                let replaceBatchItem = (a, b) => replaceBatchItem(pkh, a, b)
+                let replaceBatchItem = replaceBatchItem(pkh)
                 let onDeleteAll = () => resetGlobalBatch(pkh)
                 <GlobalBatchDataTableWithModals
                   account
