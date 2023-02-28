@@ -63,3 +63,12 @@ module Decode = {
   let fa2BalanceOfDecoder = json =>
     json |> dataDecoder(pairDecoder(pairDecoder(addressDecoder, intDecoder), intDecoder))
 }
+
+module MichelsonV1Expression = {
+  let int = (int: string): Js.Json.t => {"int": int}->Obj.magic
+  let string = (string: string): Js.Json.t => {"string": string}->Obj.magic
+  let bytes = (bytes: string): Js.Json.t => {"bytes": bytes}->Obj.magic
+  let prim = (prim: string, args: array<Js.Json.t>): Js.Json.t =>
+    [] == args ? {"prim": prim}->Obj.magic : {"prim": prim, "args": args}->Obj.magic
+  let array = (array: array<Js.Json.t>): Js.Json.t => array->Obj.magic
+}

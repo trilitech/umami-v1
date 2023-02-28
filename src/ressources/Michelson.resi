@@ -45,3 +45,11 @@ module Decode: {
 
   let fa2BalanceOfDecoder: Js.Json.t => array<((address, string), string)>
 }
+
+module MichelsonV1Expression: {
+  let int: string => Js.Json.t
+  let string: string => Js.Json.t
+  let bytes: string => Js.Json.t
+  let prim: (string, array<Js.Json.t>) => Js.Json.t
+  let array: array<Js.Json.t> => Js.Json.t
+}
