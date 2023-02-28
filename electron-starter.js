@@ -288,7 +288,6 @@ app.on('will-finish-launching', () => {
   // Protocol handler for osx
   app.on('open-url', function (event, url) {
     event.preventDefault()
-    //logEverywhere('open-url# ' + url)
     if (mainWindow) {
       mainWindow.webContents.send('deeplinkURL', url)
     } else {
@@ -297,11 +296,3 @@ app.on('will-finish-launching', () => {
     }
   })
 })
-
-// Log both at dev console and at running node console instance
-function logEverywhere(s) {
-  console.log(s)
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.executeJavaScript(`console.log("${s}")`)
-  }
-}
