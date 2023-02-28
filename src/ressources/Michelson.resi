@@ -53,3 +53,24 @@ module MichelsonV1Expression: {
   let prim: (string, array<Js.Json.t>) => Js.Json.t
   let array: array<Js.Json.t> => Js.Json.t
 }
+
+module LAMBDA_PARSER: {
+  type recipient_amount = {
+    recipient: PublicKeyHash.t,
+    amount: Tez.t,
+  }
+
+  let setDelegate: (array<Js.Json.t>, int) => option<(PublicKeyHash.t, int)>
+
+  let removeDelegate: (array<Js.Json.t>, int) => option<int>
+
+  let transferImplicit: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+
+  let transferToContract: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+
+  let transfer: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+
+  let delegate: (array<Js.Json.t>, int) => option<(option<PublicKeyHash.t>, int)>
+
+  let parseOperationsList: Js.Json.t => option<array<Operation.payload>>
+}
