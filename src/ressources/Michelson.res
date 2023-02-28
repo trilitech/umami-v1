@@ -74,8 +74,9 @@ module MichelsonV1Expression = {
 }
 
 module LAMBDA_PARSER = {
-  let check = (array, pos, value) =>
-    array[pos]->Option.mapWithDefault(false, x => x == Obj.magic(value))
+  open MichelsonV1Expression
+
+  let check = (input, pos, value) => input[pos]->Option.mapWithDefault(false, x => x == value)
 
   // For a given <FIELD> value:
   // read {prim: "PUSH", args: [{prim: "<FIELD>"}, {bytes: <RECIPIENT>}]} and
@@ -86,7 +87,7 @@ module LAMBDA_PARSER = {
       Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
     )
     ->Option.flatMap(Js.Json.decodeArray)
-    ->Option.flatMap(x => x[0] == Some(Obj.magic({"prim": field})) ? x[1] : None)
+    ->Option.flatMap(x => x[0] == Some(prim(field, [])) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
     ->Option.flatMap(x => Js.Dict.get(x, "bytes")) // is "string" in LAMBDA_MANAGER
     ->Option.flatMap(Js.Json.decodeString)
@@ -102,7 +103,7 @@ module LAMBDA_PARSER = {
       Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
     )
     ->Option.flatMap(Js.Json.decodeArray)
-    ->Option.flatMap(x => x[0] == Some(Obj.magic({"prim": "mutez"})) ? x[1] : None)
+    ->Option.flatMap(x => x[0] == Some(prim("mutez", [])) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
     ->Option.flatMap(x => Js.Dict.get(x, "int"))
     ->Option.flatMap(Js.Json.decodeString)
@@ -113,11 +114,11 @@ module LAMBDA_PARSER = {
     amount: Tez.t,
   }
 
-  let recipient_amount = (r, rk, encode, a, array): option<recipient_amount> => {
-    array[r]
+  let recipient_amount = (r, rk, encode, a, input): option<recipient_amount> => {
+    input[r]
     ->Option.flatMap(recipient(rk, encode))
     ->Option.flatMap(recipient => {
-      array[a]
+      input[a]
       ->Option.flatMap(amount)
       ->Option.map(amount => {
         {recipient: recipient, amount: amount}
@@ -134,10 +135,10 @@ module LAMBDA_PARSER = {
   // 2 {prim: 'SET_DELEGATE'},
   //   {prim: 'CONS'},
   // ]
-  let setDelegate = (array: array<Js.Json.t>, start) => {
-    let check = (pos, value) => check(array, pos, value)
-    check(start + 1, {"prim": "SOME"}) && check(start + 2, {"prim": "SET_DELEGATE"})
-      ? array[start]
+  let setDelegate = (input: array<Js.Json.t>, start) => {
+    let check = (pos, value) => check(input, pos, value)
+    check(start + 1, prim("SOME", [])) && check(start + 2, prim("SET_DELEGATE", []))
+      ? input[start]
         ->Option.flatMap(recipient("key_hash", ReTaquitoUtils.encodeKeyHash))
         ->Option.map(res => (res, start + 3))
       : None
@@ -151,10 +152,9 @@ module LAMBDA_PARSER = {
   // 1 { prim: 'SET_DELEGATE' },
   //   { prim: 'CONS' },
   // ]
-  let removeDelegate = (array: array<Js.Json.t>, start) => {
-    let check = (pos, value) => check(array, pos, value)
-    check(start, {"prim": "NONE", "args": [{"prim": "key_hash"}]}) &&
-    check(start + 1, {"prim": "SET_DELEGATE"})
+  let removeDelegate = (input: array<Js.Json.t>, start) => {
+    let check = (pos, value) => check(input, pos, value)
+    check(start, prim("NONE", [prim("key_hash", [])])) && check(start + 1, prim("SET_DELEGATE", []))
       ? Some(start + 2)
       : None
   }
@@ -170,17 +170,17 @@ module LAMBDA_PARSER = {
   // 4 {prim: "TRANSFER_TOKENS"},
   //   {prim: "CONS"},
   // ]
-  let transferImplicit = (array: array<Js.Json.t>, start) => {
-    let check = (pos, value) => check(array, pos, value)
-    check(start + 1, {"prim": "IMPLICIT_ACCOUNT"}) &&
-    check(start + 3, {"prim": "UNIT"}) &&
-    check(start + 4, {"prim": "TRANSFER_TOKENS"})
+  let transferImplicit = (input: array<Js.Json.t>, start) => {
+    let check = (pos, value) => check(input, pos, value)
+    check(start + 1, prim("IMPLICIT_ACCOUNT", [])) &&
+    check(start + 3, prim("UNIT", [])) &&
+    check(start + 4, prim("TRANSFER_TOKENS", []))
       ? recipient_amount(
           start,
           "key_hash",
           ReTaquitoUtils.encodeKeyHash,
           start + 2,
-          array,
+          input,
         )->Option.map(res => (res, start + 5))
       : None
   }
@@ -197,51 +197,53 @@ module LAMBDA_PARSER = {
   // 5 { prim: 'TRANSFER_TOKENS' },
   //   { prim: 'CONS' },
   // ]
-  let transferToContract = (array: array<Js.Json.t>, start) => {
-    let check = (pos, value) => check(array, pos, value)
-    check(start + 1, {"prim": "CONTRACT", "args": [{"prim": "unit"}]}) &&
+  let transferToContract = (input: array<Js.Json.t>, start) => {
+    let check = (pos, value) => check(input, pos, value)
+    check(start + 1, prim("CONTRACT", [prim("unit", [])])) &&
     check(
       start + 2,
-      [{"prim": "IF_NONE", "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]}],
+      array([
+        prim("IF_NONE", [array([array([prim("UNIT", []), prim("FAILWITH", [])])]), array([])]),
+      ]),
     ) &&
-    check(start + 4, {"prim": "UNIT"}) &&
-    check(start + 5, {"prim": "TRANSFER_TOKENS"})
+    check(start + 4, prim("UNIT", [])) &&
+    check(start + 5, prim("TRANSFER_TOKENS", []))
       ? recipient_amount(
           start,
           "address",
           ReTaquitoUtils.encodePubKey,
           start + 3,
-          array,
+          input,
         )->Option.map(res => (res, start + 6))
       : None
   }
 
-  let transfer = (array: array<Js.Json.t>, start): option<(recipient_amount, int)> =>
-    switch transferImplicit(array, start) {
-    | None => transferToContract(array, start)
+  let transfer = (input: array<Js.Json.t>, start): option<(recipient_amount, int)> =>
+    switch transferImplicit(input, start) {
+    | None => transferToContract(input, start)
     | x => x
     }
 
-  let delegate = (array: array<Js.Json.t>, start): option<(option<PublicKeyHash.t>, int)> =>
-    switch setDelegate(array, start) {
-    | None => removeDelegate(array, start)->Option.map(next => (None, next))
+  let delegate = (input: array<Js.Json.t>, start): option<(option<PublicKeyHash.t>, int)> =>
+    switch setDelegate(input, start) {
+    | None => removeDelegate(input, start)->Option.map(next => (None, next))
     | Some(x, next) => Some(Some(x), next)
     }
 
   let parseOperationsList = (json: Js.Json.t) => {
-    Js.Json.decodeArray(json)->Option.flatMap(array => {
-      let last = Array.length(array) - 1
-      let check = (pos, value) => check(array, pos, value)
-      check(0, {"prim": "DROP"}) && check(1, {"prim": "NIL", "args": [{"prim": "operation"}]})
+    Js.Json.decodeArray(json)->Option.flatMap(input => {
+      let last = Array.length(input) - 1
+      let check = (pos, value) => check(input, pos, value)
+      check(0, prim("DROP", [])) && check(1, prim("NIL", [prim("operation", [])]))
         ? {
             let rec parse = (acc, instr) => {
-              instr == 2 || check(instr, {"prim": "CONS"})
+              instr == 2 || check(instr, prim("CONS", []))
                 ? instr == last
                     ? Some(acc)
                     : {
                         let instr = instr == 2 ? 2 : instr + 1
                         open Operation
-                        switch transfer(array, instr)->Option.map(res => {
+                        switch transfer(input, instr)->Option.map(res => {
                           let ({amount, recipient}, next) = res
                           (
                             Transaction.Tez({
@@ -255,7 +257,7 @@ module LAMBDA_PARSER = {
                         }) {
                         | Some(x, next) => parse(Js.Array.concat(acc, [x]), next)
                         | None =>
-                          delegate(array, instr)
+                          delegate(input, instr)
                           ->Option.map(x => {
                             let (delegate, next) = x
                             ({Delegation.delegate: delegate}->Delegation, next)
