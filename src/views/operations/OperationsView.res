@@ -135,9 +135,9 @@ let renderOperation = (account, config, currentLevel, operation: Operation.t) =>
   <OperationRowItem account config key operation currentLevel />
 }
 
-let renderPending = (account, pending: Multisig.API.PendingOperation.t) => {
+let renderPending = (multisig, pending: Multisig.API.PendingOperation.t) => {
   let key = pending.Multisig.API.PendingOperation.id->ReBigNumber.toString
-  <OperationRowItem.Pending account key pending />
+  <OperationRowItem.Pending multisig key pending />
 }
 
 let footerStyle = width => {
@@ -203,6 +203,9 @@ module OperationsPending = {
   let make = (~account: Alias.t, ~request) => {
     let dimensions = Dimensions.useWindowDimensions()
     let footerStyle = footerStyle(dimensions.width)
+
+    let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
+    let multisig = multisigFromAddress(account.Alias.address)->Option.getExn
     <>
       <OperationsTableHeaderView.Pending />
       {switch request {
@@ -214,7 +217,7 @@ module OperationsPending = {
           </View>
         <Pagination
           elements={ReBigNumber.Map.valuesToArray(elements)}
-          renderItem={renderPending(account)}
+          renderItem={renderPending(multisig)}
           emptyComponent
           footerStyle
         />

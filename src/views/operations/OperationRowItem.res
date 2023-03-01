@@ -428,9 +428,9 @@ module Pending = {
       ~style=btnStyle,
       ~entrypoint,
       ~text,
-      ~multisig,
+      ~multisig: PublicKeyHash.t,
       ~signer: Account.t,
-      ~id,
+      ~id: ReBigNumber.t,
       ~disabled,
       ~callback=() => (),
       ~title=?,
@@ -455,7 +455,7 @@ module Pending = {
             }
           }
       let onPress = _ => {
-        let operations = entrypoint(id, multisig.Multisig.address)
+        let operations = entrypoint(id, multisig)
         let source = signer
         sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
           setStep(Sign(dryRun, operations))
@@ -547,7 +547,7 @@ module Pending = {
 
       let handlePress = _ => {
         let parameter = {"int": id->ReBigNumber.toString}->Obj.magic
-        let destination = multisig.Multisig.address
+        let destination = multisig
 
         let p: ProtocolOptions.parameter = {
           entrypoint: Multisig.executionEntrypoint->Some,
@@ -581,7 +581,14 @@ module Pending = {
 
   module TransactionActionButtons = {
     @react.component
-    let make = (~multisig, ~signer: Account.t, ~id, ~hasSigned, ~canSubmit, ~unknown=false) => {
+    let make = (
+      ~multisig: PublicKeyHash.t,
+      ~signer: Account.t,
+      ~id,
+      ~hasSigned,
+      ~canSubmit,
+      ~unknown=false,
+    ) => {
       <>
         {hasSigned
           ? <ApproveButton multisig signer id disabled=true />
@@ -625,7 +632,7 @@ module Pending = {
   module PendingOperationInfo = {
     @react.component
     let make = (
-      ~account: Alias.t,
+      ~address: PublicKeyHash.t,
       ~aliases,
       ~tokens,
       ~tooltipSuffix,
@@ -634,7 +641,7 @@ module Pending = {
       switch pending {
       | Transaction(transaction) => <>
           <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
-          <GenericCellAmount address=account.address transaction tokens tooltipSuffix />
+          <GenericCellAmount address transaction tokens tooltipSuffix />
           <CellAddress>
             {getContactOrRaw(
               aliases,
@@ -663,7 +670,7 @@ module Pending = {
   module OperationListDetails = {
     @react.component
     let make = (
-      ~account: Alias.t,
+      ~address: PublicKeyHash.t,
       ~aliases,
       ~tokens,
       ~tooltipSuffix,
@@ -677,7 +684,7 @@ module Pending = {
             {Array.mapWithIndex(operations, (i, pending) => {
               let tooltipSuffix = tooltipSuffix ++ "_" ++ string_of_int(i)
               <Table.Row.Bordered key=tooltipSuffix>
-                <PendingOperationInfo pending account aliases tokens tooltipSuffix />
+                <PendingOperationInfo pending address aliases tokens tooltipSuffix />
               </Table.Row.Bordered>
             })->React.array}
           </ModalFormView>,
@@ -687,13 +694,11 @@ module Pending = {
   }
 
   @react.component
-  let make = (~account: Alias.t, ~pending: Multisig.API.PendingOperation.t) => {
+  let make = (~multisig, ~pending: Multisig.API.PendingOperation.t) => {
     let theme = ThemeContext.useTheme()
     let accounts = StoreContext.Accounts.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
     let tokens = StoreContext.Tokens.useGetAll()
-    let multisigFromAddress = StoreContext.Multisig.useGetFromAddress()
-    let multisig = multisigFromAddress(account.Alias.address)->Option.getExn
 
     let tooltipSuffix = pending.id->ReBigNumber.toString
     let canSubmit =
@@ -716,7 +721,8 @@ module Pending = {
         <CellExpandToggle> {collapseButton} </CellExpandToggle>
         <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
         {switch pending.operations {
-        | [pending] => <PendingOperationInfo pending account aliases tokens tooltipSuffix />
+        | [pending] =>
+          <PendingOperationInfo pending address=multisig.address aliases tokens tooltipSuffix />
         | _ => <> {cellType(I18n.operation_batch)} <CellAmount /> <CellAddress /> </>
         }}
         <CellSignatures style={Style.style(~flexDirection=#row, ())}>
@@ -732,7 +738,7 @@ module Pending = {
         </CellSignatures>
         {Array.length(pending.operations) > 1
           ? <OperationListDetails
-              operations=pending.operations account aliases tokens tooltipSuffix
+              operations=pending.operations address=multisig.address aliases tokens tooltipSuffix
             />
           : pending.operations == [Unknown]
           ? <UnknownDetails> {codeView(pending)} </UnknownDetails>
@@ -821,7 +827,7 @@ module Pending = {
                   | Some(signer) =>
                     <TransactionActionButtons
                       signer
-                      multisig
+                      multisig=multisig.address
                       id=pending.id
                       hasSigned
                       canSubmit

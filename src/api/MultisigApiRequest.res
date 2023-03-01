@@ -26,18 +26,25 @@
 /* MULTISIG */
 
 module Base = {
+  // get all multisigs that concern provided addresses
+  let getMultisigsConcerningAddresses = (~network, ~addresses) => {
+    network->Multisig.API.getAddresses(~addresses)->Promise.flatMapOk(network->Multisig.API.get)
+  }
+
   let get = (~config) =>
     HDWalletAPI.Accounts.get(~config)->Promise.flatMapOk(accounts =>
-      config.network
-      ->Multisig.API.getAddresses(~addresses=accounts->Array.map(account => account.address))
-      ->Promise.flatMapOk(config.network->Multisig.API.get)
+      getMultisigsConcerningAddresses(
+        ~network=config.network,
+        ~addresses=accounts->Array.map(account => account.address),
+      )
     )
 
-  let getPendingOperations = (~config: ConfigContext.env, ~address) =>
-    config.network
+  //  get all pending operations for a multisig contract address
+  let getPendingOperations = (~network: Network.t, ~address) =>
+    network
     ->Multisig.API.getStorage(~contract=address)
     ->Promise.flatMapOk(storage =>
-      config.network->Multisig.API.getPendingOperations(~bigmap=storage.pendingOps)
+      network->Multisig.API.getPendingOperations(~bigmap=storage.pendingOps)
     )
 }
 
@@ -53,11 +60,13 @@ let useLoad = requestState => {
 let useUpdate = {
   let logOk = _ => I18n.multisig_originated
   let kind = Logs.Multisig
+
   let set = (~config, multisig) => {
     Base.get(~config)->Promise.mapOk(cache =>
       cache->PublicKeyHash.Map.set(multisig.Multisig.address, multisig)->Multisig.Cache.set
     )
   }
+
   ApiRequest.useSetter(~logOk, ~set, ~kind)
 }
 
@@ -73,6 +82,7 @@ let useDelete = {
 /* Other */
 
 let usePendingOperations = (~requestState, ~address) => {
-  let get = (~config: ConfigContext.env, ()) => Base.getPendingOperations(~config, ~address)
+  let get = (~config: ConfigContext.env, ()) =>
+    Base.getPendingOperations(~network=config.network, ~address)
   ApiRequest.useLoader(~get, ~kind=Logs.Multisig, ~requestState, ())
 }
