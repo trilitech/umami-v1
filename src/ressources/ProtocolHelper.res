@@ -372,13 +372,13 @@ module Multisig = {
   }
 
   @ocaml.doc(" Create and wrap lambda for a single 'approve' call for 'destination' multisig ")
-  let approve = (parameter, destination) => {
+  let approve = (parameter: ReBigNumber.t, destination) => {
     let parameter = {"int": parameter->ReBigNumber.toString}->Obj.magic
     call(~parameter, ~entrypoint="approve", ~destination)
   }
 
   @ocaml.doc(" Create and wrap lambda for a single 'execute' call for 'destination' multisig ")
-  let execute = (parameter, destination) => {
+  let execute = (parameter: ReBigNumber.t, destination) => {
     let parameter = {"int": parameter->ReBigNumber.toString}->Obj.magic
     call(~parameter, ~entrypoint="execute", ~destination)
   }
