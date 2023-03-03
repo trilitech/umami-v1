@@ -55,9 +55,13 @@ module MichelsonV1Expression: {
 }
 
 module LAMBDA_PARSER: {
+
+  type token = FA12(Int64.t) | FA2(int, Int64.t)
+  type amount = Tez(Tez.t) | Token(PublicKeyHash.t, token)
+
   type recipient_amount = {
     recipient: PublicKeyHash.t,
-    amount: Tez.t,
+    amount: amount,
   }
 
   let setDelegate: (array<Js.Json.t>, int) => option<(PublicKeyHash.t, int)>

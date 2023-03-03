@@ -30,6 +30,12 @@ module Decode = {
     | Packed(bytes)
     | Pkh(PublicKeyHash.t)
 
+  let toPublicKeyHash = (a: address, encode): PublicKeyHash.t =>
+    switch a {
+    | Packed(b) => b->Bytes.unsafe_to_string->encode->PublicKeyHash.build->Result.getExn
+    | Pkh(pkh) => pkh
+    }
+
   let dataDecoder = params => field("data", array(params))
 
   let pairDecoder = (d1, d2) => field("args", tuple2(d1, d2))
@@ -44,6 +50,17 @@ module Decode = {
     bytesDecoder |> map(b => Packed(b)),
     stringDecoder |> map(s => Pkh(s->PublicKeyHash.build->JsonEx.getExn)),
   )
+
+  let fa12ParameterDecoder = json =>
+    json |> pairDecoder(addressDecoder, pairDecoder(addressDecoder, intDecoder))
+
+  let fa2ParameterDecoder = json =>
+    json |> array(
+      pairDecoder(
+        addressDecoder,
+        array(pairDecoder(addressDecoder, pairDecoder(intDecoder, intDecoder))),
+      ),
+    )
 
   /*
     Example of response for `run_view` on `balance_of` on an FA2 contract for
@@ -109,9 +126,73 @@ module LAMBDA_PARSER = {
     ->Option.flatMap(Js.Json.decodeString)
     ->Option.map(Tez.fromMutezString)
 
+  let fa12_parameter_type = prim(
+    "pair",
+    [prim("address", []), prim("pair", [prim("address", []), prim("nat", [])])],
+  )
+
+  let fa2_parameter_type = prim(
+    "list",
+    [
+      prim(
+        "pair",
+        [
+          prim("address", []),
+          prim(
+            "list",
+            [prim("pair", [prim("address", []), prim("pair", [prim("nat", []), prim("nat", [])])])],
+          ),
+        ],
+      ),
+    ],
+  )
+
+  type token = FA12(Int64.t) | FA2(int, Int64.t)
+  type amount = Tez(Tez.t) | Token(PublicKeyHash.t, token)
+
+  let fa12_token_amount = (json, encode) =>
+    Js.Json.decodeObject(json)
+    ->Option.flatMap(x =>
+      Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
+    )
+    ->Option.flatMap(Js.Json.decodeArray)
+    ->Option.flatMap(x => x[0] == Some(fa12_parameter_type) ? x[1] : None)
+    ->Option.flatMap(x => x->JsonEx.decode(Decode.fa12ParameterDecoder)->ResultEx.toOption)
+    ->Option.map(x => {
+      let (from_, (to_, amount)) = x
+      (
+        from_->Decode.toPublicKeyHash(encode),
+        (to_->Decode.toPublicKeyHash(encode), FA12(amount->Int64.of_string)),
+      )
+    })
+
+  let fa2_token_amount = (json, encode) =>
+    Js.Json.decodeObject(json)
+    ->Option.flatMap(x =>
+      Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
+    )
+    ->Option.flatMap(Js.Json.decodeArray)
+    ->Option.flatMap(x => x[0] == Some(fa2_parameter_type) ? x[1] : None)
+    ->Option.flatMap(x => x->JsonEx.decode(Decode.fa2ParameterDecoder)->ResultEx.toOption)
+    ->Option.flatMap(x => x[0])
+    ->Option.flatMap(x => {
+      let (from_, recipients) = x
+      recipients[0]->Option.map(x => (from_, x))
+    })
+    ->Option.map(x => {
+      let (from_, (to_, (token_id, amount))) = x
+      (
+        from_->Decode.toPublicKeyHash(encode),
+        (
+          to_->Decode.toPublicKeyHash(encode),
+          FA2(token_id->Int.fromString->Option.getWithDefault(0), amount->Int64.of_string),
+        ),
+      )
+    })
+
   type recipient_amount = {
     recipient: PublicKeyHash.t,
-    amount: Tez.t,
+    amount: amount,
   }
 
   let recipient_amount = (r, rk, encode, a, input): option<recipient_amount> => {
@@ -121,9 +202,26 @@ module LAMBDA_PARSER = {
       input[a]
       ->Option.flatMap(amount)
       ->Option.map(amount => {
-        {recipient: recipient, amount: amount}
+        {recipient: recipient, amount: Tez(amount)}
       })
     })
+  }
+
+  let recipient_token_amount = (r, rk, encode, a, t, f, input): option<recipient_amount> => {
+    input[r]
+    ->Option.flatMap(recipient(rk, encode))
+    ->Option.flatMap(recipient =>
+      input[a]
+      ->Option.flatMap(amount)
+      ->Option.flatMap(_ =>
+        input[t]
+        ->Option.flatMap(x => x->f(encode))
+        ->Option.map(token_amount => {
+          let (_, (to_, amount)) = token_amount
+          {recipient: to_, amount: Token(recipient, amount)}
+        })
+      )
+    )
   }
 
   // See MANAGER_LAMBDA.setDelegate
@@ -189,10 +287,10 @@ module LAMBDA_PARSER = {
   // [
   //   { prim: 'DROP' },
   //   { prim: 'NIL', args: [{ prim: 'operation' }] },
-  // 0 { prim: 'PUSH', args: [{ prim: 'address' }, { string: key }], },
+  // 0 { prim: 'PUSH', args: [{ prim: 'address' }, { string: <CONTRACT_ADDRESS> }], },
   // 1 { prim: 'CONTRACT', args: [{ prim: 'unit' }] },
-  // 2 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []], }, ],
-  // 3 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: `${amount}` }], },
+  // 2 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []] }, ],
+  // 3 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: <AMOUNT> }] },
   // 4 { prim: 'UNIT' },
   // 5 { prim: 'TRANSFER_TOKENS' },
   //   { prim: 'CONS' },
@@ -218,9 +316,53 @@ module LAMBDA_PARSER = {
       : None
   }
 
+  // See MANAGER_LAMBDA.call
+  // [
+  //   { prim: 'DROP' },
+  //   { prim: 'NIL', args: [{ prim: 'operation' }] },
+  // 0 { prim: 'PUSH', args: [{ prim: 'address' }, { string: <CONTRACT_ADDRESS%entrypoint> }], },
+  // 1 { prim: 'CONTRACT', args: [{ prim: <PARAMETER_TYPE> }] },
+  // 2 [ { prim: 'IF_NONE', args: [[[{ prim: 'UNIT' }, { prim: 'FAILWITH' }]], []] }, ],
+  // 3 { prim: 'PUSH', args: [{ prim: 'mutez' }, { int: <AMOUNT> }] },
+  // 4 { prim: 'PUSH', args: [PARAMETER_TYPE, PARAMETER_VALUE] },
+  // 5 { prim: 'TRANSFER_TOKENS' },
+  //   { prim: 'CONS' },
+  // ]
+  let call = (input: array<Js.Json.t>, start) => {
+    let check = (pos, value) => check(input, pos, value)
+    let token_amount = check(start + 1, prim("CONTRACT", [fa12_parameter_type]))
+      ? Some(fa12_token_amount)
+      : check(start + 1, prim("CONTRACT", [fa2_parameter_type]))
+      ? Some(fa2_token_amount)
+      : None
+    token_amount->Option.flatMap(token_amount =>
+      check(
+        start + 2,
+        array([
+          prim("IF_NONE", [array([array([prim("UNIT", []), prim("FAILWITH", [])])]), array([])]),
+        ]),
+      ) &&
+      check(start + 5, prim("TRANSFER_TOKENS", []))
+        ? recipient_token_amount(
+            start,
+            "address",
+            ReTaquitoUtils.encodePubKey,
+            start + 3,
+            start + 4,
+            token_amount,
+            input,
+          )->Option.map(res => (res, start + 6))
+        : None
+    )
+  }
+
   let transfer = (input: array<Js.Json.t>, start): option<(recipient_amount, int)> =>
     switch transferImplicit(input, start) {
-    | None => transferToContract(input, start)
+    | None =>
+      switch transferToContract(input, start) {
+      | None => call(input, start)
+      | x => x
+      }
     | x => x
     }
 
@@ -245,15 +387,57 @@ module LAMBDA_PARSER = {
                         open Operation
                         switch transfer(input, instr)->Option.map(res => {
                           let ({amount, recipient}, next) = res
-                          (
-                            Transaction.Tez({
-                              amount: amount,
-                              destination: recipient,
-                              parameters: None,
-                              entrypoint: None,
-                            })->Transaction,
-                            next,
-                          )
+                          switch amount {
+                          | Tez(amount) => (
+                              Transaction.Tez({
+                                amount: amount,
+                                destination: recipient,
+                                parameters: None,
+                                entrypoint: None,
+                              })->Transaction,
+                              next,
+                            )
+                          | Token(address, FA12(amount)) => (
+                              Transaction.Token(
+                                {
+                                  amount: Tez.zero,
+                                  destination: recipient,
+                                  parameters: None,
+                                  entrypoint: None,
+                                },
+                                {
+                                  kind: FA1_2,
+                                  amount: amount
+                                  ->ReBigNumber.fromInt64
+                                  ->TokenRepr.Unit.fromBigNumber
+                                  ->ResultEx.toOption
+                                  ->Option.getWithDefault(TokenRepr.Unit.zero),
+                                  contract: address,
+                                },
+                              )->Transaction,
+                              next,
+                            )
+                          | Token(address, FA2(token_id, amount)) => (
+                              Transaction.Token(
+                                {
+                                  amount: Tez.zero,
+                                  destination: recipient,
+                                  parameters: None,
+                                  entrypoint: None,
+                                },
+                                {
+                                  kind: FA2(token_id),
+                                  amount: amount
+                                  ->ReBigNumber.fromInt64
+                                  ->TokenRepr.Unit.fromBigNumber
+                                  ->ResultEx.toOption
+                                  ->Option.getWithDefault(TokenRepr.Unit.zero),
+                                  contract: address,
+                                },
+                              )->Transaction,
+                              next,
+                            )
+                          }
                         }) {
                         | Some(x, next) => parse(Js.Array.concat(acc, [x]), next)
                         | None =>
