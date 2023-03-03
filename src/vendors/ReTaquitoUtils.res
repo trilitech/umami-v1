@@ -95,3 +95,8 @@ external b58decode: string => string = "b58decode"
 
 @module("@taquito/utils")
 external encodePubKey: string => string = "encodePubKey"
+
+@module("@taquito/utils")
+external hex2buf0: string => Js.TypedArray2.Uint8Array.t = "hex2buf"
+// hex2buf fails if string is empty. Let's wrap the call in to handle this particular case.
+let hex2buf = s => "" == s ? Js.TypedArray2.Uint8Array.fromLength(0) : hex2buf0(s)

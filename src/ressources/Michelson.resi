@@ -56,23 +56,17 @@ module MichelsonV1Expression: {
 
 module LAMBDA_PARSER: {
 
-  type token = FA12(Int64.t) | FA2(int, Int64.t)
-  type amount = Tez(Tez.t) | Token(PublicKeyHash.t, token)
-
-  type recipient_amount = {
-    recipient: PublicKeyHash.t,
-    amount: amount,
-  }
+  type transferParams = Operation.Transaction.t
 
   let setDelegate: (array<Js.Json.t>, int) => option<(PublicKeyHash.t, int)>
 
   let removeDelegate: (array<Js.Json.t>, int) => option<int>
 
-  let transferImplicit: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+  let transferImplicit: (array<Js.Json.t>, int) => option<(transferParams, int)>
 
-  let transferToContract: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+  let transferToContract: (array<Js.Json.t>, int) => option<(transferParams, int)>
 
-  let transfer: (array<Js.Json.t>, int) => option<(recipient_amount, int)>
+  let transfer: (array<Js.Json.t>, int) => option<(transferParams, int)>
 
   let delegate: (array<Js.Json.t>, int) => option<(option<PublicKeyHash.t>, int)>
 
