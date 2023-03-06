@@ -97,6 +97,10 @@ module Transfer = {
 }
 
 module Multisig = {
+  open Michelson.MichelsonV1Expression
+  open Michelson.MichelsonV1Expression.Constructors
+  open Michelson.MichelsonV1Expression.Instructions
+  open Michelson.MichelsonV1Expression.Types
   type call = Protocol.Transfer.t
   external jsonToMichelson0: Js.Json.t => ReTaquitoTypes.MichelsonV1Expression.t = "%identity"
   external michelsonToJson0: ReTaquitoTypes.MichelsonV1Expression.t => Js.Json.t = "%identity"
@@ -107,11 +111,9 @@ module Multisig = {
     lambda->michelsonToJson0->Js.Json.decodeArray->Option.getExn
   }
 
-  let emptyLambda: ReTaquitoTypes.MichelsonV1Expression.t =
-    [
-      {"prim": "DROP"}->Obj.magic,
-      {"prim": "NIL", "args": [{"prim": "operation"}->Obj.magic]->Obj.magic},
-    ]->Obj.magic
+  let emptyLambda: ReTaquitoTypes.MichelsonV1Expression.t = {
+    [_DROP, _NIL(operation)]->seq->jsonToMichelson0
+  }
 
   @ocaml.doc(" Concatenate two lists of operations ")
   let appendLambda = (
@@ -126,104 +128,31 @@ module Multisig = {
   module Lambda = {
     module Parameters = {
       module Type = {
-        type t
-
-        let fa12Transfer: t = %raw(`
-          {
-            "prim": "pair",
-            "args": [
-              {"prim": "address"},
-              {
-                "prim": "pair",
-                "args": [
-                  {"prim": "address"},
-                  {"prim": "nat"}
-                ]
-              }
-            ]
-          }
-        `)
-
-        let fa2Transfer: t = %raw(`{
-          "prim": "list",
-          "args": [
-            {
-              "prim": "pair",
-              "args": [
-                {"prim": "address"},
-                {
-                  "prim": "list",
-                  "args": [
-                    {
-                      "prim": "pair",
-                      "args": [
-                        {"prim": "address"},
-                        {
-                          "prim": "pair",
-                          "args": [
-                            {"prim": "nat"},
-                            {"prim": "nat"}
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }`)
+        type t = Js.Json.t
+        let fa12Transfer: Js.Json.t = pair(address, pair(address, nat))
+        let fa2Transfer: Js.Json.t = list(pair(address, list(pair(address, pair(nat, nat)))))
       }
 
       module Value = {
-        type t
-
+        type t = Js.Json.t
         let fa12Transfer = (
-          _from: PublicKeyHash.t,
-          _to: PublicKeyHash.t,
-          _amount: ReTaquitoTypes.BigNumber.fixed,
-        ): t => {
-          %raw(`
-            {
-              "prim": "Pair",
-              "args": [
-                {"string": _from},
-                {
-                  "prim": "Pair",
-                  "args": [
-                    {"string": _to},
-                    {"int": _amount.toString()}
-                  ]
-                }
-              ]
-            }
-          `)
-        }
+          from: PublicKeyHash.t,
+          to: PublicKeyHash.t,
+          amount: ReTaquitoTypes.BigNumber.fixed,
+        ) => _Pair(string((from :> string)), _Pair(string((to :> string)), int((amount :> string))))
 
-        let fa2Transfer: array<ReTaquitoTypes.FA2.transferParam> => t = _parameters => {
-          %raw(`
-            _parameters.map(x => {
-              return {
-                "prim": "Pair",
-                "args": [
-                  {"string": x.from_},
-                  x.txs.map(x => {
-                    return {
-                      "prim": "Pair",
-                      "args": [
-                        {"string": x.to_},
-                        {
-                          "prim": "Pair",
-                          "args": [{"int": x.token_id.toString()}, {"int": x.amount.toString()}]
-                        }
-                      ]
-                    }
-                  })
-                ]
-              }
-            })
-          `)
-        }
+        let fa2Transfer = (parameters: array<ReTaquitoTypes.FA2.transferParam>) =>
+          Array.map(parameters, x =>
+            _Pair(
+              string((x.from_ :> string)),
+              Array.map(x.ReTaquitoTypes.FA2.txs, x =>
+                _Pair(
+                  string((x.to_ :> string)),
+                  _Pair(int((x.token_id :> string)), int((x.amount :> string))),
+                )
+              )->seq,
+            )
+          )->seq
       }
 
       type t = {
@@ -247,42 +176,24 @@ module Multisig = {
     }
 
     let makeCall = (
-      _recipient: PublicKeyHash.t,
-      _amount: ReBigNumber.t,
-      _entrypoint: string,
-      _parameters: Parameters.t,
+      recipient: PublicKeyHash.t,
+      amount: ReBigNumber.t,
+      entrypoint: string,
+      parameters: Parameters.t,
     ): ReTaquitoTypes.Lambda.t => {
-      %raw(`[
-        {"prim": "DROP"},
-        {"prim": "NIL", "args": [{"prim": "operation"}]},
-        {
-          "prim": "PUSH",
-          "args": [{"prim": "address"}, {"string": _recipient + "%" + _entrypoint}]
-        },
-        {
-          "prim": "CONTRACT",
-          "args": [_parameters.type_]
-        },
-        [
-          {
-            "prim": "IF_NONE",
-            "args": [[[{"prim": "UNIT"}, {"prim": "FAILWITH"}]], []]
-          }
-        ],
-        {
-          "prim": "PUSH",
-          "args": [{"prim": "mutez"}, {"int": _amount.toString()}]
-        },
-        {
-            "prim": "PUSH",
-            "args": [
-              _parameters.type_,
-              _parameters.value
-            ]
-        },
-        {"prim": "TRANSFER_TOKENS"},
-        {"prim": "CONS"}
-      ]`)
+      [
+        _DROP,
+        _NIL(operation),
+        _PUSH(address, string((recipient :> string) ++ "%" ++ entrypoint)),
+        _CONTRACT(parameters.type_),
+        [_IF_NONE([[_UNIT, _FAILWITH]->seq]->seq, []->seq)]->seq,
+        _PUSH(mutez, int(amount->ReBigNumber.toString)),
+        _PUSH(parameters.type_, parameters.value),
+        _TRANSFER_TOKENS,
+        _CONS,
+      ]
+      ->seq
+      ->jsonToMichelson0
     }
   }
 

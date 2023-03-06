@@ -82,16 +82,53 @@ module Decode = {
 }
 
 module MichelsonV1Expression = {
-  let int = (int: string): Js.Json.t => {"int": int}->Obj.magic
-  let string = (string: string): Js.Json.t => {"string": string}->Obj.magic
-  let bytes = (bytes: string): Js.Json.t => {"bytes": bytes}->Obj.magic
-  let prim = (prim: string, args: array<Js.Json.t>): Js.Json.t =>
+  type t = Js.Json.t
+  let int = (int: string): t => {"int": int}->Obj.magic
+  let string = (string: string): t => {"string": string}->Obj.magic
+  let bytes = (bytes: string): t => {"bytes": bytes}->Obj.magic
+  let prim = (prim: string, args: array<t>): t =>
     [] == args ? {"prim": prim}->Obj.magic : {"prim": prim, "args": args}->Obj.magic
-  let array = (array: array<Js.Json.t>): Js.Json.t => array->Obj.magic
+  let seq = (array: array<t>): t => array->Obj.magic
+
+  module Constructors = {
+    type t = t
+    let _Pair = (a, b) => prim("Pair", [a, b])
+  }
+
+  module Types = {
+    type t = t
+    let pair = (a, b) => prim("pair", [a, b])
+    let list = t => prim("list", [t])
+    let address = prim("address", [])
+    let nat = prim("nat", [])
+    let operation = prim("operation", [])
+    let mutez = prim("mutez", [])
+    let unit = prim("unit", [])
+    let key_hash = prim("key_hash", [])
+    let lambda = (t1, t2) => prim("key_hash", [t1, t2])
+  }
+  module Instructions = {
+    type t = t
+    let _DROP = prim("DROP", [])
+    let _NIL = t => prim("NIL", [t])
+    let _PUSH = (t, v) => prim("PUSH", [t, v])
+    let _CONTRACT = t => prim("CONTRACT", [t])
+    let _IF_NONE = (a, b) => prim("IF_NONE", [a, b])
+    let _TRANSFER_TOKENS = prim("TRANSFER_TOKENS", [])
+    let _CONS = prim("CONS", [])
+    let _FAILWITH = prim("FAILWITH", [])
+    let _UNIT = prim("UNIT", [])
+    let _SOME = prim("SOME", [])
+    let _SET_DELEGATE = prim("SET_DELEGATE", [])
+    let _NONE = t => prim("NONE", [t])
+    let _IMPLICIT_ACCOUNT = prim("IMPLICIT_ACCOUNT", [])
+  }
 }
 
 module LAMBDA_PARSER = {
   open MichelsonV1Expression
+  open Types
+  open Instructions
 
   let check = (input, pos, value) => input[pos]->Option.mapWithDefault(false, x => x == value)
 
@@ -105,7 +142,7 @@ module LAMBDA_PARSER = {
       Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
     )
     ->Option.flatMap(Js.Json.decodeArray)
-    ->Option.flatMap(x => x[0] == Some(prim(field, [])) ? x[1] : None)
+    ->Option.flatMap(x => x[0] == Some(field) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
     ->Option.flatMap(x => Js.Dict.get(x, "bytes")) // is "string" in LAMBDA_MANAGER
     ->Option.flatMap(Js.Json.decodeString)
@@ -122,32 +159,15 @@ module LAMBDA_PARSER = {
       Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
     )
     ->Option.flatMap(Js.Json.decodeArray)
-    ->Option.flatMap(x => x[0] == Some(prim("mutez", [])) ? x[1] : None)
+    ->Option.flatMap(x => x[0] == Some(mutez) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
     ->Option.flatMap(x => Js.Dict.get(x, "int"))
     ->Option.flatMap(Js.Json.decodeString)
     ->Option.map(Tez.fromMutezString)
 
-  let fa12_parameter_type = prim(
-    "pair",
-    [prim("address", []), prim("pair", [prim("address", []), prim("nat", [])])],
-  )
+  let fa12_parameter_type = pair(address, pair(address, nat))
 
-  let fa2_parameter_type = prim(
-    "list",
-    [
-      prim(
-        "pair",
-        [
-          prim("address", []),
-          prim(
-            "list",
-            [prim("pair", [prim("address", []), prim("pair", [prim("nat", []), prim("nat", [])])])],
-          ),
-        ],
-      ),
-    ],
-  )
+  let fa2_parameter_type = list(pair(address, list(pair(address, pair(nat, nat)))))
 
   let fa12_token_amount = (json, contract, encode) =>
     Js.Json.decodeObject(json)
@@ -257,9 +277,9 @@ module LAMBDA_PARSER = {
   // ]
   let setDelegate = (input: array<Js.Json.t>, start) => {
     let check = (pos, value) => check(input, pos, value)
-    check(start + 1, prim("SOME", [])) && check(start + 2, prim("SET_DELEGATE", []))
+    check(start + 1, _SOME) && check(start + 2, _SET_DELEGATE)
       ? input[start]
-        ->Option.flatMap(recipient("key_hash", encode_key_hash))
+        ->Option.flatMap(recipient(key_hash, encode_key_hash))
         ->Option.map(((res, _)) => (res, start + 3))
       : None
   }
@@ -274,9 +294,7 @@ module LAMBDA_PARSER = {
   // ]
   let removeDelegate = (input: array<Js.Json.t>, start) => {
     let check = (pos, value) => check(input, pos, value)
-    check(start, prim("NONE", [prim("key_hash", [])])) && check(start + 1, prim("SET_DELEGATE", []))
-      ? Some(start + 2)
-      : None
+    check(start, _NONE(key_hash)) && check(start + 1, _SET_DELEGATE) ? Some(start + 2) : None
   }
 
   // See MANAGER_LAMBDA.transferImplicit
@@ -292,10 +310,10 @@ module LAMBDA_PARSER = {
   // ]
   let transferImplicit = (input: array<Js.Json.t>, start) => {
     let check = (pos, value) => check(input, pos, value)
-    check(start + 1, prim("IMPLICIT_ACCOUNT", [])) &&
-    check(start + 3, prim("UNIT", [])) &&
-    check(start + 4, prim("TRANSFER_TOKENS", []))
-      ? transferParams(start, "key_hash", encode_key_hash, start + 2, input)->Option.map(res => (
+    check(start + 1, _IMPLICIT_ACCOUNT) &&
+    check(start + 3, _UNIT) &&
+    check(start + 4, _TRANSFER_TOKENS)
+      ? transferParams(start, key_hash, encode_key_hash, start + 2, input)->Option.map(res => (
           res,
           start + 5,
         ))
@@ -326,17 +344,12 @@ module LAMBDA_PARSER = {
   // ]
   let transferToContract = (input: array<Js.Json.t>, start) => {
     let check = (pos, value) => check(input, pos, value)
-    check(start + 1, prim("CONTRACT", [prim("unit", [])])) &&
-    check(
-      start + 2,
-      array([
-        prim("IF_NONE", [array([array([prim("UNIT", []), prim("FAILWITH", [])])]), array([])]),
-      ]),
-    ) &&
-    check(start + 4, prim("UNIT", [])) &&
+    check(start + 1, _CONTRACT(unit)) &&
+    check(start + 2, seq([_IF_NONE(seq([seq([_UNIT, _FAILWITH])]), seq([]))])) &&
+    check(start + 4, _UNIT) &&
     // FIXME: This is entrypoint's parameter
-    check(start + 5, prim("TRANSFER_TOKENS", []))
-      ? transferParams(start, "address", encode_address, start + 3, input)->Option.map(res => (
+    check(start + 5, _TRANSFER_TOKENS)
+      ? transferParams(start, address, encode_address, start + 3, input)->Option.map(res => (
           res,
           start + 6,
         ))
@@ -357,23 +370,18 @@ module LAMBDA_PARSER = {
   // ]
   let call = (input: array<Js.Json.t>, start) => {
     let check = (pos, value) => check(input, pos, value)
-    let token_amount = check(start + 1, prim("CONTRACT", [fa12_parameter_type]))
+    let token_amount = check(start + 1, _CONTRACT(fa12_parameter_type))
       ? Some(fa12_token_amount)
-      : check(start + 1, prim("CONTRACT", [fa2_parameter_type]))
+      : check(start + 1, _CONTRACT(fa2_parameter_type))
       ? Some(fa2_token_amount)
       : None
     token_amount->Option.flatMap(token_amount =>
-      check(
-        start + 2,
-        array([
-          prim("IF_NONE", [array([array([prim("UNIT", []), prim("FAILWITH", [])])]), array([])]),
-        ]),
-      ) &&
-      check(start + 5, prim("TRANSFER_TOKENS", []))
+      check(start + 2, seq([_IF_NONE(seq([seq([_UNIT, _FAILWITH])]), seq([]))])) &&
+      check(start + 5, _TRANSFER_TOKENS)
         ? recipient_token_amount(
             start,
-            "address",
-            (s => s->encode_address->fst),
+            address,
+            s => s->encode_address->fst,
             start + 3,
             start + 4,
             token_amount,
@@ -403,10 +411,10 @@ module LAMBDA_PARSER = {
     Js.Json.decodeArray(json)->Option.flatMap(input => {
       let last = Array.length(input) - 1
       let check = (pos, value) => check(input, pos, value)
-      check(0, prim("DROP", [])) && check(1, prim("NIL", [prim("operation", [])]))
+      check(0, _DROP) && check(1, _NIL(operation))
         ? {
             let rec parse = (acc, instr) => {
-              instr == 2 || check(instr, prim("CONS", []))
+              instr == 2 || check(instr, _CONS)
                 ? instr == last
                     ? Some(acc)
                     : {

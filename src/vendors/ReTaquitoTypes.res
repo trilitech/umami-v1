@@ -24,15 +24,13 @@
 /* *************************************************************************** */
 
 module BigNumber: {
-  type fixed
+  type fixed = private string
   let toFixed: (~decimals: int=?, ReBigNumber.t) => fixed
   let fromInt64: Int64.t => ReBigNumber.t
   let toInt64: ReBigNumber.t => Int64.t
 } = {
   type fixed = string
-
   let toFixed = ReBigNumber.toFixed
-
   let fromInt64 = ReBigNumber.fromInt64
   let toInt64 = ReBigNumber.toInt64
 }

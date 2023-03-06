@@ -47,11 +47,47 @@ module Decode: {
 }
 
 module MichelsonV1Expression: {
-  let int: string => Js.Json.t
-  let string: string => Js.Json.t
-  let bytes: string => Js.Json.t
-  let prim: (string, array<Js.Json.t>) => Js.Json.t
-  let array: array<Js.Json.t> => Js.Json.t
+  type t = Js.Json.t
+  let int: string => t
+  let string: string => t
+  let bytes: string => t
+  let prim: (string, array<t>) => t
+  let seq: array<t> => t
+
+  module Constructors: {
+    type t = Js.Json.t
+    let _Pair: (t, t) => t
+  }
+
+  module Types: {
+    type t = t
+    let pair: (t, t) => t
+    let operation: t
+    let list: t => t
+    let address: t
+    let nat: t
+    let mutez: t
+    let unit: t
+    let key_hash: t
+    let lambda: (t, t) => t
+  }
+
+  module Instructions: {
+    type t = t
+    let _DROP: t
+    let _NIL: Types.t => t
+    let _PUSH: (Types.t, t) => t
+    let _CONTRACT: Types.t => t // FIXME: can also annot endpoint
+    let _IF_NONE: (t, t) => t
+    let _TRANSFER_TOKENS: t
+    let _CONS: t
+    let _FAILWITH: t
+    let _UNIT: t
+    let _SOME: t
+    let _NONE: Types.t => t
+    let _SET_DELEGATE: t
+    let _IMPLICIT_ACCOUNT: t
+  }
 }
 
 module LAMBDA_PARSER: {
