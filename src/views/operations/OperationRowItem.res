@@ -317,18 +317,22 @@ module UnknownRow = {
   }
 }
 
+let contractCall = ({amount, entrypoint}: Operation.Transaction.common) =>
+  switch entrypoint {
+  | Some(entrypoint) if entrypoint != "default" && amount == Tez.zero =>
+    Some("{ " ++ entrypoint ++ " }")
+  | _ => None
+  }
+
 module TransactionRow = {
   @react.component
   let make = (~account: Alias.t, ~aliases, ~tokens, ~fee, ~source, ~transaction, ~uniqueId) => {
     switch transaction {
-    | Operation.Transaction.Tez({amount, destination, entrypoint})
-    | Operation.Transaction.Token({amount, destination, entrypoint}, _) =>
-      let (label, amount) = switch entrypoint {
-      | Some(entrypoint) if entrypoint != "default" && amount == Tez.zero => (
-          "{ " ++ entrypoint ++ " }",
-          <CellAmount />,
-        )
-      | _ => (
+    | Operation.Transaction.Tez(common)
+    | Operation.Transaction.Token(common, _) =>
+      let (label, amount) = switch contractCall(common) {
+      | Some(txt) => (txt, <CellAmount />)
+      | None => (
           I18n.operation_transaction,
           <GenericCellAmount address=account.address transaction tokens tooltipSuffix=uniqueId />,
         )
@@ -344,7 +348,7 @@ module TransactionRow = {
             alias->Typography.body1(~numberOfLines=1)
           })}
         </CellAddress>
-        <CellAddress> {getContactOrRaw(aliases, tokens, destination)} </CellAddress>
+        <CellAddress> {getContactOrRaw(aliases, tokens, common.destination)} </CellAddress>
       </>
     }
   }
@@ -599,9 +603,6 @@ module Pending = {
           : <ApproveButton multisig signer id disabled=false />}
         <ExecuteButton multisig signer id disabled={!canSubmit} />
         <AddToBatchButton multisig signer id disabled={!canSubmit} />
-        //        <Buttons.SubmitPrimary
-        //          text=I18n.Btn.global_batch_add_short onPress={_ => ()} style=btnStyle disabled={true}
-        //        />
       </>
     }
   }
@@ -639,9 +640,20 @@ module Pending = {
       ~pending: Operation.payload,
     ) => {
       switch pending {
-      | Transaction(transaction) => <>
-          <CellType> {I18n.operation_transaction->Typography.body1} </CellType>
-          <GenericCellAmount address transaction tokens tooltipSuffix />
+      | Transaction(transaction) =>
+        let (label, amount) = switch switch transaction {
+        | Operation.Transaction.Tez(common) => contractCall(common)
+        | Operation.Transaction.Token(_) => None
+        } {
+        | Some(txt) => (txt, <CellAmount />)
+        | None => (
+            I18n.operation_transaction,
+            <GenericCellAmount address transaction tokens tooltipSuffix />,
+          )
+        }
+        <>
+          <CellType> {label->Typography.body1} </CellType>
+          {amount}
           <CellAddress>
             {getContactOrRaw(
               aliases,
@@ -707,6 +719,14 @@ module Pending = {
       )
     let signed = pending.approvals->Array.length->Int.toString
     let threshold = multisig.Multisig.threshold->ReBigNumber.toString
+    let unknown = Js.Array.some(x =>
+      switch x {
+      | Operation.Transaction(Tez({entrypoint, amount})) =>
+        entrypoint != None && entrypoint != Some("default") && amount == Tez.zero
+      | Unknown => true
+      | _ => false
+      }
+    , pending.operations)
     let header = (collapseButton, expanded) => {
       let rowStyle = expanded
         ? Style.style(
@@ -716,7 +736,6 @@ module Pending = {
             (),
           )->Some
         : None
-
       <Table.Row.Bordered ?rowStyle>
         <CellExpandToggle> {collapseButton} </CellExpandToggle>
         <CellID> {pending.id->ReBigNumber.toString->Typography.body1} </CellID>
@@ -740,7 +759,7 @@ module Pending = {
           ? <OperationListDetails
               operations=pending.operations address=multisig.address aliases tokens tooltipSuffix
             />
-          : pending.operations == [Unknown]
+          : unknown
           ? <UnknownDetails> {codeView(pending)} </UnknownDetails>
           : React.null}
       </Table.Row.Bordered>
@@ -826,12 +845,7 @@ module Pending = {
                   {switch PublicKeyHash.Map.get(accounts, owner) {
                   | Some(signer) =>
                     <TransactionActionButtons
-                      signer
-                      multisig=multisig.address
-                      id=pending.id
-                      hasSigned
-                      canSubmit
-                      unknown={pending.operations == [Unknown]}
+                      signer multisig=multisig.address id=pending.id hasSigned canSubmit unknown
                     />
                   | None => React.null
                   }}
