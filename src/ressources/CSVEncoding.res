@@ -97,7 +97,7 @@ let checkTokenId = (tokenId, (token: TokenRepr.t, registered)) =>
   | _ => Ok(token)
   }
 
-let handleTokenRow = (tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) =>
+let handleTokenRow = (source, tokens, index, destination, amount, token: PublicKeyHash.t, tokenId) =>
   tokens
   ->TokensLibrary.WithRegistration.getFullToken(
     token,
@@ -112,26 +112,26 @@ let handleTokenRow = (tokens, index, destination, amount, token: PublicKeyHash.t
     ->Token.Unit.fromFloatBigNumber(token.decimals)
     ->Result.mapError(_ => CannotParseTokenAmount(amount, index, 2))
     ->Result.map(amount =>
-      ProtocolHelper.Transfer.makeSimpleToken(~destination, ~amount, ~token, ())
+      ProtocolHelper.Transfer.makeSimpleToken(~source, ~destination, ~amount, ~token, ())
     )
   )
 
-let handleRow = (tokens, index, row) =>
+let handleRow = (source, tokens, index, row) =>
   switch row {
   | #Left((destination, amount), #Right()) => handleTezRow(index, destination, amount)
   | #Left((destination, amount), #Left(token, tokenId)) =>
-    handleTokenRow(tokens, index, destination, amount, token, tokenId)
+    handleTokenRow(source, tokens, index, destination, amount, token, tokenId)
   | #Right(kt, entrypoint, parameter, amount) =>
     handleTezRow(~parameter, ~entrypoint, index, kt, amount->Option.default(ReBigNumber.zero))
   }
 
-let handleCSV = (rows, tokens) => rows->List.mapWithIndex(handleRow(tokens))->Result.collect
+let handleCSV = (rows, source, tokens) => rows->List.mapWithIndex(handleRow(source, tokens))->Result.collect
 
-let parseCSV = (content, ~tokens) => {
+let parseCSV = (content, ~source, ~tokens) => {
   let rows = rowEncoding->Result.flatMap(encoding => parseCSV(content, encoding))
   switch rows {
   | Ok(list{}) => Error(NoRows)
-  | Ok(rows) => handleCSV(rows, tokens)
+  | Ok(rows) => handleCSV(rows, source, tokens)
   | Error(e) => Error(e)
   }
 }

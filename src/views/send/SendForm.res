@@ -42,7 +42,7 @@ type validState = {
 }
 
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
-  amount: state.amount->FormUtils.parseAmount(token)->FormUtils.Unsafe.getAmount,
+  amount: state.amount->FormUtils.parseAmount(state.sender.address, token)->FormUtils.Unsafe.getAmount,
   sender: state.sender,
   recipient: state.recipient->FormUtils.Unsafe.account,
   entrypoint: None,

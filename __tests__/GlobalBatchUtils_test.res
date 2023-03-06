@@ -42,7 +42,7 @@ let makeMockFA2Token = (amount, address) => {
     decimals: 2,
     asset: Metadata.defaultAsset,
   }
-  let mockToken = {token: mockFA1_2Token, amount: mockTokenAmount}
+  let mockToken = {token: mockFA1_2Token, amount: mockTokenAmount, source: mockAccount.address}
   mockToken
 }
 
@@ -72,7 +72,11 @@ describe("GlobalBatchUtils", () => {
         decimals: 2,
         asset: Metadata.defaultAsset,
       }
-      let mockToken: Protocol.Amount.t = Token({token: mockFA1_2Token, amount: mockTokenAmount})
+      let mockToken: Protocol.Amount.t = Token({
+        token: mockFA1_2Token,
+        amount: mockTokenAmount,
+        source: mockAccount.address,
+      })
       let transferFA2: Transfer.transferFA2 = {
         tokenId: 33,
         content: {
@@ -80,6 +84,7 @@ describe("GlobalBatchUtils", () => {
           amount: {
             token: mockFA1_2Token,
             amount: mockTokenAmount,
+            source: mockAccount.address,
           },
         },
       }

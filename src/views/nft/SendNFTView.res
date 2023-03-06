@@ -143,7 +143,7 @@ let unsafeExtractValidState = (state: SendNFTForm.state, nft, source): SendForm.
 
   let amount = {
     open Protocol.Amount
-    Token({amount: TokenRepr.Unit.one, token: nft})
+    Token({amount: TokenRepr.Unit.one, token: nft, source: source.Account.address})
   }
   let sender = source->Alias.fromAccount
 
@@ -171,6 +171,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let nominalSubmit = (state: SendNFTForm.state) => {
     let transfer = ProtocolHelper.Transfer.makeSimpleToken(
+      ~source=source.Account.address,
       ~destination=state.values.recipient->FormUtils.Unsafe.account->FormUtils.Alias.address,
       ~amount=TokenRepr.Unit.one,
       ~token=nft,

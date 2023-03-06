@@ -282,7 +282,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
   let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
     let operations =
       ProtocolHelper.Multisig.transfer(
-        state.sender.Alias.address,
         state.recipient->FormUtils.Alias.address,
         state.amount,
       )->ProtocolHelper.Multisig.propose(state.sender.Alias.address)

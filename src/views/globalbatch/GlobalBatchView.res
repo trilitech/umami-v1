@@ -123,7 +123,9 @@ let make = () => {
         <LeftCol>
           <AccountElements.Selector.Simple account />
           <Wrapper>
-            <TransactionCounter operations /> <CSVPicker onAddCSVList /> <CSVFormatLink />
+            <TransactionCounter operations />
+            <CSVPicker source=account.Alias.address onAddCSVList />
+            <CSVFormatLink />
           </Wrapper>
           {[] == operations
             ? <BatchEmptyView />
