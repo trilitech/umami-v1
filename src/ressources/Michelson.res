@@ -131,16 +131,18 @@ module LAMBDA_PARSER = {
   open Instructions
 
   let check = (input, pos, value) => input[pos]->Option.mapWithDefault(false, x => x == value)
+  let args = (json, name) =>
+    Js.Json.decodeObject(json)->Option.flatMap(x =>
+      Js_dict.get(x, "prim") == Some(Obj.magic(name)) ? Js_dict.get(x, "args") : None
+    )
 
   // FIXME: Entrypoint my be defined in "annots" field
   // For a given <FIELD> value:
   // read {prim: "PUSH", args: [{prim: "<FIELD>"}, {bytes: <RECIPIENT>}]} and
   // return <RECIPIENT>
   let recipient = (field, encode: string => (string, string), json) => {
-    Js.Json.decodeObject(json)
-    ->Option.flatMap(x =>
-      Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
-    )
+    json
+    ->args("PUSH")
     ->Option.flatMap(Js.Json.decodeArray)
     ->Option.flatMap(x => x[0] == Some(field) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
@@ -154,10 +156,8 @@ module LAMBDA_PARSER = {
 
   // Extract <AMOUNT> from {prim: "PUSH", args: [{prim: "mutez"}, {int: <AMOUNT>}]}
   let amount = json =>
-    Js.Json.decodeObject(json)
-    ->Option.flatMap(x =>
-      Js_dict.get(x, "prim") == Some(Obj.magic("PUSH")) ? Js_dict.get(x, "args") : None
-    )
+    json
+    ->args("PUSH")
     ->Option.flatMap(Js.Json.decodeArray)
     ->Option.flatMap(x => x[0] == Some(mutez) ? x[1] : None)
     ->Option.flatMap(Js.Json.decodeObject)
