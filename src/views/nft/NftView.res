@@ -199,12 +199,9 @@ let make = (~account: Alias.t) => {
       syncState
       syncIcon=Icons.SyncNFT.build
     />
-    {switch Alias.toAccount(account) {
-    | Ok(account) => switch mode {
-      | Gallery => <NftGalleryView account nfts />
-      | Collection => <NftCollectionView account nfts />
-      }
-    | _ => <View> {"Not implemented. Please select an implicit account"->React.string} </View>
+    {switch mode {
+    | Gallery => <NftGalleryView account nfts />
+    | Collection => <NftCollectionView account nfts />
     }}
   </View>
 }

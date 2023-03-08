@@ -87,12 +87,22 @@ module Form = {
     open SendNFTForm
 
     @react.component
-    let make = (~sender, ~nft, ~form, ~loading, ~onAddToBatch, ~simulatingBatch=false) => {
+    let make = (
+      ~proposal=false,
+      ~sender,
+      ~nft,
+      ~form,
+      ~loading,
+      ~onAddToBatch,
+      ~simulatingBatch=false,
+    ) => {
       let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
+
+      let submitLabel = proposal ? I18n.Btn.proposal_submit : I18n.Btn.send_submit
 
       <>
         <ReactFlipToolkit.FlippedView flipId="form">
-          <FormGroupAccountSelector.Implicits
+          <FormGroupAccountSelector
             disabled=true label=I18n.Label.send_sender value=sender handleChange={_ => ()}
           />
           <FormGroupNFTView nft />
@@ -107,10 +117,7 @@ module Form = {
         <ReactFlipToolkit.FlippedView flipId="submit">
           <View style=FormStyles.verticalFormAction>
             <Buttons.SubmitPrimary
-              text=I18n.Btn.send_submit
-              onPress={_ => form.submit()}
-              loading
-              disabled={!formFieldsAreValids}
+              text=submitLabel onPress={_ => form.submit()} loading disabled={!formFieldsAreValids}
             />
           </View>
           <Buttons.SubmitSecondary
@@ -128,30 +135,38 @@ module Form = {
 
 type step =
   | SendStep
-  | SigningStep(array<Protocol.manager>, Protocol.Simulation.results)
+  | SigningStep(
+      SendForm.validState,
+      Account.t,
+      array<Protocol.manager>,
+      Protocol.Simulation.results,
+    )
   | SubmittedStep(string)
+  | SourceStep(SendForm.validState, option<Account.t>)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
-  | SigningStep(_, _) => "signingstep"
+  | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
+  | SourceStep(_) => "sourcestep"
   }
 
-let unsafeExtractValidState = (state: SendNFTForm.state, nft, source): SendForm.validState => {
+let unsafeExtractValidState = (state: SendNFTForm.state, nft, source: Alias.t): SendForm.validState => {
   let recipient = state.values.recipient->FormUtils.Unsafe.account
 
   let amount = {
     open Protocol.Amount
-    Token({amount: TokenRepr.Unit.one, token: nft, source: source.Account.address})
+    Token({amount: TokenRepr.Unit.one, token: nft, source: source.address})
   }
-  let sender = source->Alias.fromAccount
 
-  {amount: amount, sender: sender, recipient: recipient, parameter: None, entrypoint: None}
+  {amount: amount, sender: source, recipient: recipient, parameter: None, entrypoint: None}
 }
 
+let senderIsMultisig = (sender: Alias.t) => PublicKeyHash.isContract(sender.address)
+
 @react.component
-let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
+let make = (~source: Alias.t, ~nft: Token.t, ~closeAction) => {
   let (modalStep, setModalStep) = React.useState(_ => SendStep)
 
   let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
@@ -167,42 +182,78 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
 
   let isForGlobalBatch = React.useRef(false)
 
-  let (sign, _setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
+  let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 
-  let nominalSubmit = (state: SendNFTForm.state) => {
+  let onSubmitMultisig = (state: SendForm.validState) => {
+    setModalStep(_ => SourceStep(state, None))
+  }
+  let onSubmitImplicit = (state: SendForm.validState) => {
+    let account = source->Alias.toAccountExn
     let transfer = ProtocolHelper.Transfer.makeSimpleToken(
-      ~source=source.Account.address,
-      ~destination=state.values.recipient->FormUtils.Unsafe.account->FormUtils.Alias.address,
+      ~source=source.address,
+      ~destination=state.recipient->FormUtils.Alias.address,
       ~amount=TokenRepr.Unit.one,
       ~token=nft,
       (),
     )
     let managers = [Protocol.Transfer(transfer)]
-    sendOperationSimulate(source, managers)->Promise.getOk(dryRun =>
-      setModalStep(_ => SigningStep(managers, dryRun))
+    sendOperationSimulate(account, managers)->Promise.getOk(dryRun =>
+      setModalStep(_ => SigningStep(state, account, managers, dryRun))
     )
   }
 
-  let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) =>
+  let onSubmitProposal = (state: SendForm.validState, source: Account.t) => {
+    let operations =
+      ProtocolHelper.Multisig.transfer(
+        state.recipient->FormUtils.Alias.address,
+        state.amount,
+      )->ProtocolHelper.Multisig.propose(state.sender.Alias.address)
+    sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
+      setModalStep(_ => SigningStep(state, source, operations, dryRun))
+    })
+  }
+
+  let nominalSubmit = (state: SendForm.validState) =>
+    switch source.kind {
+    | Some(Alias.Multisig) => onSubmitMultisig(state)
+    | Some(Account(_)) => onSubmitImplicit(state)
+    | _ => assert false
+    }
+
+  let onSubmit = ({state, _}: SendNFTForm.onSubmitAPI) => {
+    let validState = unsafeExtractValidState(state, nft, source)
     if isForGlobalBatch.current {
-      let validState = unsafeExtractValidState(state, nft, source)
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
       addTransfer(validState.sender.address, p, closeAction)
     } else {
-      nominalSubmit(state)
+      nominalSubmit(validState)
     }
+  }
 
   let form: SendNFTForm.api = Form.use(onSubmit)
 
   let title = switch modalStep {
-  | SendStep => Some(I18n.Title.send)
-  | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
+  | SendStep
+  | SourceStep(_) =>
+    Some(I18n.Title.send)
+  | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
   }
 
   let back = SignOperationView.back(signOpStep, () =>
     switch modalStep {
-    | SigningStep(_, _) => Some(() => setModalStep(_ => SendStep))
+    | SigningStep(state, sender, _, _) =>
+      switch sign {
+      | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+      | SummaryStep =>
+        Some(
+          () =>
+            setModalStep(_ =>
+              senderIsMultisig(source) ? SourceStep(state, Some(sender)) : SendStep
+            ),
+        )
+      }
+    | SourceStep(_) => Some(() => setModalStep(_ => SendStep))
     | _ => None
     }
   )
@@ -225,6 +276,7 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
         {switch modalStep {
         | SendStep =>
           <Form.View
+            proposal={senderIsMultisig(source)}
             onAddToBatch=addToGlobalBatch
             sender=source
             nft
@@ -232,9 +284,10 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
             loading=loadingSimulate
             simulatingBatch=isSimulating
           />
-        | SigningStep(operations, dryRun) =>
+        | SigningStep(_, signer, operations, dryRun) =>
           <SignOperationView
-            signer=source
+            proposal={senderIsMultisig(source)}
+            signer
             state=signingState
             signOpStep
             dryRun
@@ -249,6 +302,13 @@ let make = (~source: Account.t, ~nft: Token.t, ~closeAction) => {
             push(Operations)
           }
           <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
+        | SourceStep(state, source) =>
+          <SourceStepView
+            multisig=state.sender.address
+            ?source
+            sender=state.sender
+            onSubmit={onSubmitProposal(state)}
+          />
         }}
       </ModalFormView>
     </ReactFlipToolkit.FlippedView>
