@@ -85,7 +85,7 @@ let requestToBatch = ({operationDetails}) => {
     | Origination(orig) =>
       ProtocolHelper.Origination.make(
         ~balance=Tez.fromMutezString(orig.balance),
-        ~code=orig.script.code,
+        ~code=orig.script.code->ReTaquitoTypes.Code.fromString,
         ~storage=orig.script.storage,
         ~delegate=orig.delegate->PublicKeyHash.unsafeBuild->Some,
         (),

@@ -123,7 +123,10 @@ module MichelsonV1Expression: {
 }
 
 module Code = {
-  type t = string
+  // code: string | object[];
+  type t
+  external fromString: string => t = "%identity"
+  external fromArray: array<Js.Json.t> => t = "%identity"
 }
 
 module Storage = {
