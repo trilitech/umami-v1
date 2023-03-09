@@ -105,7 +105,7 @@ module MichelsonV1Expression = {
     let mutez = prim("mutez", [])
     let unit = prim("unit", [])
     let key_hash = prim("key_hash", [])
-    let lambda = (t1, t2) => prim("key_hash", [t1, t2])
+    let lambda = (t1, t2) => prim("lambda", [t1, t2])
   }
   module Instructions = {
     type t = t
