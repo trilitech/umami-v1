@@ -1631,5 +1631,5 @@ let storage: (PublicKeyHash.t, array<PublicKeyHash.t>, ReBigNumber.t) => Storage
         ]
       }
     ]
-  }`)
+  }`)->ReTaquitoParser.emitMicheline
 }

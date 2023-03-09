@@ -37,3 +37,9 @@ external parseMichelineExpression: (
 @send
 external parseScript: (parser, string) => option<ReTaquitoTypes.MichelsonV1Expression.t> =
   "parseScript"
+
+@send
+external parseJSON: (parser, Js.Json.t) => ReTaquitoTypes.MichelsonV1Expression.t = "parseJSON"
+
+@module("@taquito/michel-codec")
+external emitMicheline: ReTaquitoTypes.MichelsonV1Expression.t => string = "emitMicheline"
