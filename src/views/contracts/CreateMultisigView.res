@@ -532,7 +532,8 @@ let getAddress = (result: ReTaquito.Toolkit.Operation.result) => {
 }
 
 @react.component
-let make = (~source: Account.t, ~closeAction) => {
+let make = (~closeAction) => {
+  let account = StoreContext.SelectedAccount.useGetImplicit()->Option.getExn
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
   let (modalStep, setModalStep) = React.useState(_ => CreateStep)
@@ -622,13 +623,14 @@ let make = (~source: Account.t, ~closeAction) => {
     | CreateStep => <CreateView currentStep form setCurrentStep />
     | SourceStep(state, raiseSubmitFailed) =>
       <SourceSelector
-        source={Alias.fromAccount(source)} //FIXME
+        filter=PublicKeyHash.isImplicit
+        source={Alias.fromAccount(account)}
         loading={operationSimulateRequest->ApiRequest.isLoading}
         onSubmit={source => handleSource(state, raiseSubmitFailed, source->Alias.toAccountExn)} //FIXME
       />
     | SigningStep(_, _, operations, dryRun) =>
       <SignView
-        account=source
+        account
         state
         signOpStep
         dryRun

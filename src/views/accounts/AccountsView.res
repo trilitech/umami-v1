@@ -202,15 +202,12 @@ module MultisigAccountList = {
   module CreateMultisigButton = {
     @react.component
     let make = () => {
-      let account = StoreContext.SelectedAccount.useGetImplicit()
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
       <>
         <Buttons.SubmitPrimary
           style={styles["button"]} text=I18n.Btn.create_new_multisig onPress={_ => openAction()}
         />
-        {Option.mapWithDefault(account, React.null, source =>
-          wrapModal(<CreateMultisigView source closeAction />)
-        )}
+        {<CreateMultisigView closeAction />->wrapModal}
       </>
     }
   }

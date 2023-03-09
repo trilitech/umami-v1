@@ -110,12 +110,7 @@ module CreateNewMultisigButton = {
         icon=Icons.Key.build
         primary=true
       />
-      {
-        let account = StoreContext.SelectedAccount.useGetImplicit()
-        Option.mapWithDefault(account, React.null, source =>
-          wrapModal(<CreateMultisigView source closeAction />)
-        )
-      }
+      {<CreateMultisigView closeAction />->wrapModal}
     </>
   }
 }
