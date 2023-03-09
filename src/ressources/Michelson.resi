@@ -87,11 +87,14 @@ module MichelsonV1Expression: {
     let _NONE: Types.t => t
     let _SET_DELEGATE: t
     let _IMPLICIT_ACCOUNT: t
+    let _CREATE_CONTRACT: (Types.t, Types.t, t) => t
+    let _AMOUNT: t
+    let _DIP: t => t
+    let _PAIR: t
   }
 }
 
 module LAMBDA_PARSER: {
-
   type transferParams = Operation.Transaction.t
 
   let setDelegate: (array<Js.Json.t>, int) => option<(PublicKeyHash.t, int)>

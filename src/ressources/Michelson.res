@@ -122,6 +122,11 @@ module MichelsonV1Expression = {
     let _SET_DELEGATE = prim("SET_DELEGATE", [])
     let _NONE = t => prim("NONE", [t])
     let _IMPLICIT_ACCOUNT = prim("IMPLICIT_ACCOUNT", [])
+    let _CREATE_CONTRACT = (parameter: Types.t, storage: Types.t, code: t) =>
+      prim("CREATE_CONTRACT", [parameter, storage, code])
+    let _AMOUNT = prim("AMOUNT", [])
+    let _DIP = args => prim("DIP", [args])
+    let _PAIR = prim("PAIR", [])
   }
 }
 
