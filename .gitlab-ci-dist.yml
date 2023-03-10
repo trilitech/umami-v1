@@ -89,7 +89,7 @@ macos-dist:
     - npm install -g node-hid
   script:
     - '[ ! -z "$CI_COMMIT_TAG" ] || (sed -i "" "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json)'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (base64 --decode -i "${SECRET_UMAMI_Developer_ID_Application_p12}" -o "${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12"'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js)'
