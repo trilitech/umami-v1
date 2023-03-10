@@ -358,6 +358,7 @@ module Title = {
   let confirm_multisig_origination = "Confirm"
   let confirm_operation_approval = "Confirm"
   let confirm_operation_execution = "Confirm"
+  let confirm_operation_approval_and_execution = "Confirm"
   let delegate = "Delegate"
   let delegate_update = "Change Baker"
   let delegate_delete = "End Delegation"

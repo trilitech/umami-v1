@@ -433,7 +433,7 @@ module Pending = {
     @react.component
     let make = (
       ~style=btnStyle,
-      ~entrypoint,
+      ~entrypoints,
       ~text,
       ~multisig: PublicKeyHash.t,
       ~signer: Alias.t,
@@ -467,14 +467,16 @@ module Pending = {
         ->ReBigNumber.toString
         ->Michelson.MichelsonV1Expression.int
         ->ProtocolHelper.Multisig.jsonToMichelson0
+      let operations =
+        entrypoints->Array.map(entrypoint =>
+          ProtocolHelper.Multisig.call(~entrypoint, ~parameter, multisig)
+        )
       let onSubmitMultisig = () => {
-        let action = [ProtocolHelper.Multisig.call(~entrypoint, ~parameter, multisig)]
         let initiator = signer.Alias.address
-        setStack(_ => list{(initiator, action, None)})
+        setStack(_ => list{(initiator, operations, None)})
         setModalStep(_ => SourceStep)
       }
       let onSubmitImplicit = () => {
-        let operations = [ProtocolHelper.Multisig.call(~parameter, ~entrypoint, multisig)]
         let source = signer->Alias.toAccountExn
         sendOperationSimulate(source, operations)->Promise.getOk(dryRun => {
           setStep(SigningStep(source, operations, dryRun))
@@ -522,7 +524,7 @@ module Pending = {
     @react.component
     let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
       <ActionButton
-        entrypoint="approve"
+        entrypoints=["approve"]
         ?style
         title=I18n.Title.confirm_operation_approval
         text
@@ -535,41 +537,34 @@ module Pending = {
     }
   }
 
-  module ApproveWithConfirmationButton = {
-    @react.component
-    let make = (
-      ~multisig,
-      ~title=I18n.Title.approval_threshold_reached,
-      ~contentText=I18n.Expl.approval_threshold_reached,
-      ~signer: Alias.t,
-      ~id,
-    ) => {
-      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
-      let cancelText = I18n.Btn.cancel
-
-      let action =
-        <ApproveButton
-          text=I18n.Btn.sign_anyway multisig signer id disabled=false callback=closeAction
-        />
-
-      <>
-        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => openAction()} style=btnStyle />
-        {wrapModal(<ModalDialogConfirm.Modal action title contentText cancelText closeAction />)}
-      </>
-    }
-  }
-
   module ExecuteButton = {
     @react.component
     let make = (~multisig, ~signer: Alias.t, ~id, ~disabled) => {
       <ActionButton
-        entrypoint="execute"
+        entrypoints=["execute"]
         title=I18n.Title.confirm_operation_execution
         text=I18n.Btn.submit
         multisig
         signer
         id
         disabled
+      />
+    }
+  }
+
+  module ApproveAndExecuteButton = {
+    @react.component
+    let make = (~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
+      <ActionButton
+        entrypoints=["approve", "execute"]
+        ?style
+        title=I18n.Title.confirm_operation_approval_and_execution
+        text=I18n.Btn.submit
+        multisig
+        signer
+        id
+        disabled
+        ?callback
       />
     }
   }
@@ -604,12 +599,29 @@ module Pending = {
       />
     }
   }
-  module ApproveWithReviewButton = {
+
+  module WithConfirmationButton = {
     @react.component
-    let make = (~multisig, ~signer: Alias.t, ~id) => {
+    let make = (
+      ~title=I18n.Title.approval_threshold_reached,
+      ~contentText=I18n.Expl.approval_threshold_reached,
+      ~children,
+    ) => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      let cancelText = I18n.Btn.cancel
+      let action = children(closeAction)
+      <>
+        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => openAction()} style=btnStyle />
+        {wrapModal(<ModalDialogConfirm.Modal action title contentText cancelText closeAction />)}
+      </>
+    }
+  }
+  module WithReviewButton = {
+    @react.component
+    let make = (~children) => {
       let title = I18n.Title.unrecognized_operation
       let contentText = I18n.Expl.unrecognized_operation
-      <ApproveWithConfirmationButton multisig signer id title contentText />
+      <WithConfirmationButton title contentText> {children} </WithConfirmationButton>
     }
   }
 
@@ -620,18 +632,35 @@ module Pending = {
       ~signer: Alias.t,
       ~id,
       ~hasSigned,
-      ~canSubmit,
+      ~missing,
       ~unknown=false,
     ) => {
+      let canSubmit = missing <= 0
+
+      let approve = (~text=?, ~closeAction as callback=?, disabled) =>
+        <ApproveButton ?text multisig signer id disabled ?callback />
       <>
         {hasSigned
           ? <ApproveButton multisig signer id disabled=true />
           : canSubmit
-          ? <ApproveWithConfirmationButton multisig signer id />
+          ? <WithConfirmationButton>
+            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~closeAction, false)}
+          </WithConfirmationButton>
           : unknown
-          ? <ApproveWithReviewButton multisig signer id />
+          ? <WithReviewButton>
+            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~closeAction, false)}
+          </WithReviewButton>
           : <ApproveButton multisig signer id disabled=false />}
-        <ExecuteButton multisig signer id disabled={!canSubmit} />
+        {missing == 1 && !hasSigned
+          ? unknown
+              ? <WithReviewButton>
+                  {closeAction =>
+                    <ApproveAndExecuteButton
+                      multisig signer id disabled=false callback=closeAction
+                    />}
+                </WithReviewButton>
+              : <ApproveAndExecuteButton multisig signer id disabled=false />
+          : <ExecuteButton multisig signer id disabled={!canSubmit} />}
         <AddToBatchButton multisig signer id disabled={!canSubmit} />
       </>
     }
@@ -743,10 +772,7 @@ module Pending = {
     let tokens = StoreContext.Tokens.useGetAll()
 
     let tooltipSuffix = pending.id->ReBigNumber.toString
-    let canSubmit =
-      ReBigNumber.fromInt(Array.length(pending.approvals))->ReBigNumber.isGreaterThanOrEqualTo(
-        multisig.Multisig.threshold,
-      )
+    let missing = multisig.Multisig.threshold->ReBigNumber.toInt - Array.length(pending.approvals)
     let signed = pending.approvals->Array.length->Int.toString
     let threshold = multisig.Multisig.threshold->ReBigNumber.toString
     let unknown = Js.Array.some(x =>
@@ -776,7 +802,7 @@ module Pending = {
         }}
         <CellSignatures style={Style.style(~flexDirection=#row, ())}>
           {
-            let color = canSubmit ? theme.colors.textPositive : theme.colors.textHighEmphasis
+            let color = missing <= 0 ? theme.colors.textPositive : theme.colors.textHighEmphasis
             <>
               <Icons.Key size=20. color />
               {I18n.a_of_b(signed, threshold)->Typography.body1(
@@ -875,7 +901,7 @@ module Pending = {
                   {switch PublicKeyHash.Map.get(accounts, owner) {
                   | Some(signer) =>
                     <TransactionActionButtons
-                      signer multisig=multisig.address id=pending.id hasSigned canSubmit unknown
+                      signer multisig=multisig.address id=pending.id hasSigned missing unknown
                     />
                   | None => React.null
                   }}
