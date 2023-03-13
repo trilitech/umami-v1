@@ -79,11 +79,11 @@ macos-dist:
     - node -v || export PATH="/opt/homebrew/opt/${NODE_PKG}/bin:$PATH" && node -v
     - npm -v
     # `brew install --force` and `brew link --overwrite` in order to avoid cache issue between two builds
-    - brew install --force cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
-    - brew link --overwrite cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
+    - brew install --force cairo corepack expat giflib jpeg libffi libpng librsvg pango pixman pkg-config zlib
+    - brew link --overwrite cairo corepack expat giflib jpeg libffi libpng librsvg pango pixman pkg-config zlib
     - export LDFLAGS="-L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/expat/lib"
     - export CPPFLAGS="-I/opt/homebrew/opt/zlib/include -I/opt/homebrew/opt/expat/include"
-    - export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/expat/lib/pkgconfig"
+    - export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/expat/lib/pkgconfig:/opt/homebrew/opt/libffi/lib/pkgconfig/"
     - corepack enable
     - npm install -g node-gyp@8.4.1 # 9.0.0 gives an error (search for `openssl_fips != ""` error)
     - npm install -g node-hid
