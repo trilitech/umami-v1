@@ -47,14 +47,20 @@ module Widget = {
   @send external getRedirectUrl: t => string = "getRedirectUrl"
 }
 
-let makeTezWidget = (~address: PublicKeyHash.t, ~theme: ThemeContext.theme) =>
+let makeTezWidget = (
+  ~network: [#ghosnet | #mainnet],
+  ~address: PublicKeyHash.t,
+  ~theme: ThemeContext.theme,
+) => {
+  let mainnet = network == #mainnet
   Widget.make({
     container_id: "wert-widget",
-    partner_id: System.isDev ? "01F8DFQRA460MG8EMEP6E0RQQT" : "01FN6APWJ68N2PWC22YDJW4D5W",
-    origin: System.isDev ? "https://sandbox.wert.io" : "https://widget.wert.io",
+    partner_id: mainnet ? "01FN6APWJ68N2PWC22YDJW4D5W" : "01F8DFQRA460MG8EMEP6E0RQQT",
+    origin: mainnet ? "https://widget.wert.io" : "https://sandbox.wert.io",
     commodity: "XTZ",
     commodities: "XTZ",
     address: (address :> string),
     theme: theme.dark ? "dark" : "light",
     color_background: theme.colors.background,
   })
+}

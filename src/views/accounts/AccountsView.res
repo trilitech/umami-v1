@@ -95,12 +95,17 @@ module BuyTezButton = {
   @react.component
   let make = (~account, ~showView) => {
     let theme = ThemeContext.useTheme()
-
+    let network = ConfigContext.useNetwork()
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
+    let network = switch network.chain {
+    | #Mainnet => #mainnet->Some
+    | #Ghostnet => #ghosnet->Some
+    | _ => None
+    }
 
-    let buyTez = (address: PublicKeyHash.t) => {
+    let buyTez = (network, address: PublicKeyHash.t) => {
       closeAction()
-      let widget = ReWert.makeTezWidget(~address, ~theme)
+      let widget = ReWert.makeTezWidget(~network, ~address, ~theme)
       let url = widget->ReWert.Widget.getEmbedUrl
       showView(url)
     }
@@ -108,12 +113,20 @@ module BuyTezButton = {
     <>
       <View style={styles["button"]}>
         <ButtonAction
-          onPress={_ => openAction()} text=I18n.Btn.buy_tez icon=Icons.Shop.build primary=true
+          onPress={_ => openAction()}
+          text=I18n.Btn.buy_tez
+          icon=Icons.Shop.build
+          primary=true
+          disabled={network == None}
         />
       </View>
-      <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <WertView account submit=buyTez closeAction />
-      </ModalAction>
+      {switch network {
+      | None => React.null
+      | Some(network) =>
+        <ModalAction visible=visibleModal onRequestClose=closeAction>
+          <WertView account submit={buyTez(network)} closeAction />
+        </ModalAction>
+      }}
     </>
   }
 }
