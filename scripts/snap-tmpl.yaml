@@ -35,6 +35,7 @@ apps:
     plugs:
       - audio-playback
       - browser-support
+      - camera
       - home
       - network
       - network-bind
