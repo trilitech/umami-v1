@@ -93,7 +93,7 @@ let () = Errors.registerHandler("Network", x =>
   }
 )
 
-type nativeChains = [#Mainnet | #Ghostnet | #Limanet]
+type nativeChains = [#Mainnet | #Ghostnet | #Limanet | #Mumbainet]
 
 type supportedChains = [
   | nativeChains
@@ -118,6 +118,7 @@ let getChainId = x =>
   | #Florencenet => "NetXxkAx4woPLyu"
   | #Edo2net => "NetXSgo1ZT2DRUG"
   | #Hangzhounet => "NetXZSsxBpMQeAT"
+  | #Mumbainet => "NetXgbcrNtXD2yA"
   | #Custom(s) => s
   }
 
@@ -132,6 +133,7 @@ let fromChainId = x =>
   | "NetXLH1uAxK7CCh" => #Jakartanet
   | "NetXi2ZagzEsXbZ" => #Kathmandunet
   | "NetXizpkH94bocH" => #Limanet
+  | "NetXgbcrNtXD2yA" => #Mumbainet
   | s => #Custom(s)
   }
 
@@ -141,6 +143,7 @@ let nativeChains = list{
   mkChainAssoc(#Mainnet),
   mkChainAssoc(#Ghostnet),
   mkChainAssoc(#Limanet),
+  mkChainAssoc(#Mumbainet),
 }
 
 let supportedChains = list{
@@ -164,6 +167,7 @@ let getDisplayedName = x =>
   | #Jakartanet => "Jakartanet"
   | #Kathmandunet => "Kathmandunet"
   | #Limanet => "Limanet"
+  | #Mumbainet => "Mumbainet"
   | #Custom(s) => s
   }
 
@@ -178,6 +182,7 @@ let externalExplorer = x =>
   | #Jakartanet => "https://jakartanet.tzkt.io/"->Ok
   | #Kathmandunet => "https://kathmandunet.tzkt.io/"->Ok
   | #Limanet => "https://limanet.tzkt.io/"->Ok
+  | #Mumbainet => "https://mumbainet.tzkt.io/"->Ok
   | #Custom(_) as net => Error(UnknownChainId(getChainId(net)))
   }
 
@@ -204,6 +209,7 @@ let chainNetwork: chain<_> => option<string> = x =>
   | #Jakartanet => Some("jakartanet")
   | #Kathmandunet => Some("kathmandunet")
   | #Limanet => Some("limanet")
+  | #Mumbainet => Some("mumbainet")
   | #Custom(_) => None
   }
 
@@ -220,6 +226,7 @@ let networkChain: string => option<chain<_>> = x =>
   | "jakartanet" => Some(#Jakartanet)
   | "kathmandunet" => Some(#Kathmandunet)
   | "limanet" => Some(#Limanet)
+  | "mumbainet" => Some(#Mumbainet)
   | _ => None
   }
 
@@ -236,6 +243,7 @@ module Encode = {
     | #Jakartanet
     | #Kathmandunet
     | #Limanet
+    | #Mumbainet
     | #Hangzhounet => "default"
     | #Custom(_) => "custom"
     }
@@ -266,6 +274,7 @@ module Decode = {
     | "Mainnet" => #Mainnet
     | "Ithacanet" /* Kill? */ | "Ghostnet" => #Ghostnet
     | "Limanet" => #Limanet
+    | "Mumbainet" => #Mumbainet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n))
     }
 
@@ -335,11 +344,18 @@ let limanet = mk(
   #Limanet,
 )
 
+let mumbainet = mk(
+  ~explorer="https://mumbainet.umamiwallet.com",
+  ~endpoint="https://mumbainet.ecadinfra.com",
+  #Mumbainet,
+)
+
 let getNetwork = x =>
   switch x {
   | #Mainnet => mainnet
   | #Ghostnet => ghostnet
   | #Limanet => limanet
+  | #Mumbainet => mumbainet
   }
 
 let getNetworks = (c: nativeChains) => {
@@ -357,9 +373,8 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://ghostnet.ecadinfra.com/"),
       withEP("https://ghostnet.smartpy.io/"),
     }
-  | #Limanet => list{
-      withEP("https://limanet.ecadinfra.com"),
-    }
+  | #Limanet => list{withEP("https://limanet.ecadinfra.com")}
+  | #Mumbainet => list{withEP("https://mumbainet.ecadinfra.com")}
   }
 }
 
