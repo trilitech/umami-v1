@@ -205,7 +205,8 @@ module Decode = {
 
   let t = json => {
     block: json |> optional(field("block_hash", string)),
-    fee: json |> field("fee", string) |> Tez.fromMutezString,
+    fee: (json |> optional(field("fee", string)))
+      ->Option.mapWithDefault(Tez.zero, Tez.fromMutezString),
     hash: json |> field("hash", string),
     id: json |> field("id", string),
     level: json |> field("level", string) |> int_of_string,
