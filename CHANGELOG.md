@@ -4,9 +4,11 @@
 
 ## Beta (0.8.7)
 
-- Remove Kathmandunet from native chains
+- Add native Mumbainet support
+- Drop native Kathmandunet support
 - Small UI fixes/improvements for NFT tab
 - Fix a problem with NFT cache
+- Fix camera permission issue on macos/linux
 
 ## Beta (0.8.6)
 
