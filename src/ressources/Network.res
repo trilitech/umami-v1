@@ -363,18 +363,29 @@ let getNetworks = (c: nativeChains) => {
   let withEP = url => {...n, endpoint: url}
   switch c {
   | #Mainnet => list{
-      withEP("https://mainnet.smartpy.io/"),
-      withEP("https://api.tez.ie/rpc/mainnet/"),
-      withEP("https://teznode.letzbake.com"),
-      withEP("https://mainnet.tezrpc.me/"),
       withEP("https://rpc.tzbeta.net"),
+      withEP("https://mainnet.oxheadhosted.com"),
+      withEP("https://mainnet.api.tez.ie"),
+      withEP("https://mainnet.smartpy.io"),
+      withEP("https://mainnet.tezos.marigold.dev"),
     }
   | #Ghostnet => list{
-      withEP("https://ghostnet.ecadinfra.com/"),
-      withEP("https://ghostnet.smartpy.io/"),
+      withEP("https://rpc.ghostnet.teztnets.xyz"),
+      withEP("https://ghostnet.ecadinfra.com"),
+      withEP("https://ghostnet.smartpy.io"),
+      withEP("https://ghostnet.tezos.marigold.dev"),
     }
-  | #Limanet => list{withEP("https://limanet.ecadinfra.com")}
-  | #Mumbainet => list{withEP("https://mumbainet.ecadinfra.com")}
+  | #Limanet => list{
+      withEP("https://rpc.limanet.teztnets.xyz"),
+      withEP("https://limanet.ecadinfra.com"),
+      withEP("https://limanet.smartpy.io"),
+      withEP("https://limanet.tezos.marigold.dev"),
+    }
+  | #Mumbainet => list{
+      withEP("https://rpc.mumbainet.teztnets.xyz"),
+      withEP("https://mumbainet.ecadinfra.com"),
+      withEP("https://mumbainet.tezos.marigold.dev"),
+    }
   }
 }
 
