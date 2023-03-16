@@ -141,12 +141,22 @@ module Transaction = {
 module Origination = {
   type t = {contract: string}
 
-  open Json.Decode
+  module Decode = {
+    open Json.Decode
 
-  let decode = json => {
-    let ca = json |> optional(field("data", field("contract", string)))
+    let t = json => {
+      let ca = json |> optional(field("data", field("contract", string)))
 
-    ca->Option.map(contract => {contract: contract})
+      ca->Option.map(contract => {contract: contract})
+    }
+
+    module Tzkt = {
+      let t = json => {
+        let ca = json |> optional(field("originatedContract", optional(field("address", string))))
+
+        ca->Option.flatMap(x => x->Option.map(x => {contract: x}))
+      }
+    }
   }
 }
 
@@ -211,8 +221,7 @@ type t = {
 }
 
 let uniqueId = op => (op.hash, op.id, op.internal)
-let uniqueIdToString = ((hash, id, iid)) =>
-  hash ++ id ++ iid->Int.toString
+let uniqueIdToString = ((hash, id, iid)) => hash ++ id ++ iid->Int.toString
 
 type operation = t
 
@@ -223,7 +232,7 @@ module Decode = {
     switch ty {
     | "reveal" => Reveal(json->Reveal.decode)
     | "transaction" => Transaction(json->Transaction.Decode.t)
-    | "origination" => Origination(json->Origination.decode)
+    | "origination" => Origination(json->Origination.Decode.t)
     | "delegation" => Delegation(json->Delegation.Decode.t)
     | _ => Unknown
     }
@@ -259,7 +268,7 @@ module Decode = {
       switch ty {
       | "reveal" => None
       | "transaction" => Option.map(json->Transaction.Decode.Tzkt.t, t => Transaction(t))
-      | "origination" => None
+      | "origination" => json->Origination.Decode.Tzkt.t->Origination->Some
       | "delegation" => json->Delegation.Decode.Tzkt.t->Delegation->Some
       | _ => None
       }

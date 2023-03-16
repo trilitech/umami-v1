@@ -166,8 +166,7 @@ module URL = {
           ),
         )
       }
-      let url = build_explorer_url(network, operationsPath, args)
-      url
+      build_explorer_url(network, operationsPath, args)
     }
 
     let checkToken = (network, ~contract: PublicKeyHash.t) => {
