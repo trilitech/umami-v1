@@ -500,7 +500,10 @@ module Pending = {
       <>
         {submitButton(~text, ~onPress, ~style, ~loading=loadingSign, ~disabled)}
         {wrapModal(
-          <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
+          <ModalFormView
+            ?title
+            titleStyle=FormStyles.headerMarginBottom8
+            closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
             | Simulation => <LoadingView />
             | SourceStep =>
