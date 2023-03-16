@@ -303,7 +303,7 @@ module Form_input_error = {
   let illformed_token_metadata = (pkh, tokenId, field) =>
     `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
   let not_a_multisig_contract = "Contract not supported by Umami"
-  let permissions_error = "You don't have enough permissions on the selected contract."
+  let permissions_error = "Unable to propose a multisig transaction: none of your wallet accounts is a co-owner ot the selected contract."
 }
 
 module Title = {
