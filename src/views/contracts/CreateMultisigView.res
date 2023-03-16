@@ -533,7 +533,8 @@ let getAddress = (result: ReTaquito.Toolkit.Operation.result) => {
 
 @react.component
 let make = (~closeAction) => {
-  let account = StoreContext.SelectedAccount.useGetImplicit()->Option.getExn
+  let init = StoreContext.SelectedAccount.useGetImplicit()->Option.getExn
+  let (account, setAccount) = React.useState(_ => init)
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
   let (modalStep, setModalStep) = React.useState(_ => CreateStep)
@@ -593,6 +594,8 @@ let make = (~closeAction) => {
   }
 
   let handleSource = (state, raiseSubmitFailed, source: Umami.Account.t) => {
+    setAccount(_ => source)
+    // Don't use account instead of source because React won't have update account already.
     let operations = [state->Form.originationOperation(~source)]
     sendOperationSimulate(source, operations)->Promise.get(x => {
       switch x {
