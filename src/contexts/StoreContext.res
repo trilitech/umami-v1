@@ -1167,6 +1167,36 @@ module AccountsMultisigs = {
   }
 }
 
+let useHasPendingWaiting = () => {
+  let getMultisig = Multisig.useGetFromAddress()
+  let accountsRequest = Accounts.useRequest()
+  let multisigsRequest = Multisig.useRequest()
+  address => {
+    let accounts =
+      accountsRequest
+      ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      ->PublicKeyHash.Map.keysToArray
+    let multisigs =
+      multisigsRequest
+      ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      ->PublicKeyHash.Map.keysToArray
+    let pkhs = Array.concat(accounts, multisigs)
+    let pending =
+      Multisig.PendingOperations.usePendingOperations(~address)->ApiRequest.getWithDefault(
+        ReBigNumber.Map.empty,
+      )
+    !ReBigNumber.Map.isEmpty(pending) && {
+      let m = getMultisig(address)->Option.getExn
+      let threshold = ReBigNumber.toInt(m.threshold)
+      let signers = Array.keep(m.signers, x => Js.Array.includes(x, pkhs))
+      ReBigNumber.Map.some(pending, (_, p) => {
+        Array.length(p.approvals) >= threshold ||
+          Array.some(signers, x => !Js.Array.includes(x, p.approvals))
+      })
+    }
+  }
+}
+
 // For backward compatibility. To be removed.
 let useGetAccountsMultisigsAliasesAsAliases = AccountsMultisigs.useRequest
 

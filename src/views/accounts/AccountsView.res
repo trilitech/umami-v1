@@ -139,7 +139,10 @@ module AccountTypeSwitch = {
     <SegmentedButtons
       selectedValue=accountType
       setSelectedValue=setAccountType
-      buttons=[(I18n.Btn.individual_accounts, Individual), (I18n.Btn.multisig_accounts, Multisig)]
+      buttons=[
+        (I18n.Btn.individual_accounts, Individual, false),
+        (I18n.Btn.multisig_accounts, Multisig, false),
+      ]
     />
   }
 }

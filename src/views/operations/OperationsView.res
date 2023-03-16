@@ -241,7 +241,7 @@ module Multisig = {
       operationsReload()
       pendingOperationsReload()
     }
-
+    let hasPendingWaiting = StoreContext.useHasPendingWaiting()(account.address)
     let pendingOperationsRequest = StoreContext.Multisig.PendingOperations.usePendingOperations(
       ~address=account.Alias.address,
     )
@@ -252,7 +252,10 @@ module Multisig = {
         <SegmentedButtons
           selectedValue=tab
           setSelectedValue=setTab
-          buttons=[(I18n.Btn.history, History), (I18n.Btn.pending_operations, Pending)]
+          buttons=[
+            (I18n.Btn.history, History, false),
+            (I18n.Btn.pending_operations, Pending, hasPendingWaiting),
+          ]
         />
       </View>
     }

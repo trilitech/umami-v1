@@ -48,6 +48,29 @@ let styles = {
   })
 }
 
+module Dot = {
+  @react.component
+  let make = (~style as styleArg=?) => {
+    let theme = ThemeContext.useTheme()
+    open Style
+    <View
+      style={arrayOption([
+        style(
+          ~width="0.5rem"->StyleUtils.stringToSize,
+          ~height="0.5rem"->StyleUtils.stringToSize,
+          ~backgroundColor=theme.colors.primaryButtonBackground,
+          ~borderRadius=100.,
+          ~position=#absolute,
+          ~right=0.->Style.dp,
+          ~top="0.6rem"->StyleUtils.stringToSize,
+          (),
+        )->Some,
+        styleArg,
+      ])}
+    />
+  }
+}
+
 module FormBase = {
   @react.component
   let make = (

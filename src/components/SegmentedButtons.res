@@ -55,7 +55,7 @@ let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
     }>
     {buttons
     ->Array.mapWithIndex((index, button) => {
-      let (title, value) = button
+      let (title, value, dot) = button
       let borderStyle = {
         open Style
         if index == 0 {
@@ -71,7 +71,12 @@ let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
         style={Style.arrayOption([Some(styles["element"]), borderStyle])}
         onPress={_ => setSelectedValue(_ => value)}
         isActive={selectedValue == value}>
-        <Typography.Subtitle1> {title->React.string} </Typography.Subtitle1>
+        {title->Typography.subtitle1}
+        {dot
+          ? <Buttons.Dot
+              style={Style.style(~position=#relative, ~top="-0.25rem"->StyleUtils.stringToSize, ())}
+            />
+          : React.null}
       </ThemedPressable>
     })
     ->React.array}

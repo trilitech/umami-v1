@@ -71,20 +71,6 @@ module NavBarItem = {
       if !isActive {
         onPress(a)
       }
-    open ReactNative.Style
-    let dot =
-      <View
-        style={style(
-          ~width="0.5rem"->StyleUtils.stringToSize,
-          ~height="0.5rem"->StyleUtils.stringToSize,
-          ~backgroundColor=theme.colors.primaryButtonBackground,
-          ~borderRadius=100.,
-          ~position=#absolute,
-          ~right=0.->dp,
-          ~top="0.6rem"->StyleUtils.stringToSize,
-          (),
-        )}
-      />
 
     <ThemedPressable accessibilityRole=#link onPress=handlePress style={styles["item"]} isActive>
       {icon->Option.mapWithDefault(React.null, icon =>
@@ -94,7 +80,7 @@ module NavBarItem = {
             ~size=iconSize->Option.getWithDefault(24.),
             ~color=iconColor,
           )}
-          {showDot ? dot : React.null}
+          {showDot ? <Buttons.Dot /> : React.null}
         </View>
       )}
       <Typography.ButtonTernary
@@ -225,9 +211,11 @@ module Empty = {
 let make = (~account: Alias.t, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme()
 
-  let batch = GlobalBatchContext.useGlobalBatchContext().batch(account.Alias.address)
-
+  let {address} = account
+  let hasPendingWaiting = StoreContext.useHasPendingWaiting()(address)
+  let batch = GlobalBatchContext.useGlobalBatchContext().batch(address)
   let hasBatchItems = batch != None
+
   <View
     style={
       open Style
@@ -250,7 +238,11 @@ let make = (~account: Alias.t, ~route as currentRoute) => {
       currentRoute route=Nft iconSize=28. title=I18n.navbar_nft icon=Icons.Nft.build
     />
     <NavBarItemRoute
-      currentRoute route=Operations title=I18n.navbar_operations icon=Icons.History.build
+      currentRoute
+      route=Operations
+      title=I18n.navbar_operations
+      icon=Icons.History.build
+      showDot=hasPendingWaiting
     />
     <NavBarItemRoute
       currentRoute

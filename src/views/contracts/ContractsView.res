@@ -123,7 +123,7 @@ module ContractTypeSwitch = {
     <SegmentedButtons
       selectedValue=contractType
       setSelectedValue=setContractType
-      buttons=[(I18n.Btn.token, Token), (I18n.Btn.multisig, Multisig)]
+      buttons=[(I18n.Btn.token, Token, false), (I18n.Btn.multisig, Multisig, false)]
     />
   }
 }
