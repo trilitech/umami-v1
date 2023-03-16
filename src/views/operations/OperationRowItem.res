@@ -441,6 +441,8 @@ module Pending = {
       ~disabled,
       ~callback=() => (),
       ~title=?,
+      ~submitButton=(~text, ~onPress, ~style, ~loading, ~disabled) =>
+        <Buttons.SubmitPrimary text onPress style loading disabled />,
     ) => {
       let (
         sendOperationSimulateRequest,
@@ -496,7 +498,7 @@ module Pending = {
       | _ => title
       }
       <>
-        <Buttons.SubmitPrimary text onPress style loading=loadingSign disabled />
+        {submitButton(~text, ~onPress, ~style, ~loading=loadingSign, ~disabled)}
         {wrapModal(
           <ModalFormView ?title closing=ModalFormView.Close(_ => closeAction())>
             {switch modalStep {
@@ -523,7 +525,16 @@ module Pending = {
 
   module ApproveButton = {
     @react.component
-    let make = (~text=I18n.Btn.sign, ~style=?, ~multisig, ~signer, ~id, ~disabled, ~callback=?) => {
+    let make = (
+      ~text=I18n.Btn.sign,
+      ~submitButton=?,
+      ~style=?,
+      ~multisig,
+      ~signer,
+      ~id,
+      ~disabled,
+      ~callback=?,
+    ) => {
       <ActionButton
         entrypoints=["approve"]
         ?style
@@ -534,6 +545,7 @@ module Pending = {
         id
         disabled
         ?callback
+        ?submitButton
       />
     }
   }
@@ -613,7 +625,9 @@ module Pending = {
       let action = children(closeAction)
       <>
         <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => openAction()} style=btnStyle />
-        {wrapModal(<ModalDialogConfirm.Modal action title contentText cancelText closeAction />)}
+        {wrapModal(
+          <ModalDialogConfirm.ModalBase action title contentText cancelText closeAction />,
+        )}
       </>
     }
   }
@@ -637,19 +651,22 @@ module Pending = {
       ~unknown=false,
     ) => {
       let canSubmit = missing <= 0
-
-      let approve = (~text=?, ~closeAction as callback=?, disabled) =>
-        <ApproveButton ?text multisig signer id disabled ?callback />
+      let approve = (~text=?, ~style=?, ~closeAction as callback=?, disabled) => {
+        let submitButton = (~text, ~onPress, ~style, ~loading, ~disabled) =>
+          <Buttons.Form text onPress style loading disabled />
+        <ApproveButton ?text ?style submitButton multisig signer id disabled ?callback />
+      }
+      let style = Style.style()
       <>
         {hasSigned
           ? <ApproveButton multisig signer id disabled=true />
           : canSubmit
           ? <WithConfirmationButton>
-            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~closeAction, false)}
+            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~style, ~closeAction, false)}
           </WithConfirmationButton>
           : unknown
           ? <WithReviewButton>
-            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~closeAction, false)}
+            {closeAction => approve(~text=I18n.Btn.sign_anyway, ~style, ~closeAction, false)}
           </WithReviewButton>
           : <ApproveButton multisig signer id disabled=false />}
         {missing == 1 && !hasSigned
@@ -657,7 +674,7 @@ module Pending = {
               ? <WithReviewButton>
                   {closeAction =>
                     <ApproveAndExecuteButton
-                      multisig signer id disabled=false callback=closeAction
+                      style multisig signer id disabled=false callback=closeAction
                     />}
                 </WithReviewButton>
               : <ApproveAndExecuteButton multisig signer id disabled=false />

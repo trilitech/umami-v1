@@ -25,6 +25,38 @@
 
 open ReactNative
 
+module ModalBase = {
+  @react.component
+  let make = (
+    ~closeAction,
+    ~action,
+    ~loading=?,
+    ~title,
+    ~subtitle=?,
+    ~contentText=?,
+    ~cancelText,
+    ~cancelStyle=?,
+  ) => {
+    <ModalTemplate.Dialog>
+      <Typography.Headline style=FormStyles.header> {title->React.string} </Typography.Headline>
+      {subtitle->ReactUtils.mapOpt(sub =>
+        <Typography.Headline> {sub->React.string} </Typography.Headline>
+      )}
+      {contentText->ReactUtils.mapOpt(contentText =>
+        <Typography.Body1 style=FormStyles.textContent>
+          {contentText->React.string}
+        </Typography.Body1>
+      )}
+      <View style=FormStyles.formAction>
+        {action}
+        <Buttons.Form
+          style=?cancelStyle text=cancelText onPress={_ => closeAction()} disabled=?loading
+        />
+      </View>
+    </ModalTemplate.Dialog>
+  }
+}
+
 module Modal = {
   @react.component
   let make = (
@@ -37,29 +69,8 @@ module Modal = {
     ~cancelText,
   ) => {
     let theme = ThemeContext.useTheme()
-    <ModalTemplate.Dialog>
-      <Typography.Headline style=FormStyles.header> {title->React.string} </Typography.Headline>
-      {subtitle->ReactUtils.mapOpt(sub =>
-        <Typography.Headline> {sub->React.string} </Typography.Headline>
-      )}
-      {contentText->ReactUtils.mapOpt(contentText =>
-        <Typography.Body1 style=FormStyles.textContent>
-          {contentText->React.string}
-        </Typography.Body1>
-      )}
-      <View style=FormStyles.formAction>
-        <Buttons.Form
-          style={
-            open Style
-            style(~backgroundColor=theme.colors.stateActive, ())
-          }
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
-        />
-        {action}
-      </View>
-    </ModalTemplate.Dialog>
+    let cancelStyle = Style.style(~backgroundColor=theme.colors.stateActive, ())
+    <ModalBase closeAction action ?loading title ?subtitle ?contentText cancelText cancelStyle />
   }
 }
 
