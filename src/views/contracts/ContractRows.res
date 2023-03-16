@@ -125,7 +125,7 @@ let makeTokenRowItem = (tokens, currentChain, (token, registered)) =>
 module Collapsable = {
   //FIXME: Move it somewhere else
   @react.component
-  let make = (~header, ~expanded=true, ~children) => {
+  let make = (~header, ~expanded=true, ~onExpandedChange, ~children) => {
     let (expanded, setExpanded) = React.useState(_ => expanded)
 
     let collapseButton =
@@ -136,7 +136,10 @@ module Collapsable = {
           : Icons.ChevronDown.build}
         iconSizeRatio=0.7
         size=36.
-        onPress={_ => setExpanded(expanded => !expanded)}
+        onPress={_ => {
+          onExpandedChange(!expanded)
+          setExpanded(expanded => !expanded)
+        }}
         style={styles["iconButton"]}
       />
     let header = header(collapseButton, expanded)
@@ -155,7 +158,7 @@ module Token = {
         </Typography.Headline>
       </View>
     }
-    <Collapsable header>
+    <Collapsable onExpandedChange={_ => ()} header>
       {tokens->TokensLibrary.Contracts.isEmpty
         ? emptyText->Option.mapDefault(React.null, text =>
             <Table.Empty> {text->React.string} </Table.Empty>

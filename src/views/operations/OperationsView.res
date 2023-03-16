@@ -135,9 +135,9 @@ let renderOperation = (account, config, currentLevel, operation: Operation.t) =>
   <OperationRowItem account config key operation currentLevel />
 }
 
-let renderPending = (multisig, pending: Multisig.API.PendingOperation.t) => {
+let renderPending = (expanded, multisig, pending: Multisig.API.PendingOperation.t) => {
   let key = pending.Multisig.API.PendingOperation.id->ReBigNumber.toString
-  <OperationRowItem.Pending multisig key pending />
+  <OperationRowItem.Pending expanded multisig key pending />
 }
 
 let footerStyle = width => {
@@ -200,7 +200,7 @@ module OperationsHistory = {
 
 module OperationsPending = {
   @react.component
-  let make = (~account: Alias.t, ~request) => {
+  let make = (~account: Alias.t, ~expanded, ~request) => {
     let dimensions = Dimensions.useWindowDimensions()
     let footerStyle = footerStyle(dimensions.width)
 
@@ -217,7 +217,7 @@ module OperationsPending = {
           </View>
         <Pagination
           elements={ReBigNumber.Map.valuesToArray(elements)}
-          renderItem={renderPending(multisig)}
+          renderItem={renderPending(expanded, multisig)}
           emptyComponent
           footerStyle
         />
@@ -246,6 +246,7 @@ module Multisig = {
       ~address=account.Alias.address,
     )
     let (tab, setTab) = React.useState(() => History)
+    let expanded = React.useRef(Set.String.empty) // Used to keep pending operations open upon refresh
     let headerExt = {
       <View style={styles["tabSelector"]}>
         <SegmentedButtons
@@ -258,7 +259,7 @@ module Multisig = {
     <Base headerExt account onRefresh loading={operationsRequest->ApiRequest.isLoading}>
       {switch tab {
       | History => <OperationsHistory account request=operationsRequest />
-      | Pending => <OperationsPending account request=pendingOperationsRequest />
+      | Pending => <OperationsPending expanded account request=pendingOperationsRequest />
       }}
     </Base>
   }

@@ -766,13 +766,22 @@ module Pending = {
   }
 
   @react.component
-  let make = (~multisig, ~pending: Multisig.API.PendingOperation.t) => {
+  let make = (
+    ~multisig,
+    ~expanded: React.ref<Set.String.t>,
+    ~pending: Multisig.API.PendingOperation.t,
+  ) => {
     let theme = ThemeContext.useTheme()
     let accounts = StoreContext.AccountsMultisigs.useGetAll()
     let aliases = StoreContext.Aliases.useGetAll()
     let tokens = StoreContext.Tokens.useGetAll()
-
-    let tooltipSuffix = pending.id->ReBigNumber.toString
+    let pendingid = pending.id->ReBigNumber.toString
+    let onExpandedChange = b =>
+      expanded.current = b
+        ? Set.String.add(expanded.current, pendingid)
+        : Set.String.remove(expanded.current, pendingid)
+    let currentlyExpanded = Set.String.has(expanded.current, pendingid)
+    let tooltipSuffix = pendingid
     let missing = multisig.Multisig.threshold->ReBigNumber.toInt - Array.length(pending.approvals)
     let signed = pending.approvals->Array.length->Int.toString
     let threshold = multisig.Multisig.threshold->ReBigNumber.toString
@@ -821,7 +830,7 @@ module Pending = {
           : React.null}
       </Table.Row.Bordered>
     }
-    <ContractRows.Collapsable header expanded=false>
+    <ContractRows.Collapsable header onExpandedChange expanded=currentlyExpanded>
       <View
         style={Style.array([
           styles["pendingDetails"],
