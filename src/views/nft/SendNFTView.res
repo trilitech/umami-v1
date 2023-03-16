@@ -301,7 +301,7 @@ let make = (~source: Alias.t, ~nft: Token.t, ~closeAction) => {
             sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
               setModalStep(_ => SigningStep(account, operations, dryRun))
             })
-          <SourceStepView stack=stackState callback />
+          <SourceStepView ?back stack=stackState callback />
         }}
       </ModalFormView>
     </ReactFlipToolkit.FlippedView>

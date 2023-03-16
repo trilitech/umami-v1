@@ -58,9 +58,10 @@ module Content = {
         sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
           setStep(_ => SigningStep(account, operations, dryRun->Some))
         })
+      let back = SourceStepView.back(~default=closeAction, stackState)
       <ModalFormView
         title=I18n.Title.propose_batch closing={ModalFormView.Close(_ => closeAction())}>
-        <SourceStepView stack=stackState callback />
+        <SourceStepView ?back stack=stackState callback />
       </ModalFormView>
     }
   }

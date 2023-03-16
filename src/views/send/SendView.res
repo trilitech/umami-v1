@@ -398,7 +398,7 @@ let make = (~account, ~closeAction, ~initalStep=SendStep) => {
               sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(account, operations, dryRun))
               })
-            <SourceStepView stack=stackState callback />
+            <SourceStepView ?back stack=stackState callback />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

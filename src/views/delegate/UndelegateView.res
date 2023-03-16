@@ -119,7 +119,7 @@ let make = (~closeAction, ~account, ~delegate) => {
               sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(account, operations, dryRun))
               })
-            <SourceStepView stack=stackState callback />
+            <SourceStepView ?back stack=stackState callback />
           | SigningStep(signer, operations, dryRun) =>
             let loading = operationRequest->ApiRequest.isLoading
             <SignOperationView signer signOpStep dryRun operations sendOperation loading />

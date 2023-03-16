@@ -506,7 +506,8 @@ module Pending = {
                 sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
                   setModalStep(_ => SigningStep(account, operations, dryRun))
                 })
-              <SourceStepView stack=stackState callback />
+              let back = SourceStepView.back(~default=closeAction, stackState)
+              <SourceStepView ?back stack=stackState callback />
             | SigningStep(source, operations, dryRun) =>
               <Pending_SignView signer=source dryRun operations setStep />
             | SubmittedStep(hash) =>

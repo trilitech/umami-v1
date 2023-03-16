@@ -22,7 +22,6 @@
 /* DEALINGS IN THE SOFTWARE. */
 /*  */
 /* *************************************************************************** */
-open ReactNative
 
 type state = (PublicKeyHash.t, array<Protocol.manager>, option<Alias.t>) // ((initiator, managers), source)
 type stack = list<state>
@@ -55,7 +54,9 @@ let proposal = (destination, managers) => {
 @ocaml.doc("Stack should be initialized with one the operation you want to execute,
             and it will automatically be wrapped into a proposal as many time as needed.")
 @react.component
-let make = (~stack, ~callback) => {
+let make = (~stack, ~back=() => (), ~callback) => {
+  let addToast = LogsContext.useToast()
+
   let (stack, setStack) = stack
 
   @warning("-8")
@@ -92,6 +93,9 @@ let make = (~stack, ~callback) => {
     // Key is needed in order to reset the 'selectedAccount' state in SourceSelector...
     let key = "SourceStepView" ++ (multisig.address :> string)
     <SourceSelector multisig=multisig.address source filter onSubmit key />
-  | None => <View> {I18n.Form_input_error.permissions_error->Typography.body1} </View>
+  | None =>
+    addToast(Logs.error(~origin=Logs, Errors.Generic(I18n.Form_input_error.permissions_error)))
+    back()
+    React.null
   }
 }

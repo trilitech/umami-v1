@@ -273,7 +273,7 @@ let make = (~closeAction, ~action) => {
               sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
                 setModalStep(_ => SigningStep(account, operations, dryRun))
               })
-            <SourceStepView stack=stackState callback />
+            <SourceStepView ?back stack=stackState callback />
           | SigningStep(signer, operations, dryRun) =>
             <SignOperationView signer signOpStep dryRun state operations sendOperation loading />
           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
