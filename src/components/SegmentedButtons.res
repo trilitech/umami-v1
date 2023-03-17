@@ -71,7 +71,7 @@ let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
         style={Style.arrayOption([Some(styles["element"]), borderStyle])}
         onPress={_ => setSelectedValue(_ => value)}
         isActive={selectedValue == value}>
-        {title->Typography.subtitle1}
+        {title->Typography.subtitle1(~style=Style.style(~fontWeight=#bold, ()))}
         {dot
           ? <Buttons.Dot
               style={Style.style(~position=#relative, ~top="-0.25rem"->StyleUtils.stringToSize, ())}
