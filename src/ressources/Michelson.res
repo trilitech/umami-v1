@@ -205,6 +205,7 @@ module LAMBDA_PARSER = {
         None,
       )
     })
+    ->Option.map(x => [x])
 
   let fa2_token_amount = (json, contract, encode) =>
     Js.Json.decodeObject(json)
@@ -215,31 +216,32 @@ module LAMBDA_PARSER = {
     ->Option.flatMap(x => x[0] == Some(fa2_parameter_type) ? x[1] : None)
     ->Option.flatMap(x => x->JsonEx.decode(Decode.fa2ParameterDecoder)->ResultEx.toOption)
     ->Option.flatMap(x => x[0])
-    ->Option.flatMap(((_, recipients)) => recipients[0]) //???
-    ->Option.map(((to_, (token_id, amount))) => {
-      let destination = to_->Decode.toPublicKeyHash(encode)
-      let amount =
-        amount
-        ->ReBigNumber.fromString
-        ->TokenRepr.Unit.fromBigNumber
-        ->ResultEx.toOption
-        ->Option.getWithDefault(TokenRepr.Unit.zero)
-      let token_id = token_id->Int.fromString->Option.getWithDefault(0)
-      Operation.Transaction.Token(
-        {
-          amount: Tez.zero,
-          destination: destination,
-          parameters: None,
-          entrypoint: None,
-        },
-        {
-          kind: FA2(token_id),
-          amount: amount,
-          contract: contract,
-        },
-        None,
-      )
-    })
+    ->Option.map(((_, recipients)) =>
+      recipients->Array.map(((to_, (token_id, amount))) => {
+        let destination = to_->Decode.toPublicKeyHash(encode)
+        let amount =
+          amount
+          ->ReBigNumber.fromString
+          ->TokenRepr.Unit.fromBigNumber
+          ->ResultEx.toOption
+          ->Option.getWithDefault(TokenRepr.Unit.zero)
+        let token_id = token_id->Int.fromString->Option.getWithDefault(0)
+        Operation.Transaction.Token(
+          {
+            amount: Tez.zero,
+            destination: destination,
+            parameters: None,
+            entrypoint: None,
+          },
+          {
+            kind: FA2(token_id),
+            amount: amount,
+            contract: contract,
+          },
+          None,
+        )
+      })
+    )
 
   type transferParams = Operation.Transaction.t
 
@@ -260,7 +262,7 @@ module LAMBDA_PARSER = {
     })
   }
 
-  let recipient_token_amount = (r, rk, encode, a, t, f, input): option<transferParams> => {
+  let recipient_token_amount = (r, rk, encode, a, t, f, input): option<array<transferParams>> => {
     let encode' = s => (encode(s), "")
     input[r]
     ->Option.flatMap(recipient(rk, encode'))
@@ -398,14 +400,14 @@ module LAMBDA_PARSER = {
     )
   }
 
-  let transfer = (input: array<Js.Json.t>, start): option<(transferParams, int)> =>
+  let transfers = (input: array<Js.Json.t>, start): option<(array<transferParams>, int)> =>
     switch transferImplicit(input, start) {
     | None =>
       switch transferToContract(input, start) {
       | None => call(input, start)
-      | x => x
+      | Some(params, next) => Some([params], next)
       }
-    | x => x
+    | Some(params, next) => Some([params], next)
     }
 
   let delegate = (input: array<Js.Json.t>, start): option<(option<PublicKeyHash.t>, int)> =>
@@ -427,11 +429,11 @@ module LAMBDA_PARSER = {
                     : {
                         let instr = instr == 2 ? 2 : instr + 1
                         open Operation
-                        switch transfer(input, instr)->Option.map(((transaction, next)) => (
-                          transaction->Transaction,
+                        switch transfers(input, instr)->Option.map(((transactions, next)) => (
+                          transactions->Array.map(x => x->Transaction),
                           next,
                         )) {
-                        | Some(x, next) => parse(Js.Array.concat(acc, [x]), next)
+                        | Some(x, next) => parse(Js.Array.concat(acc, x), next)
                         | None =>
                           delegate(input, instr)
                           ->Option.map(x => {

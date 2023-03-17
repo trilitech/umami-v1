@@ -105,7 +105,7 @@ module LAMBDA_PARSER: {
 
   let transferToContract: (array<Js.Json.t>, int) => option<(transferParams, int)>
 
-  let transfer: (array<Js.Json.t>, int) => option<(transferParams, int)>
+  let transfers: (array<Js.Json.t>, int) => option<(array<transferParams>, int)>
 
   let delegate: (array<Js.Json.t>, int) => option<(option<PublicKeyHash.t>, int)>
 
