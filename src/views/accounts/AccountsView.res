@@ -295,6 +295,7 @@ module AccountsTreeList = {
           )
           ->React.array}
         </View>
+        <View style=Style.style(~height=100.->Style.dp, ()) /> // Make sure last item has enough space for dropdown
       </>
     })
   }
