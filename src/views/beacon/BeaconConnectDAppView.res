@@ -187,7 +187,7 @@ module WithQR = {
 
     @react.component
     let make = (~onQRCodeData) => {
-      let videoRef = React.useRef(window["document"]["createElement"](."video"))
+      let videoRef = React.useRef(window["document"]["createElement"](. "video"))
       let canvasRef = React.useRef(Js.Nullable.null)
       let rafRef = React.useRef(Js.Nullable.null)
 
@@ -242,7 +242,7 @@ module WithQR = {
         let streamRef = ref(None)
 
         Promise.async(() =>
-          window["navigator"]["mediaDevices"]["getUserMedia"](.{
+          window["navigator"]["mediaDevices"]["getUserMedia"](. {
             "video": {
               "facingMode": "environment",
             },
@@ -306,9 +306,8 @@ module WithQR = {
     let updatePeers = StoreContext.Beacon.Peers.useResetAll()
     let (client, _) = StoreContext.Beacon.useClient()
 
-    let onQRCodeData = dataUrl => {
+    let onTZIP10 = data => {
       setWebcamScanning(_ => false)
-      let data = dataUrl->Js.String2.replace("tezos://?type=tzip10&data=", "")
 
       let pairingInfo = ReBeacon.parsePairingRequest(data)
 
@@ -336,6 +335,15 @@ module WithQR = {
       }
 
       ()
+    }
+
+    let onQRCodeData = dataUrl => {
+      let prefix = "tezos://?type=tzip10&data="
+      Js.String.startsWith(prefix, dataUrl)
+        ? dataUrl->Js.String.substr(~from=String.length(prefix))->onTZIP10
+        : "" == dataUrl
+        ? () // if empty string, prevent obvious failure and do nothing
+        : dataUrl->onTZIP10 // otherwise, give it a try
     }
 
     <ModalFormView closing=ModalFormView.Close(closeAction)>
