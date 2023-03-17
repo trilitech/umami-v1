@@ -677,33 +677,40 @@ module Aliases = {
     aliasesRequest
   }
 
-  let filterAccounts = (~aliases, ~accounts) =>
-    aliases->PublicKeyHash.Map.keep((k, _) => !(accounts->PublicKeyHash.Map.has(k)))
+  let filterAccounts = (~aliases, ~accounts, ~multisigs) =>
+    aliases->PublicKeyHash.Map.keep((k, _) =>
+      !(accounts->PublicKeyHash.Map.has(k) || multisigs->PublicKeyHash.Map.has(k))
+    )
 
   let useRequestExceptAccounts = () => {
     let store = useStoreContext()
     let (aliasesRequest, _) = store.aliasesRequestState
     let (accountsRequest, _) = store.accountsRequestState
+    let (multisigsRequest, _) = store.multisigsRequestState
 
-    switch (aliasesRequest, accountsRequest) {
-    | (ApiRequest.Done(Ok(aliases), t), Done(Ok(accounts), t')) =>
-      ApiRequest.Done(Ok(filterAccounts(~aliases, ~accounts)), min(t, t'))
+    switch (aliasesRequest, accountsRequest, multisigsRequest) {
+    | (ApiRequest.Done(Ok(aliases), t), Done(Ok(accounts), t'), Done(Ok(multisigs), t'')) =>
+      ApiRequest.Done(Ok(filterAccounts(~aliases, ~accounts, ~multisigs)), min(t, min(t', t'')))
 
-    | (Loading(Some(aliases)), Loading(Some(accounts))) =>
-      Loading(Some(filterAccounts(~aliases, ~accounts)))
+    | (
+        Loading(Some(aliases)) | Done(Ok(aliases), _),
+        Loading(Some(accounts)) | Done(Ok(accounts), _),
+        Loading(Some(multisigs)) | Done(Ok(multisigs), _),
+      ) =>
+      Loading(Some(filterAccounts(~aliases, ~accounts, ~multisigs)))
 
-    | (Loading(Some(aliases)), Done(Ok(accounts), _))
-    | (Done(Ok(aliases), _), Loading(Some(accounts))) =>
-      Loading(Some(filterAccounts(~aliases, ~accounts)))
-    | (Done(Error(e), t), _)
-    | (_, Done(Error(e), t)) =>
+    | (Done(Error(e), t), _, _)
+    | (_, Done(Error(e), t), _)
+    | (_, _, Done(Error(e), t)) =>
       Done(Error(e), t)
 
-    | (Loading(None), _)
-    | (_, Loading(None)) =>
+    | (Loading(None), _, _)
+    | (_, Loading(None), _)
+    | (_, _, Loading(None)) =>
       Loading(None)
-    | (NotAsked, _)
-    | (_, NotAsked) =>
+    | (NotAsked, _, _)
+    | (_, NotAsked, _)
+    | (_, _, NotAsked) =>
       NotAsked
     }
   }
