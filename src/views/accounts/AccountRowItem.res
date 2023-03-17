@@ -81,7 +81,7 @@ module Delegate = {
           <DelegateButton
             zeroTez
             action={delegate->Option.mapWithDefault(
-              Delegate.Create(account, false),
+              Delegate.Create(account, true),
               delegate => Delegate.Edit(account, delegate),
             )}
           />
