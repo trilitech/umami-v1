@@ -105,6 +105,7 @@ let make = () => {
               />
             )}
             <Table.Head>
+              <DelegateRowItem.CellIcon />
               <DelegateRowItem.CellAddress>
                 <Typography.Overline3>
                   {I18n.delegate_column_account->React.string}

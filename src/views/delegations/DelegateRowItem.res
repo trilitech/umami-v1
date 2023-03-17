@@ -25,6 +25,12 @@
 
 open ReactNative
 
+module CellIcon = Table.MakeCell({
+  let style = {
+    open Style
+    style(~flexBasis=34.->dp, ~minWidth=34.->dp, ~justifyContent=#center, ~margin=0.->dp, ())
+  }
+})
 module CellAddress = Table.MakeCell({
   let style = {
     open Style
@@ -103,6 +109,9 @@ let make = memo((~account: Alias.t, ~delegateRequest) => {
   | Done(Ok(Some(delegate)), _)
   | Loading(Some(Some(delegate))) =>
     <Table.Row.Bordered>
+      <CellIcon>
+        <AliasIcon kind=account.kind isHD=true />
+      </CellIcon>
       <CellAddress>
         <Typography.Body1 numberOfLines=1> {account.name->React.string} </Typography.Body1>
       </CellAddress>
