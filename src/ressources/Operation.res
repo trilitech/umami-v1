@@ -230,9 +230,9 @@ let internal_op_id = op =>
   | _ => None
   }
 
-let uniqueId = op => (op.hash, op.id, internal_op_id(op))
-let uniqueIdToString = ((hash, id, iid)) =>
-  hash ++ (id ++ iid->Option.mapWithDefault("", Int.toString))
+let uniqueId = op => (op.hash, op.id, op.internal, op->internal_op_id)
+let uniqueIdToString = ((hash, id, iid, iiid)) =>
+  hash ++ id ++ iid->Int.toString ++ iiid->Option.mapWithDefault("", Int.toString)
 
 type operation = t
 
