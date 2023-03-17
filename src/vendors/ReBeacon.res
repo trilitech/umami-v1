@@ -75,8 +75,7 @@ module WalletClient = {
 // Not included in Beacon lib
 let parsePairingRequest = (pairingRequest: string): Result.t<Beacon.peerInfo, Errors.t> => {
   switch pairingRequest->HD.BS58Check.decode->HD.toString->Beacon.parseJsonIntoPeerInfo {
-  | exception _ =>
-    Error(Error.BeaconError(Unknown(`Pairing request parsing (${pairingRequest})`)))
+  | exception _ => Error(Error.BeaconError(Unknown(`Pairing request parsing (${pairingRequest})`)))
   | peerInfo => Ok(peerInfo)
   }
 }
