@@ -231,7 +231,7 @@ module GenericCellAmount = {
         {switch transaction {
         | Operation.Transaction.Tez(transaction) =>
           I18n.tez_op_amount(sign, transaction.amount->Tez.toString)->React.string
-        | Token(_, {amount, kind, contract}) =>
+        | Token(_, {amount, kind, contract}, _) =>
           let address = contract
           let token: option<(Token.t, bool)> = TokensLibrary.WithRegistration.getFullToken(
             tokens,
@@ -329,7 +329,7 @@ module TransactionRow = {
   let make = (~account: Alias.t, ~aliases, ~tokens, ~fee, ~source, ~transaction, ~uniqueId) => {
     switch transaction {
     | Operation.Transaction.Tez(common)
-    | Operation.Transaction.Token(common, _) =>
+    | Operation.Transaction.Token(common, _, _) =>
       let (label, amount) = switch contractCall(common) {
       | Some(txt) => (txt, <CellAmount />)
       | None => (

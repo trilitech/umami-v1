@@ -46,6 +46,7 @@ describe("Multisig", () => {
               amount: ReBigNumber.fromInt(300000)->Obj.magic,
               contract: fa2Contract,
             },
+            None,
           ),
         ),
       ]->Some
