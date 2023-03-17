@@ -57,9 +57,9 @@ let useLoad = requestState => {
 
 /* Set */
 
-let useUpdate = {
-  let logOk = _ => I18n.multisig_originated
+let useUpdate = creation => {
   let kind = Logs.Multisig
+  let logOk = _ => creation ? I18n.multisig_originated : I18n.multisig_updated
 
   let set = (~config, multisig) => {
     Base.get(~config)->Promise.mapOk(cache =>

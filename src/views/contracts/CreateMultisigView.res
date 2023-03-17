@@ -562,7 +562,7 @@ let make = (~closeAction) => {
   let state = React.useState(() => None)
   let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
-  let (multisigRequest, updateMultisig) = StoreContext.Multisig.useUpdate()
+  let (multisigRequest, updateMultisig) = StoreContext.Multisig.useUpdate(true)
   let config = ConfigContext.useContent()
 
   let back = switch modalStep {

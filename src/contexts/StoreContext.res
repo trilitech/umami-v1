@@ -769,14 +769,15 @@ module Multisig = {
     () => setMultisigRequest(ApiRequest.expireCache)
   }
 
-  let useUpdate = () => {
+  @ocaml.doc(" Use [useUpdate(true)] for creation, [useUpdate(false)] for edition. ")
+  let useUpdate = mode => {
     let resetMultisigs = useResetAll()
     let resetAliases = Aliases.useResetAll()
     let sideEffect = () => {
       resetMultisigs()
       resetAliases()
     }
-    MultisigApiRequest.useUpdate(~sideEffect, ())
+    MultisigApiRequest.useUpdate(mode)(~sideEffect, ())
   }
 
   let useDelete = () => {
