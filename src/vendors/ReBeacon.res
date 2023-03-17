@@ -26,6 +26,26 @@
 module Error = {
   type Errors.t += BeaconError(Beacon.Error.beaconErrors)
 
+  let () = Errors.registerHandler("BeaconError", x =>
+    switch x {
+    | BeaconError(e) =>
+      open Beacon.Error
+      `Beacon error: ${switch e {
+        | NoMatchingRequest => noMatchingRequest
+        | EncodedPayloadNeedString => encodedPayloadNeedString
+        | MessageNotHandled => messageNotHandled
+        | CouldNotDecryptMessage => couldNotDecryptMessage
+        | AppMetadataNotFound => appMetadataNotFound
+        | ShouldNotWork => shouldNotWork
+        | ContainerNotFound => containerNotFound
+        | PlatformUnknown => platformUnknown
+        | PairingRequestParsing => "Pairing request parsing"
+        | Unknown(s) => s
+        }}`->Some
+    | _ => None
+    }
+  )
+
   let fromPromiseParsed = p =>
     p->RawJsError.fromPromiseParsed(e => BeaconError(Beacon.Error.parse(e.message)))
 }
@@ -53,12 +73,10 @@ module WalletClient = {
 }
 
 // Not included in Beacon lib
-let parsePairingRequest = (pairingRequest: string): Result.t<Beacon.peerInfo, Errors.t> =>
+let parsePairingRequest = (pairingRequest: string): Result.t<Beacon.peerInfo, Errors.t> => {
   switch pairingRequest->HD.BS58Check.decode->HD.toString->Beacon.parseJsonIntoPeerInfo {
-  | exception Js.Exn.Error(obj) =>
-    switch Js.Exn.message(obj) {
-    | Some(_) => Error(Error.BeaconError(PairingRequestParsing))
-    | None => Error(Error.BeaconError(PairingRequestParsing))
-    }
+  | exception _ =>
+    Error(Error.BeaconError(Unknown(`Pairing request parsing (${pairingRequest})`)))
   | peerInfo => Ok(peerInfo)
   }
+}
