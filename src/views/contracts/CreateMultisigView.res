@@ -461,7 +461,7 @@ type step =
       array<Protocol.manager>,
       Protocol.Simulation.results,
     )
-  | SubmittedStep(string)
+  | SubmittedStep(PublicKeyHash.t, string) // (originator, operation hash)
 
 let stepToString = step =>
   switch step {
@@ -533,6 +533,7 @@ let getAddress = (result: ReTaquito.Toolkit.Operation.result) => {
 
 @react.component
 let make = (~closeAction) => {
+  let setDefaultAccount = StoreContext.SelectedAccount.useSet()
   let init = StoreContext.SelectedAccount.useGetImplicit()->Option.getExn
   let (account, setAccount) = React.useState(_ => init)
   let (currentStep, setCurrentStep) = React.useState(_ => 1)
@@ -605,12 +606,12 @@ let make = (~closeAction) => {
     })
   }
 
-  let handleOperationAndSigningIntent = (~operation, signingIntent) => {
+  let handleOperationAndSigningIntent = (account, ~operation, signingIntent) => {
     sendOperation({
       operation: operation,
       signingIntent: signingIntent,
     })->Promise.tapOk((result: ReTaquito.Toolkit.Operation.result) => {
-      setModalStep(_ => SubmittedStep(result.hash))
+      setModalStep(_ => SubmittedStep(account, result.hash))
       result
       ->getAddress
       ->Promise.mapOk(address =>
@@ -640,11 +641,16 @@ let make = (~closeAction) => {
         operations
         name={_ => Some(form.values.name)}
         loading={operationRequest->ApiRequest.isLoading || multisigRequest->ApiRequest.isLoading}
-        onOperationAndSigningIntent=handleOperationAndSigningIntent
+        onOperationAndSigningIntent=handleOperationAndSigningIntent(account.address)
       />
 
-    | SubmittedStep(hash) =>
-      <SubmittedView hash onPressCancel={_ => closeAction()} submitText=I18n.Btn.go_operations />
+    | SubmittedStep(originator, hash) =>
+      let onPressCancel = _ => {
+        closeAction()
+        setDefaultAccount(originator) //
+        Routes.push(Operations)
+      }
+      <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
     }}
   </ModalFormView>
 }
