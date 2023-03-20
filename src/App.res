@@ -75,7 +75,7 @@ module BuyTezView = {
         src: src,
         width: "100%",
         height: "100%",
-        allow: "camera *; microphone *",
+        allow: "camera *",
         frameBorder: "0",
       })
   }
@@ -93,7 +93,7 @@ module BuyTezView = {
           {I18n.Expl.external_service->React.string}
         </Typography.Body1>}
         right={<CloseButton onClose />}>
-        ReasonReact.null
+        React.null
       </Page.Header>
       <IFrame src />
     </Page>
@@ -161,7 +161,7 @@ let shouldDisplayNavbar = (
 module AppView = {
   @react.component
   let make = () => {
-    let url = ReasonReactRouter.useUrl()
+    let url = RescriptReactRouter.useUrl()
     let route = Routes.match_(url)
 
     let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()

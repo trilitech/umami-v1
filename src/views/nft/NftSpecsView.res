@@ -70,46 +70,52 @@ let buildFields = (t: TokenRepr.t) => {
   }
 
   let l = \"@:"(
-    (I18n.Label.nft_spec_name, Mono(String(t.alias))),
+    (I18n.Label.nft_spec_name, Mono(String(t.alias)), false),
     \"@:"(
-      (I18n.Label.nft_spec_symbol, Mono(String(t.symbol))),
+      (I18n.Label.nft_spec_symbol, Mono(String(t.symbol)), false),
       \"@:"(
-        (I18n.Label.nft_spec_contract_address, Mono(String((t.address :> string)))),
+        (I18n.Label.nft_spec_contract_address, Mono(String((t.address :> string))), true),
         \"@:"(
-          (I18n.Label.nft_spec_token_id, Mono(String(tokenId))),
+          (I18n.Label.nft_spec_token_id, Mono(String(tokenId)), false),
           \"@:"(
-            (I18n.Label.nft_spec_decimals, Mono(String(t.decimals->Int.toString))),
+            (I18n.Label.nft_spec_decimals, Mono(String(t.decimals->Int.toString)), false),
             \"@:"(
               (
                 I18n.Label.nft_spec_boolean_amount,
                 Mono(String(t.asset.isBooleanAmount->Js.String.make)),
+                false
               ),
               \"@?"(
-                creators->Option.map(c => (I18n.Label.nft_spec_creators, c)),
+                creators->Option.map(c => (I18n.Label.nft_spec_creators, c, false)),
                 \"@?"(
                   t.asset.thumbnailUri->Option.map(uri => (
                     I18n.Label.nft_spec_thumbnail_uri,
                     Mono(Uri(uri)),
+                    false
                   )),
                   \"@?"(
                     t.asset.artifactUri->Option.map(uri => (
                       I18n.Label.nft_spec_artifact_uri,
                       Mono(Uri(uri)),
+                      false
                     )),
                     \"@?"(
                       t.asset.displayUri->Option.map(uri => (
                         I18n.Label.nft_spec_display_uri,
                         Mono(Uri(uri)),
+                        false
                       )),
                       \"@?"(
                         formats->Option.map(fmt => (
                           I18n.Label.nft_spec_formats,
                           Multi(fmt->List.toArray),
+                          false
                         )),
                         \"@?"(
                           t.asset.description->Option.map(d => (
                             I18n.Label.nft_spec_description,
                             Mono(String(d)),
+                            false
                           )),
                           list{},
                         ),
@@ -147,13 +153,23 @@ let showVal = x =>
 
 module Field = {
   @react.component
-  let make = (~style=?, ~field as (field, v)) =>
+  let make = (~style=?, ~field as (field, v, copyable)) =>
     <View ?style>
       <Typography.Overline2> {field->React.string} </Typography.Overline2>
       {switch v {
       | Mono(Uri(s)) => showUri(s)
-      | Mono(String(s)) =>
-        <Typography.Body1 style={styles["subField"]}> {s->React.string} </Typography.Body1>
+      | Mono(String(s)) => {
+        let addToast = LogsContext.useToast()
+        <View style={ open Style; style(~flexDirection=#row, ()) }>
+          <Typography.Body1 style={styles["subField"]}>
+            {s->React.string}
+          </Typography.Body1>
+          { copyable
+          ? <ClipboardButton  style={ open Style; style(~marginLeft=16.->dp, ()) } copied=field addToast data=s />
+          : React.null
+          }
+         </View>
+      }
       | Multi(fields) =>
         fields
         ->Array.map(((field, v)) =>

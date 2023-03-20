@@ -46,23 +46,53 @@ let () = Errors.registerHandler("BeaconAPI", x =>
   }
 )
 
-open ReBeacon.Message.Request
+@ocaml.doc(" Cast Beacon.MichelineMichelsonV1Expression.t into ReTaquitoTypes.MichelsonV1Expression.t ")
+// This is okay, because:
+//
+// Beacon:
+// export type MichelineMichelsonV1Expression =
+//   | { int: string }
+//   | { string: string } // eslint-disable-line id-blacklist
+//   | { bytes: string }
+//   | MichelineMichelsonV1Expression[]
+//   | {
+//       prim: MichelsonPrimitives
+//       args?: MichelineMichelsonV1Expression[]
+//       annots?: string[]
+//     }
+//
+// Taquito
+// export interface MichelsonV1ExpressionBase {
+//   int?: string;
+//   string?: string;
+//   bytes?: string;
+// }
+// export interface MichelsonV1ExpressionExtended {
+//   prim: string;
+//   args?: MichelsonV1Expression[];
+//   annots?: string[];
+// }
+// export type MichelsonV1Expression = MichelsonV1ExpressionBase | MichelsonV1ExpressionExtended | MichelsonV1Expression[];
+external beaconToTaquito: (Beacon.MichelineMichelsonV1Expression.t) => ReTaquitoTypes.MichelsonV1Expression.t = "%identity";
+
+open Beacon.Message.Request
 let requestToBatch = (account, {operationDetails}) => {
   let managers = operationDetails->Array.map(o =>
-    switch ReBeacon.Message.Request.PartialOperation.classify(o) {
+    switch Beacon.Message.Request.PartialOperation.classify(o) {
     | Origination(orig) =>
       ProtocolHelper.Origination.make(
         ~balance=Tez.fromMutezString(orig.balance),
         ~code=orig.script.code,
         ~storage=orig.script.storage,
-        ~delegate=orig.delegate,
+        ~delegate=orig.delegate->PublicKeyHash.unsafeBuild->Some,
         (),
       )->Ok
 
     | Transfer({destination, amount, parameters}) =>
-      ProtocolHelper.Transfer.makeSimple(
-        ~data={destination: destination, amount: Tez(Tez.fromMutezString(amount))},
-        ~parameter=?parameters->Option.map(a => a.value),
+      ProtocolHelper.Transfer.makeSimpleTez(
+        ~destination=destination->PublicKeyHash.unsafeBuild,
+        ~amount=Tez.fromMutezString(amount),
+        ~parameter=?parameters->Option.map(a => a.value)->Option.map(beaconToTaquito),
         ~entrypoint=?parameters->Option.map(a => a.entrypoint),
         (),
       )
@@ -71,7 +101,7 @@ let requestToBatch = (account, {operationDetails}) => {
 
     | Delegation({delegate}) =>
       let delegate = switch delegate {
-      | Some(d) => Protocol.Delegation.Delegate(d)
+      | Some(d) => Protocol.Delegation.Delegate(d->PublicKeyHash.unsafeBuild)
       | None => Undelegate(None)
       }
 
@@ -105,7 +135,7 @@ let useNextRequestState = (client, peersRequestState) => {
     ->Promise.flatMapOk(client =>
       client
       ->ReBeacon.WalletClient.connect(message => {
-        let request = message->ReBeacon.Message.Request.classify
+        let request = message->Beacon.Message.Request.classify
         yield(request)
       })
       ->Promise.mapOk(() => setIsConnected(_ => true))
@@ -152,7 +182,7 @@ module Peers = {
 
   let useDelete = (~client) =>
     ApiRequest.useSetter(
-      ~set=(~config as _, peer: ReBeacon.peerInfo) =>
+      ~set=(~config as _, peer: Beacon.peerInfo) =>
         client
         ->Promise.fromOption(~error=ClientNotConnected)
         ->Promise.flatMapOk(client => client->ReBeacon.WalletClient.removePeer(peer)),
@@ -183,7 +213,7 @@ module Permissions = {
 
   let useDelete = (~client) =>
     ApiRequest.useSetter(
-      ~set=(~config as _s, accountIdentifier: ReBeacon.accountIdentifier) =>
+      ~set=(~config as _s, accountIdentifier: Beacon.accountIdentifier) =>
         client
         ->Promise.fromOption(~error=ClientNotConnected)
         ->Promise.flatMapOk(client =>

@@ -74,21 +74,22 @@ macos-dist:
   variables:
     NODE_PKG: node@16
   before_script:
+    - brew --version || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     - brew list "${NODE_PKG}" &>/dev/null || brew install "${NODE_PKG}"
     - node -v || export PATH="/opt/homebrew/opt/${NODE_PKG}/bin:$PATH" && node -v
     - npm -v
     # `brew install --force` and `brew link --overwrite` in order to avoid cache issue between two builds
-    - brew install --force cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
-    - brew link --overwrite cairo corepack expat giflib jpeg libpng librsvg pango pixman pkg-config zlib
+    - brew install --force cairo corepack expat giflib jpeg libffi libpng librsvg pango pixman pkg-config zlib
+    - brew link --overwrite cairo corepack expat giflib jpeg libffi libpng librsvg pango pixman pkg-config zlib
     - export LDFLAGS="-L/opt/homebrew/opt/zlib/lib -L/opt/homebrew/opt/expat/lib"
     - export CPPFLAGS="-I/opt/homebrew/opt/zlib/include -I/opt/homebrew/opt/expat/include"
-    - export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/expat/lib/pkgconfig"
+    - export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/expat/lib/pkgconfig:/opt/homebrew/opt/libffi/lib/pkgconfig/"
     - corepack enable
     - npm install -g node-gyp@8.4.1 # 9.0.0 gives an error (search for `openssl_fips != ""` error)
     - npm install -g node-hid
   script:
     - '[ ! -z "$CI_COMMIT_TAG" ] || (sed -i "" "s/\"version\": \"\([[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+\)\"/\"version\": \"\1-${CI_PIPELINE_IID}\"/" package.json)'
-    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (base64 --decode "${SECRET_UMAMI_Developer_ID_Application_p12}" > "${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
+    - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (base64 --decode -i "${SECRET_UMAMI_Developer_ID_Application_p12}" -o "${SECRET_UMAMI_Developer_ID_Application_p12}.p12")'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_LINK="${SECRET_UMAMI_Developer_ID_Application_p12}.p12"'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js)'

@@ -47,6 +47,7 @@ let make = (~closeAction) => {
   let updatePeers = StoreContext.Beacon.Peers.useResetAll()
 
   let (client, _) = StoreContext.Beacon.useClient()
+  let (loading, setLoading) = React.useState(() => false)
 
   let form = Form.use(
     ~schema={
@@ -54,25 +55,27 @@ let make = (~closeAction) => {
       Schema(nonEmpty(PairingRequest))
     },
     ~onSubmit=({state, raiseSubmitFailed}) => {
-      let pairingInfo = ReBeacon.parsePairingRequest(state.values.pairingRequest)
-
-      switch pairingInfo {
+      setLoading(_ => true)
+      switch ReBeacon.parsePairingRequest(state.values.pairingRequest) {
       | Ok(pairingInfo) =>
         client
         ->Promise.fromOption(~error=Errors.Generic(I18n.Errors.beacon_client_not_created))
         ->Promise.flatMapOk(client => client->ReBeacon.WalletClient.addPeer(pairingInfo))
         ->Promise.get(x =>
           switch x {
-          | Error(e) => raiseSubmitFailed(Some(e->Errors.toString))
+          | Error(e) =>
+            setLoading(_ => false)
+            raiseSubmitFailed(Some(e->Errors.toString))
           | Ok(_) =>
             updatePeers()
+            setLoading(_ => false)
             closeAction()
           }
         )
-
-      | Error(error) => raiseSubmitFailed(Some(error->Errors.toString))
+      | Error(error) =>
+        setLoading(_ => false)
+        raiseSubmitFailed(Some(error->Errors.toString))
       }
-
       None
     },
     ~initialState={pairingRequest: ""},
@@ -98,7 +101,7 @@ let make = (~closeAction) => {
       <FormGroupTextInput
         label=I18n.Label.beacon_dapp_pairing
         value=form.values.pairingRequest
-        placeholder=j`e.g. BSdNU2tFbvtHvFpWR7rjrHyna1VQkAFnz4CmDTqkohdCx4FS51WUpc5Z9YoNJqbtZpoDNJfencTaDp23fWQqcyL54F75puvwCfmC1RCn11RLyFHrCYKo7uJ7a9KR8txqb1712J78ZXpLEvjbALAacLPrrvcJxta6XpU8Cd6F8NUHqBGd2Y4oWD9iQnyXB7umC72djzJFJVEgN5Z37DdiXPscqCMs7mX6qpuhq8thyKCDVhkvT9sr9t5EU7LYMxUHJgDdBS8K2GfTf76NTrHNV9AqjWcbbGM4EpPtGjsB8g6DjoH3xTdAtb9GE1PB2pFvucUMWrdT`
+        placeholder=`e.g. BSdNU2tFbvtHvFpWR7rjrHyna1VQkAFnz4CmDTqkohdCx4FS51WUpc5Z9YoNJqbtZpoDNJfencTaDp23fWQqcyL54F75puvwCfmC1RCn11RLyFHrCYKo7uJ7a9KR8txqb1712J78ZXpLEvjbALAacLPrrvcJxta6XpU8Cd6F8NUHqBGd2Y4oWD9iQnyXB7umC72djzJFJVEgN5Z37DdiXPscqCMs7mX6qpuhq8thyKCDVhkvT9sr9t5EU7LYMxUHJgDdBS8K2GfTf76NTrHNV9AqjWcbbGM4EpPtGjsB8g6DjoH3xTdAtb9GE1PB2pFvucUMWrdT`
         handleChange={form.handleChange(PairingRequest)}
         error={list{
           form.formState->FormUtils.getFormStateError,
@@ -113,6 +116,7 @@ let make = (~closeAction) => {
           text=I18n.Btn.beacon_connect_dapp
           onPress={_ => form.submit()}
           disabledLook={!formFieldsAreValids}
+          loading
         />
       </View>
     </View>
@@ -187,7 +191,7 @@ module WithQR = {
 
     @react.component
     let make = (~onQRCodeData) => {
-      let videoRef = React.useRef(window["document"]["createElement"](."video"))
+      let videoRef = React.useRef(window["document"]["createElement"](. "video"))
       let canvasRef = React.useRef(Js.Nullable.null)
       let rafRef = React.useRef(Js.Nullable.null)
 
@@ -242,7 +246,7 @@ module WithQR = {
         let streamRef = ref(None)
 
         Promise.async(() =>
-          window["navigator"]["mediaDevices"]["getUserMedia"](.{
+          window["navigator"]["mediaDevices"]["getUserMedia"](. {
             "video": {
               "facingMode": "environment",
             },
@@ -306,9 +310,8 @@ module WithQR = {
     let updatePeers = StoreContext.Beacon.Peers.useResetAll()
     let (client, _) = StoreContext.Beacon.useClient()
 
-    let onQRCodeData = dataUrl => {
+    let onTZIP10 = data => {
       setWebcamScanning(_ => false)
-      let data = dataUrl->Js.String2.replace("tezos://?type=tzip10&data=", "")
 
       let pairingInfo = ReBeacon.parsePairingRequest(data)
 
@@ -336,6 +339,15 @@ module WithQR = {
       }
 
       ()
+    }
+
+    let onQRCodeData = dataUrl => {
+      let prefix = "tezos://?type=tzip10&data="
+      Js.String.startsWith(prefix, dataUrl)
+        ? dataUrl->Js.String.substr(~from=String.length(prefix))->onTZIP10
+        : "" == dataUrl
+        ? () // if empty string, prevent obvious failure and do nothing
+        : dataUrl->onTZIP10 // otherwise, give it a try
     }
 
     <ModalFormView closing=ModalFormView.Close(closeAction)>

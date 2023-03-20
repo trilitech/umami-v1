@@ -23,14 +23,17 @@
 /*  */
 /* *************************************************************************** */
 
-include ReTaquitoTypes.Micheline
-
 type parser
 
 @module("@taquito/michel-codec") @new
 external parser: unit => parser = "Parser"
 
 @send
-external parseMichelineExpression: (parser, string) => t = "parseMichelineExpression"
+external parseMichelineExpression: (
+  parser,
+  string,
+) => option<ReTaquitoTypes.MichelsonV1Expression.t> = "parseMichelineExpression"
 
-@send external parseScript: (parser, string) => t = "parseScript"
+@send
+external parseScript: (parser, string) => option<ReTaquitoTypes.MichelsonV1Expression.t> =
+  "parseScript"

@@ -82,7 +82,7 @@ let make = (
   ~tagTextColor=?,
   ~tagBorderColor=?,
 ) =>
-  <Pressable_
+  <Pressable
     style={_ => Style.arrayOption([Some(styles["pressable"]), styleFromProp])}
     onPress={_ => setValue(_ => value)}
     disabled
@@ -117,4 +117,4 @@ let make = (
         <Typography.Body1> {label->React.string} </Typography.Body1>
       </>
     }}
-  </Pressable_>
+  </Pressable>

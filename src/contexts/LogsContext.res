@@ -64,7 +64,7 @@ let make = (~children) => {
     (s, seen => set(_ => seen))
   }
 
-  let url = ReasonReactRouter.useUrl()
+  let url = RescriptReactRouter.useUrl()
   let route = Routes.match_(url)
 
   let (toastState, setToastState) = React.useState(() => None)

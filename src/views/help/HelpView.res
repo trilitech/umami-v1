@@ -67,7 +67,7 @@ module HelpLink = {
   let make = (~icon: Icons.builder, ~text, ~link) => {
     let theme = ThemeContext.useTheme()
 
-    <Pressable_ onPress={onPress(link)}>
+    <Pressable onPress={onPress(link)}>
       {({hovered: _, pressed: _, focused: _}) =>
         <View
           style={
@@ -92,7 +92,7 @@ module HelpLink = {
             {text->React.string}
           </Text>
         </View>}
-    </Pressable_>
+    </Pressable>
   }
 }
 

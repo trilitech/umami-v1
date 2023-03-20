@@ -75,7 +75,7 @@ module FormTokenId = {
         disabled=true
         style={
           open Style
-          style(~borderRadius=0., ~marginLeft="4px", ~marginTop="5px", ())
+          style(~borderRadius=0., ~marginLeft=4.->dp, ~marginTop=5.->dp, ())
         }
       />
 

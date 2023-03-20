@@ -1,29 +1,30 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2021 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 open ReactNative
+open Style
 open Routes
 
 let width = 110.
@@ -74,13 +75,13 @@ module NavBarItem = {
     let dot =
       <View
         style={style(
-          ~width="0.5rem",
-          ~height="0.5rem",
+          ~width="0.5rem"->StyleUtils.stringToSize,
+          ~height="0.5rem"->StyleUtils.stringToSize,
           ~backgroundColor=theme.colors.primaryButtonBackground,
           ~borderRadius=100.,
           ~position=#absolute,
-          ~right="0px",
-          ~top="0.6rem",
+          ~right=0.->dp,
+          ~top="0.6rem"->StyleUtils.stringToSize,
           (),
         )}
       />
@@ -125,12 +126,7 @@ module NavBarItemRoute = {
 
 module NavBarSmallItem = {
   @react.component
-  let make = (
-    ~onPress,
-    ~icon: Icons.builder,
-    ~isActive=false,
-    ~colorStyle=?,
-  ) => {
+  let make = (~onPress, ~icon: Icons.builder, ~isActive=false, ~colorStyle=?) => {
     let theme = ThemeContext.useTheme()
 
     let iconColor =
@@ -146,8 +142,18 @@ module NavBarSmallItem = {
         onPress(a)
       }
     /* border-radius: (17 + 8 * 2) / 2 = 16.5 */
-    <ThemedPressable accessibilityRole=#link onPress=handlePress style=ReactNative.Style.style(~padding="8px", ~overflow=#hidden, ~borderRadius=16.5, ~marginBottom="9px", ()) isActive>
-      <View>{icon(~size=17., ~color=iconColor, ~style=ReactNative.Style.style())}</View>
+    <ThemedPressable
+      accessibilityRole=#link
+      onPress=handlePress
+      style={ReactNative.Style.style(
+        ~padding=8.->dp,
+        ~overflow=#hidden,
+        ~borderRadius=16.5,
+        ~marginBottom=9.->dp,
+        (),
+      )}
+      isActive>
+      <View> {icon(~size=17., ~color=iconColor, ~style=ReactNative.Style.style())} </View>
     </ThemedPressable>
   }
 }
@@ -172,7 +178,7 @@ module LogsButton = {
 
     let onPress = event => {
       event->ReactNative.Event.PressEvent.preventDefault
-      ReasonReactRouter.push(href)
+      RescriptReactRouter.push(href)
       true->setSeen
     }
 
@@ -231,7 +237,9 @@ let make = (~account, ~route as currentRoute) => {
         {
           open Style
           unsafeStyle({"overflow": "auto"})
-        } /* No `auto value allowed for overflow prop */,
+        },
+
+        /* No `auto value allowed for overflow prop */
       ])
     }>
     <View style={styles["sendButton"]}> <SendButton account /> </View>

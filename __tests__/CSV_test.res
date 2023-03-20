@@ -693,6 +693,7 @@ describe("CSV.Batch.v2", ({test}) => {
     let micheline =
       "(Pair 2 3)"
       ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline
+      ->Result.map(Option.getExn)
       ->Result.getExn
     let amount = "2"->ReBigNumber.fromString
     let expected = Ok(list{#Right(kt, entrypoint, micheline, Some(amount))})
@@ -716,6 +717,7 @@ describe("CSV.Batch.v2", ({test}) => {
     let micheline =
       "(Pair 2 3)"
       ->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline
+      ->Result.map(Option.getExn)
       ->Result.getExn
     let expected = Ok(list{
       #Left((pkh, tez), #Right()),

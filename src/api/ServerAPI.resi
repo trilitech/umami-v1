@@ -87,23 +87,6 @@ module URL: {
 
   module External: {
     let bakingBadBakers: t
-    // The API might not be available on custom network, or old networks
-    let betterCallDevAccountTokens: (
-      ~network: Network.t,
-      ~account: PublicKeyHash.t,
-      ~contract: PublicKeyHash.t=?,
-      ~limit: int=?,
-      ~index: int=?,
-      ~hideEmpty: bool=?,
-      ~sortBy: [#Balance | #TokenId]=?,
-      unit,
-    ) => Promise.result<t>
-
-    // The request does not return the metadata for now
-    let betterCallDevBatchAccounts: (
-      ~network: Network.t,
-      ~accounts: array<PublicKeyHash.t>,
-    ) => Promise.result<t>
 
     let tzktAccountTokens: (
       ~network: Network.t,

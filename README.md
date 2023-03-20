@@ -103,16 +103,10 @@ Start catalog:
 yarn catalog:start
 ```
 
+---
+
+<br />
+
+Need further assistance? [Ask for help.](https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/FAQ/Ask-for-help) 
+
 <br>
-
-# ℹ️ Get Further Assistance
-
-- 📧 [Send an e-mail to Umami support](mailto:umami-support@nomadic-labs.com)
-- 📂 [Open a support issue on Gitlab](https://gitlab.com/nomadic-labs/umami-wallet/testruns/-/issues/new?issuable_template=support)
-- 💬 [Ask your question on Umami Slack channel](https://tezos-dev.slack.com)
-
-
-# Follow us
-
-- On [Twitter](https://twitter.com/UmamiWallet)
-- On [Medium](https://medium.com/umamiwallet)

@@ -74,7 +74,7 @@ module FormBase = {
         {loading
           ? <ActivityIndicator
               animating=true
-              size={18.->Style.dp}
+              size={18.->ActivityIndicator.Size.exact}
               color={isPrimary
                 ? theme.colors.primaryIconMediumEmphasis
                 : theme.colors.iconMediumEmphasis}

@@ -130,7 +130,7 @@ let make = (
   }
 
   <View ?style>
-    <Pressable_ ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
+    <Pressable ref={pressableRef->Ref.value} onPress={_ => togglePopover()} disabled>
       {({focused}) => {
         let focused = focused->Option.getWithDefault(false)
         let borderColor = borderStyles(~focused)
@@ -175,7 +175,7 @@ let make = (
               </Animated.View>}
         </View>
       }}
-    </Pressable_>
+    </Pressable>
     <DropdownMenu
       keyPopover
       style={Style.arrayOption([Some(styles["dropdownmenu"]), dropdownStyle])}

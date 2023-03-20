@@ -37,13 +37,13 @@ let addr: CSVParser.Encodings.element<PublicKeyHash.t>
 /* Contract hash encoding */
 let contract: CSVParser.Encodings.element<PublicKeyHash.t>
 /* Micheline encoding */
-let michelson: CSVParser.Encodings.element<ReTaquitoTypes.Micheline.t>
+let michelson: CSVParser.Encodings.element<ReTaquitoTypes.MichelsonV1Expression.t>
 
 type token = (PublicKeyHash.t, option<Umami.ReBigNumber.t>)
 
 type transfer = ((PublicKeyHash.t, ReBigNumber.t), CSVParser.Encodings.or_<token, unit>)
 
-type contractCall = (PublicKeyHash.t, string, ReTaquitoParser.t, option<ReBigNumber.t>)
+type contractCall = (PublicKeyHash.t, string, ReTaquitoTypes.MichelsonV1Expression.t, option<ReBigNumber.t>)
 
 /* CSV row encoding */
 let rowEncoding: Promise.result<

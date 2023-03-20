@@ -23,7 +23,7 @@
 /*  */
 /* *************************************************************************** */
 
-open ProtocolOptions
+module Options = ProtocolOptions
 open Protocol
 
 module Delegation = {
@@ -46,10 +46,7 @@ module Transfer = {
     (),
   ) => {
     data: Simple(data),
-    parameter: {
-      value: parameter,
-      entrypoint: entrypoint,
-    },
+    parameter: Options.makeParameter(~value=?parameter, ~entrypoint?, ()),
     options: Options.make(~fee?, ~gasLimit?, ~storageLimit?, ()),
   }
 
@@ -96,7 +93,7 @@ module Transfer = {
   let isNonNativeContractCall = (recipient, amount) =>
     recipient->PublicKeyHash.isContract && !(amount->ProtocolAmount.isToken)
 
-  let hasParams = p => p.value != None || p.entrypoint != None
+  let hasParams = p => p.Options.value != None || p.entrypoint != None
 }
 
 module Origination = {

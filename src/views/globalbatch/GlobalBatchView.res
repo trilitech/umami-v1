@@ -34,7 +34,7 @@ let styles = {
   StyleSheet.create({
     "container": style(~display=#flex, ~flexDirection=#row, ()),
     "leftCol": style(~flex=4., ()),
-    "rightCol": style(~flex=1., ~marginLeft="12px", ()),
+    "rightCol": style(~flex=1., ~marginLeft=12.->dp, ()),
   })
 }
 
@@ -68,7 +68,7 @@ module TransactionCounter = {
     <Typography.Overline2
       style={
         open Style
-        style(~marginTop="4px", ~marginBottom="4px", ~position=#absolute, ~left="0px", ())
+        style(~marginTop=4.->dp, ~marginBottom=4.->dp, ~position=#absolute, ~left=0.->dp, ())
       }>
       {React.string(transactionsDisplay(count))}
     </Typography.Overline2>

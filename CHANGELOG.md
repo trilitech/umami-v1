@@ -2,6 +2,16 @@
 
 ## Unreleased changes
 
+## Beta (0.8.7)
+
+- Add native Mumbainet support
+- Drop native Kathmandunet support
+- Small UI fixes/improvements for NFT tab
+- Fix a problem with NFT cache
+- Fix camera permission issue on macos/linux
+- Small UI fixes/improvements for dApp pairing
+- API upgrade for potential future mezos breaking (optional fees)
+
 ## Beta (0.8.6)
 
 - Use ImageProxy for all NFTs

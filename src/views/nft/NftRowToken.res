@@ -50,7 +50,12 @@ let styles = {
     "marginLeft10": style(~marginLeft=10.->dp, ()),
     "marginAuto": style(~margin=auto, ()),
     "marginLeftAuto": style(~marginLeft=auto, ()),
-    "image": style(~marginLeft=10.->dp, ~width="1.8vw", ~height="1.8vw", ()),
+    "image": style(
+      ~marginLeft=10.->dp,
+      ~width="1.8vw"->StyleUtils.stringToSize,
+      ~height="1.8vw"->StyleUtils.stringToSize,
+      (),
+    ),
   })
 }
 

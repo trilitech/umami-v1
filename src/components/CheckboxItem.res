@@ -63,7 +63,7 @@ let make = (
   ~style as styleFromProp: option<Style.t>=?,
   ~labelStyle=?,
 ) =>
-  <Pressable_
+  <Pressable
     style={_ => Style.arrayOption([Some(styles["pressable"]), styleFromProp])}
     onPress={_ => handleChange(!value)}
     disabled
@@ -89,4 +89,4 @@ let make = (
         )}
       </>
     }}
-  </Pressable_>
+  </Pressable>

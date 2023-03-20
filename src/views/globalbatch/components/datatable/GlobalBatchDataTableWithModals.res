@@ -66,7 +66,7 @@ module Details = {
       <CodeView
         style={detailsStyles["container"]}
         text={
-          let p = p.value->ProtocolOptions.TransactionParameters.getParameter
+          let p = p.value->ProtocolOptions.TransactionParameters.getValue
           p->MichelineMichelsonV1Expression.toString->Option.default("")
         }
       />

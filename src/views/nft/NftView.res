@@ -47,6 +47,7 @@ let make = (~account) => {
   let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
   let (search, setSearch) = React.useState(_ => "")
   let stop = React.useRef(false)
+  let network = ConfigContext.useNetwork()
 
   let request = fromCache => {
     open TokensApiRequest
@@ -148,6 +149,11 @@ let make = (~account) => {
     getTokens(request(false))->ignore
   }
 
+  React.useEffect1(() => {
+    onRefresh()
+    None
+  }, [network])
+
   let onStop = () => {
     setSyncState(x =>
       switch x {
@@ -168,10 +174,11 @@ let make = (~account) => {
     )
   }, [tokens])
 
+  open ReactNative.Style
   <View style={styles["listContent"]}>
     <NftHeaderView account headline>
       <ButtonAction
-        style={Style.style(~marginTop="10px", ())}
+        style={Style.style(~marginTop=10.->dp, ())}
         icon
         text=switchButtonText
         onPress={_ =>

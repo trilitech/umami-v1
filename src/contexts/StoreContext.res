@@ -55,10 +55,10 @@ type state = {
   balanceTokenRequestsState: requestState<TokenRepr.Map.map<TokenRepr.Unit.t>>,
   apiVersionRequestState: reactState<option<Network.apiVersion>>,
   eulaSignatureRequestState: reactState<bool>,
-  beaconPeersRequestState: requestState<array<ReBeacon.peerInfo>>,
+  beaconPeersRequestState: requestState<array<Beacon.peerInfo>>,
   beaconClient: reactState<option<ReBeacon.WalletClient.t>>,
-  beaconPermissionsRequestState: reactState<ApiRequest.t<array<ReBeacon.permissionInfo>>>,
-  beaconNextRequestState: nextState<ReBeacon.Message.Request.t>,
+  beaconPermissionsRequestState: reactState<ApiRequest.t<array<Beacon.permissionInfo>>>,
+  beaconNextRequestState: nextState<Beacon.Message.Request.t>,
 }
 
 // Context and Provider

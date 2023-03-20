@@ -43,24 +43,32 @@ module ThemeContext = {
 module Wrapper = {
   @react.component
   let make = (~children) =>
-    <View style={style(~width="800px", ~minHeight="100vh", ~margin="auto", ())}> children </View>
+    <View
+      style={style(
+        ~width=800.->dp,
+        ~minHeight="100vh"->StyleUtils.stringToSize,
+        ~margin="auto"->StyleUtils.stringToSize,
+        (),
+      )}>
+      children
+    </View>
 }
 
 module Menu = {
   @react.component
   let make = () =>
     <View
-      style={style(~top="20px", ~left="20px", ~width="200px", ())->unsafeAddStyle({
+      style={style(~top=20.->dp, ~left=20.->dp, ~width=200.->dp, ())->unsafeAddStyle({
         "position": "fixed",
       })}>
       <ThemeSettingView />
-      <Typography.Overline1 onPress={_ => ReasonReactRouter.push("/typography")}>
+      <Typography.Overline1 onPress={_ => RescriptReactRouter.push("/typography")}>
         {"typography"->React.string}
       </Typography.Overline1>
-      <Typography.Overline1 onPress={_ => ReasonReactRouter.push("/buttons")}>
+      <Typography.Overline1 onPress={_ => RescriptReactRouter.push("/buttons")}>
         {"buttons"->React.string}
       </Typography.Overline1>
-      <Typography.Overline1 onPress={_ => ReasonReactRouter.push("/mnemonic")}>
+      <Typography.Overline1 onPress={_ => RescriptReactRouter.push("/mnemonic")}>
         {"mnemonic"->React.string}
       </Typography.Overline1>
     </View>
@@ -68,7 +76,7 @@ module Menu = {
 
 @react.component
 let make = () => {
-  let url = ReasonReactRouter.useUrl()
+  let url = RescriptReactRouter.useUrl()
 
   <ThemeContext>
     <Background>

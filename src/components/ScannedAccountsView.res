@@ -44,7 +44,7 @@ let styles = {
       (),
     ),
     "itemBorder": style(~borderTopWidth=1., ()),
-    "itemsContent": style(~height=250.->pt, ~borderWidth=1., ~borderRadius=4., ()),
+    "itemsContent": style(~height=250.->dp, ~borderWidth=1., ~borderRadius=4., ()),
   })
 }
 

@@ -29,7 +29,6 @@ let styles = {
   open Style
   StyleSheet.create({
     "searchSection": {
-      open Style
       style(
         ~maxHeight=44.->dp,
         ~flexBasis=48.->dp,
@@ -53,10 +52,22 @@ let make = (
   ~onRefresh,
   ~onStop,
   ~syncState,
-) =>
-  <View style={Style.arrayOption([styles["searchAndSync"]->Some, style])}>
+) => {
+  // This style is used to hide the section below when it is scrolled
+  let searchAndSyncMarginStyle = {
+    open Style
+    let theme = ThemeContext.useTheme()
+    style(
+      ~paddingBottom=16.->dp,
+      ~backgroundColor=theme.colors.background,
+      ~zIndex=1,
+      ()
+    )
+  }
+  <View style={Style.arrayOption([styles["searchAndSync"]->Some, searchAndSyncMarginStyle->Some, style])}>
     <ThemedTextInput
       style={styles["searchSection"]} icon=Icons.Search.build value onValueChange placeholder
     />
     <Sync onRefresh onStop state=syncState icon=syncIcon />
   </View>
+}

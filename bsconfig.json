@@ -34,19 +34,18 @@
   "ppx-flags": ["lenses-ppx/ppx"],
   "bs-dependencies": [
     "@umami/base",
+    "@rescript/react",
+    "rescript-react-native",
     "bs-fetch",
     "@glennsl/bs-json",
-    "reason-react",
-    "reason-react-native",
     "child-reprocess",
-    "reason-react-update",
+    "rescript-react-update",
     "reason-test-framework",
-    "bs-reform",
-    "reschema",
-    "@reason-react-native/svg",
+    "@rescriptbr/reform",
+    "@rescriptbr/reschema",
+    "@rescript-react-native/svg",
     "@glennsl/rescript-jest",
-    "bs-react-testing-library",
-    "bs-dom-testing-library"
+    "@nomadic-labs/rescript-beacon-sdk"
   ],
   "refmt": 3
 }

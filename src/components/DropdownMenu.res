@@ -33,7 +33,10 @@ let styles = {
     "listContainer": style(~borderRadius=3., ~maxHeight=224.->dp, ())->unsafeAddStyle({
       "boxShadow": "0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 3px 14px 2px rgba(0, 0, 0, 0.12), 0 8px 10px 1px rgba(0, 0, 0, 0.14)",
     }),
-    "positionBottomTop": style(~bottom=35.->dp, ~top="unset", ~position=#absolute, ()),
+    "positionBottomTop": array([
+      unsafeStyle({"top": "unset"}),
+      style(~bottom=35.->dp, ~position=#absolute, ()),
+    ]),
     "listContentContainer": style(~paddingVertical=listVerticalPadding->dp, ()),
   })
 }

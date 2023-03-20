@@ -51,14 +51,14 @@ type t = list<Protocol.Transfer.t>
 let addr = Encodings.custom(~conv=PublicKeyHash.build)
 let contract = Encodings.custom(~conv=PublicKeyHash.buildContract)
 let michelson = Encodings.custom(
-  ~conv=ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline,
+  ~conv=(x => x->ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.parseMicheline->Result.map(Option.getExn)),
 )
 
 type token = (PublicKeyHash.t, option<Umami.ReBigNumber.t>)
 
 type transfer = ((PublicKeyHash.t, ReBigNumber.t), CSVParser.Encodings.or_<token, unit>)
 
-type contractCall = (PublicKeyHash.t, string, ReTaquitoParser.t, option<ReBigNumber.t>)
+type contractCall = (PublicKeyHash.t, string, ReTaquitoTypes.MichelsonV1Expression.t, option<ReBigNumber.t>)
 
 let token: Encodings.row_repr<token> = {
   open Encodings

@@ -92,33 +92,33 @@ module Toolkit = {
   type provider = {signer: ReTaquitoSigner.t}
 }
 
-module Micheline: {
-  type t = private string
-
-  let unitVal: t
+module MichelsonV1Expression: {
+  type t
+  let unit: t
 } = {
-  type t = string
-
-  let unitVal = "Unit"
+  type t
+  let unit: t = Obj.magic({"prim": "Unit"})
 }
 
 module Code = {
-  type t
+  type t = string
 }
 
 module Storage = {
-  type t
+  type t = string
 }
 
 module Transfer = {
   module Entrypoint = {
-    type name = string
-    type param = {
-      entrypoint: name,
-      value: Micheline.t,
-    }
-
+    type t = string
     let default = "default"
+  }
+
+  module TransactionOperationParameter = {
+    type t = {
+      entrypoint: Entrypoint.t,
+      value: MichelsonV1Expression.t,
+    }
   }
 
   type transferParams = {
@@ -131,7 +131,7 @@ module Transfer = {
     gasLimit: option<int>,
     storageLimit: option<int>,
     mutez: option<bool>,
-    parameter: option<Entrypoint.param>,
+    parameter: option<TransactionOperationParameter.t>,
   }
 
   type sendParams = {

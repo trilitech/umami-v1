@@ -38,7 +38,7 @@ type validState = {
   sender: Account.t,
   recipient: FormUtils.Alias.t,
   entrypoint: option<ProtocolOptions.TransactionParameters.entrypoint>,
-  parameter: option<ProtocolOptions.TransactionParameters.MichelineMichelsonV1Expression.t>,
+  parameter: option<ProtocolOptions.TransactionParameters.value>,
 }
 
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
