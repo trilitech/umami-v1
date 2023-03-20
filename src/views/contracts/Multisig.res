@@ -12,14 +12,14 @@ let contract = chain =>
   | #Mainnet => "KT1Lw11GPDxpdWXWudFUUBMA2Cihevmt8QCf"->PublicKeyHash.build->Result.getExn->Some
   | #Ghostnet => "KT1Mqvf7bnYe4Ty2n7ZbGkdbebCd4WoTJUUp"->PublicKeyHash.build->Result.getExn->Some
   | #Limanet => "KT1W7ZJqgwj5D3aDwDSwZiSSvzKTaZNbiVLC"->PublicKeyHash.build->Result.getExn->Some
+  | #Mumbainet => "KT1FqCVKxbof2wRPxfLSRnMJfKH39Zh912AK"->PublicKeyHash.build->Result.getExn->Some
   | #Custom(_)
   | #Edo2net
   | #Florencenet
   | #Granadanet
   | #Hangzhounet
   | #Jakartanet
-  | #Kathmandunet
-  | #Mumbainet =>
+  | #Kathmandunet =>
     None
   }
 
