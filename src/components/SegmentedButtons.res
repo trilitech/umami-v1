@@ -74,7 +74,12 @@ let make = (~selectedValue, ~setSelectedValue, ~buttons) => {
         {title->Typography.subtitle1(~style=Style.style(~fontWeight=#bold, ()))}
         {dot
           ? <Buttons.Dot
-              style={Style.style(~position=#relative, ~top="-0.25rem"->StyleUtils.stringToSize, ())}
+              style={Style.style(
+                ~position=#relative,
+                ~top="-0.25rem"->StyleUtils.stringToSize,
+                ~marginRight="-.5rem"->StyleUtils.stringToSize, // Avoid changing the container size
+                (),
+              )}
             />
           : React.null}
       </ThemedPressable>
