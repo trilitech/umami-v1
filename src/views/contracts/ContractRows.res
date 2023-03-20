@@ -189,7 +189,10 @@ module Multisig = {
     } else {
       <View style={styles["container"]}>
         <TableHeader.Multisig />
-        <View> {multisigs->Array.map(makeMultisigRowItem(currentChain))->React.array} </View>
+        <View>
+          {multisigs->Array.map(makeMultisigRowItem(currentChain))->React.array}
+          <View style={Style.style(~height=100.->Style.dp, ())} /> // Make sure last item has enough space for dropdown
+        </View>
       </View>
     }
   }
