@@ -234,21 +234,19 @@ let onlyValidOwners = array =>
     }
   )
 
-module Step1 = {
-  @react.component
-  let make = (~currentStep, ~form: Form.api, ~action) => {
-    let theme = ThemeContext.useTheme()
+let submitOnEnterKeyPress = (onSubmit, event) =>
+  if (event->TextInput.KeyPressEvent.nativeEvent)["key"] === "Enter" {
+    TextInput.KeyPressEvent.preventDefault(event)
+    onSubmit()
+  }
 
-    <StepView step=1 currentStep title=I18n.Title.name_contract>
-      <Typography.Body1 style={styles["description"]}>
-        {I18n.Expl.name_multisig->React.string}
-      </Typography.Body1>
+module CreateStep_Name = {
+  @react.component
+  let make = (~form: Form.api, ~onSubmit) => {
+    <>
+      {I18n.Title.name_contract->Typography.overline1(~style=FormStyles.headerWithoutMarginBottom)}
+      {I18n.Expl.name_multisig->Typography.body1(~style=FormStyles.textContent)}
       <FormGroupTextInput
-        style={styles["textInput"]}
-        fieldStyle={
-          open Style
-          style(~backgroundColor=theme.colors.elevatedBackground, ())
-        }
         label=I18n.Label.add_contract_name
         value=form.values.name
         handleChange={form.handleChange(Name)}
@@ -257,32 +255,49 @@ module Step1 = {
           form.formState->FormUtils.getFormStateError,
           form.getFieldError(Field(Name)),
         }->Option.firstSome}
-        onSubmitEditing={_ => form.submit()}
+        onKeyPress={submitOnEnterKeyPress(onSubmit)}
       />
-      <View style={styles["row"]}>
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.continue
-          onPress={_ => action()}
-          style=FormStyles.formSubmit
-          disabled={form.getFieldState(Field(Name)) != Valid}
-        />
-      </View>
-    </StepView>
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.continue
+        onPress={_ => onSubmit()}
+        style=FormStyles.formSubmit
+        disabled={form.getFieldState(Field(Name)) != Valid}
+      />
+    </>
   }
 }
 
-let keep: (array<Umami.FormUtils.Alias.any>, Umami.Alias.t) => bool = (formValues, a) => {
-  let addressesInForm = formValues->Array.keepMap(owner =>
-    switch owner {
-    | FormUtils.Alias.Valid(t) => Some(t->FormUtils.Alias.address)
-    | _ => None
-    }
-  )
+module CreateStep_OwnerThreshold = {
+  let keep: (array<Umami.FormUtils.Alias.any>, Umami.Alias.t) => bool = (formValues, a) => {
+    let addressesInForm = formValues->Array.keepMap(owner =>
+      switch owner {
+      | FormUtils.Alias.Valid(t) => Some(t->FormUtils.Alias.address)
+      | _ => None
+      }
+    )
 
-  // Only keep aliases that are not already added in form
-  !(addressesInForm->Array.some(f => f === a.address))
-}
-module Step2 = {
+    // Only keep aliases that are not already added in form
+    !(addressesInForm->Array.some(f => f === a.address))
+  }
+
+  let removeOwner = (form: Form.api, i) => {
+    if (
+      form.values.threshold->ReBigNumber.isGreaterThanOrEqualTo(
+        ReBigNumber.fromInt(form.values.owners->Array.length),
+      )
+    ) {
+      form.handleChangeWithCallback(Threshold, threshold =>
+        threshold->ReBigNumber.minus(ReBigNumber.fromInt(1))
+      )
+    }
+    form.handleChangeWithCallback(Owners, owners => owners->Array.keepWithIndex((_, j) => i != j))
+  }
+
+  let addOwner = (form: Form.api, i, newOwner) =>
+    form.handleChangeWithCallback(Owners, owners =>
+      owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
+    )
+
   let renderItem = item =>
     <View style={styles["selectorItemContainer"]}>
       <Typography.ButtonSecondary fontSize=14.>
@@ -290,144 +305,106 @@ module Step2 = {
       </Typography.ButtonSecondary>
     </View>
 
-  @react.component
-  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
-    let theme = ThemeContext.useTheme()
-
-    let removeOwner = (i, _) => {
-      if (
-        form.values.threshold->ReBigNumber.isGreaterThanOrEqualTo(
-          ReBigNumber.fromInt(form.values.owners->Array.length),
-        )
-      ) {
-        form.handleChangeWithCallback(Threshold, threshold =>
-          threshold->ReBigNumber.minus(ReBigNumber.fromInt(1))
-        )
-      }
-      form.handleChangeWithCallback(Owners, owners => owners->Array.keepWithIndex((_, j) => i != j))
+  module OwnerSelector = {
+    @react.component
+    let make = (~form: Form.api, ~i, ~value) => {
+      let theme = ThemeContext.useTheme()
+      let key = i->Int.toString
+      let existingOwners = form.values.owners->Array.removeAtIndex(i)
+      <FormGroupContactSelector
+        keyPopover={"formGroupContactSelector" ++ key}
+        fieldStyle={
+          open Style
+          style(~backgroundColor=theme.colors.elevatedBackground, ())
+        }
+        label={i == 0 ? I18n.Label.owners : ""}
+        keep={keep(existingOwners)}
+        value
+        onRemove=?{i != 0 ? {() => removeOwner(form, i)}->Some : None}
+        onChange={addOwner(form, i)}
+        error={form.getNestedFieldError(Field(Owners), i)}
+      />
     }
+  }
 
-    let addOwner = (i, newOwner) =>
-      form.handleChangeWithCallback(Owners, owners =>
-        owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
-      )
-
-    <StepView step=2 currentStep title=I18n.Title.set_owners_and_threshold>
-      <Typography.Body1 style={styles["description"]}>
-        {I18n.Expl.set_multisig_owners->React.string}
-      </Typography.Body1>
+  @react.component
+  let make = (~form: Form.api, ~onSubmit) => {
+    let theme = ThemeContext.useTheme()
+    <>
+      {I18n.Title.set_owners_and_threshold->Typography.overline1(
+        ~style=FormStyles.headerWithoutMarginBottom,
+      )}
+      {I18n.Expl.set_multisig_owners->Typography.body1(~style=FormStyles.textContent)}
       {form.values.owners
-      ->Array.mapWithIndex((i, value) => {
-        let key = i->Int.toString
-        let existingOwners = form.values.owners->Array.removeAtIndex(i)
-        <View key style={styles["row"]}>
-          <View style={styles["addressInput"]}>
-            <FormGroupContactSelector
-              keyPopover={"formGroupContactSelector" ++ key}
-              fieldStyle={
-                open Style
-                style(~backgroundColor=theme.colors.elevatedBackground, ())
-              }
-              label={i == 0 ? I18n.Label.owners : ""}
-              keep={keep(existingOwners)}
-              value
-              onChange={addOwner(i)}
-              error={form.getNestedFieldError(Field(Owners), i)}
-            />
-          </View>
-          {<IconButton
-            onPress={removeOwner(i)}
-            icon=Icons.Delete.build
-            size=40.
-            style={
-              open Style
-              style(~marginLeft=8.->dp, ~marginBottom=22.->dp, ())
-            }
-          />->ReactUtils.onlyWhen(i != 0)}
-        </View>
-      })
+      ->Array.mapWithIndex((i, value) => <OwnerSelector form i value />)
       ->React.array}
-      <View style={styles["row"]}>
-        <ButtonAction
-          style={
-            open Style
-            style(~alignSelf=#flexStart, ~marginTop=-12.->dp, ~marginBottom=28.->dp, ())
-          }
-          onPress={_ => form.arrayPush(Owners, FormUtils.Alias.AnyString(""))}
-          text=I18n.Btn.add_another_owner
-          icon=Icons.Add.build
-          primary=true
-        />
-      </View>
-      <Typography.Body1 style={styles["description"]}>
-        {I18n.Expl.set_multisig_threshold->React.string}
-      </Typography.Body1>
-      <View
+      <ButtonAction
         style={
           open Style
-          StyleSheet.flatten([styles["row"], style(~marginBottom=12.->dp, ())])
-        }>
-        {
-          let validOwnersNumber = switch onlyValidOwners(form.values.owners)->Array.length {
-          | 0 => 1
-          | x => x
-          }
-          <>
-            <Selector
-              globalStyle=#button
-              chevron={<Icons.ChevronDown
-                size=22. color=theme.colors.iconHighEmphasis style={Selector.styles["icon"]}
-              />}
-              innerStyle={styles["selectorButtonContent"]}
-              items={Array.range(1, validOwnersNumber)}
-              getItemKey={item => item->Int.toString}
-              renderItem
-              selectedValueKey={form.values.threshold->ReBigNumber.toString}
-              onValueChange={item => form.handleChange(Threshold, ReBigNumber.fromInt(item))}
-              renderButton={(selectedItem, _) => {
-                selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
-              }}
-              keyPopover="Selector"
-              backgroundColor=theme.colors.elevatedBackground
-            />
-            <Typography.Body1 style={styles["suffix"]}>
-              {I18n.Expl.out_of(validOwnersNumber->Int.toString)->React.string}
-            </Typography.Body1>
-          </>
+          style(~alignSelf=#flexStart, ~marginTop=-12.->dp, ~marginBottom=28.->dp, ())
         }
-      </View>
-      <View style={styles["row"]}>
-        <Buttons.SubmitSecondary
-          text=I18n.Btn.back
-          onPress={_ => back()}
+        onPress={_ => form.arrayPush(Owners, FormUtils.Alias.AnyString(""))}
+        text=I18n.Btn.add_another_owner
+        icon=Icons.Add.build
+        primary=true
+      />
+      {I18n.Expl.set_multisig_threshold->Typography.body1(~style=FormStyles.marginBottom16)}
+      {
+        let validOwnersNumber = switch onlyValidOwners(form.values.owners)->Array.length {
+        | 0 => 1
+        | x => x
+        }
+        <View
           style={
             open Style
-            StyleSheet.flatten([FormStyles.formSubmit, style(~marginRight=21.->dp, ())])
-          }
-        />
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.continue
-          onPress={_ => action()}
-          style=FormStyles.formSubmit
-          disabled={form.getFieldState(Field(Owners)) != Valid}
-        />
-      </View>
-    </StepView>
+            StyleSheet.flatten([styles["row"], style(~marginBottom=12.->dp, ())])
+          }>
+          <Selector
+            globalStyle=#button
+            chevron={<Icons.ChevronDown
+              size=22. color=theme.colors.iconHighEmphasis style={Selector.styles["icon"]}
+            />}
+            innerStyle={styles["selectorButtonContent"]}
+            items={Array.range(1, validOwnersNumber)}
+            getItemKey={item => item->Int.toString}
+            renderItem
+            selectedValueKey={form.values.threshold->ReBigNumber.toString}
+            onValueChange={item => form.handleChange(Threshold, ReBigNumber.fromInt(item))}
+            renderButton={(selectedItem, _) => {
+              selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
+            }}
+            keyPopover="Selector"
+            backgroundColor=theme.colors.elevatedBackground
+          />
+          {I18n.Expl.out_of(validOwnersNumber->Int.toString)->Typography.body1(
+            ~style=styles["suffix"],
+          )}
+        </View>
+      }
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.continue
+        onPress={_ => onSubmit()}
+        style=FormStyles.formSubmit
+        disabled={form.getFieldState(Field(Owners)) != Valid}
+      />
+    </>
   }
 }
 
-module Step3 = {
+module CreateStep_Review = {
   @react.component
-  let make = (~currentStep, ~form: Form.api, ~back, ~action) => {
+  let make = (~form: Form.api, ~onSubmit) => {
     let owners = form.values.owners->Array.keepMap(owner =>
       switch owner {
       | FormUtils.Alias.Valid(alias) => Some(alias)
       | _ => None
       }
     )
-
-    <StepView step=3 currentStep title=I18n.Title.review_and_submit>
-      {I18n.Expl.review_multisig->Typography.body1(~style=styles["description"])}
+    <>
+      {I18n.Title.review_and_submit->Typography.overline1(
+        ~style=FormStyles.headerWithoutMarginBottom,
+      )}
+      {I18n.Expl.review_multisig->Typography.body1(~style=FormStyles.textAlignCenter)}
       <ContractDetailsView.Multisig.Name name=form.values.name />
       <ContractDetailsView.Multisig.Owners
         owners={Array.map(owners, FormUtils.Alias.address)} shrinkedAddressDisplay=true
@@ -435,25 +412,17 @@ module Step3 = {
       <ContractDetailsView.Multisig.Threshold
         threshold={form.values.threshold} owners={owners->Array.length}
       />
-      <View style={styles["row"]}>
-        <Buttons.SubmitSecondary
-          text=I18n.Btn.back
-          onPress={_ => back()}
-          style={
-            open Style
-            StyleSheet.flatten([FormStyles.formSubmit, style(~marginRight=21.->dp, ())])
-          }
-        />
-        <Buttons.SubmitPrimary
-          text=I18n.Btn.submit onPress={_ => action()} style=FormStyles.formSubmit
-        />
-      </View>
-    </StepView>
+      <Buttons.SubmitPrimary
+        text=I18n.Btn.submit onPress={_ => onSubmit()} style=FormStyles.formSubmit
+      />
+    </>
   }
 }
 
 type step =
-  | CreateStep
+  | CreateStep_Name
+  | CreateStep_OwnerThreshold
+  | CreateStep_Review
   | SourceStep(Form.state, option<string> => unit)
   | SigningStep(
       Form.state,
@@ -463,32 +432,8 @@ type step =
     )
   | SubmittedStep(PublicKeyHash.t, string) // (originator, operation hash)
 
-let stepToString = step =>
-  switch step {
-  | CreateStep => "createstep"
-  | SourceStep(_) => "sourceStep"
-  | SigningStep(_) => "signingstep"
-  | SubmittedStep(_) => "submittedstep"
-  }
-
 type Errors.t +=
   | AddressNotFound
-
-module CreateView = {
-  @react.component
-  let make = (~currentStep, ~form, ~setCurrentStep) => {
-    <>
-      <Typography.Headline style=Styles.title>
-        {I18n.Title.create_new_multisig->React.string}
-      </Typography.Headline>
-      <Step1 currentStep form action={_ => setCurrentStep(_ => 2)} />
-      <Step2
-        currentStep form back={_ => setCurrentStep(_ => 1)} action={_ => setCurrentStep(_ => 3)}
-      />
-      <Step3 currentStep form back={_ => setCurrentStep(_ => 2)} action=form.submit />
-    </>
-  }
-}
 
 module SignView = {
   @react.component
@@ -536,9 +481,8 @@ let make = (~closeAction) => {
   let setDefaultAccount = StoreContext.SelectedAccount.useSet()
   let init = StoreContext.SelectedAccount.useGetImplicit()->Option.getExn
   let (account, setAccount) = React.useState(_ => init)
-  let (currentStep, setCurrentStep) = React.useState(_ => 1)
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
-  let (modalStep, setModalStep) = React.useState(_ => CreateStep)
+  let (modalStep, setModalStep) = React.useState(_ => CreateStep_Name)
   let form = Form.use(
     ~schema={
       open Form.Validation
@@ -567,7 +511,9 @@ let make = (~closeAction) => {
   let config = ConfigContext.useContent()
 
   let back = switch modalStep {
-  | SourceStep(_, _) => Some(_ => setModalStep(_ => CreateStep))
+  | CreateStep_OwnerThreshold => Some(_ => setModalStep(_ => CreateStep_Name))
+  | CreateStep_Review => Some(_ => setModalStep(_ => CreateStep_OwnerThreshold))
+  | SourceStep(_, _) => Some(_ => setModalStep(_ => CreateStep_Review))
   | SigningStep(state, raiseSubmitFailed, _, _) =>
     switch sign {
     | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
@@ -588,8 +534,11 @@ let make = (~closeAction) => {
   }
 
   let title = switch modalStep {
-  | CreateStep => None
-  | SourceStep(_) => Some(I18n.Title.create_new_multisig)
+  | CreateStep_Name
+  | CreateStep_OwnerThreshold
+  | CreateStep_Review
+  | SourceStep(_) =>
+    Some(I18n.Title.create_new_multisig)
   | SigningStep(_) => Some(I18n.Title.confirm_multisig_origination)
   | SubmittedStep(_) => None
   }
@@ -621,36 +570,69 @@ let make = (~closeAction) => {
       )
     })
   }
+  let stepToString = step =>
+    switch step {
+    | CreateStep_Name => "CreateStep_Name"
+    | CreateStep_OwnerThreshold =>
+      "CreateStep_OwnerThreshold_" ++ form.values.owners->Array.length->Int.toString
+    | CreateStep_Review => "CreateStep_Review"
+    | SourceStep(_) => "sourceStep"
+    | SigningStep(_) => "signingstep"
+    | SubmittedStep(_) => "submittedstep"
+    }
 
-  <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
-    {switch modalStep {
-    | CreateStep => <CreateView currentStep form setCurrentStep />
-    | SourceStep(state, raiseSubmitFailed) =>
-      <SourceSelector
-        filter=PublicKeyHash.isImplicit
-        source={Alias.fromAccount(account)}
-        loading={operationSimulateRequest->ApiRequest.isLoading}
-        onSubmit={source => handleSource(state, raiseSubmitFailed, source->Alias.toAccountExn)} //FIXME
-      />
-    | SigningStep(_, _, operations, dryRun) =>
-      <SignView
-        account
-        state
-        signOpStep
-        dryRun
-        operations
-        name={_ => Some(form.values.name)}
-        loading={operationRequest->ApiRequest.isLoading || multisigRequest->ApiRequest.isLoading}
-        onOperationAndSigningIntent=handleOperationAndSigningIntent(account.address)
-      />
+  let step = i =>
+    I18n.stepof(i, 3)->Typography.overline3(
+      ~colorStyle=#highEmphasis,
+      ~style={FormStyles.onboarding["stepPager"]},
+    )
 
-    | SubmittedStep(originator, hash) =>
-      let onPressCancel = _ => {
-        closeAction()
-        setDefaultAccount(originator) //
-        Routes.push(Operations)
-      }
-      <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
-    }}
-  </ModalFormView>
+  <ReactFlipToolkit.Flipper flipKey={modalStep->stepToString}>
+    <ReactFlipToolkit.FlippedView flipId="modal">
+      <ModalFormView ?title back ?closing titleStyle=FormStyles.headerMarginBottom8>
+        <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
+          {switch modalStep {
+          | CreateStep_Name => <>
+              {step(1)}
+              <CreateStep_Name form onSubmit={() => setModalStep(_ => CreateStep_OwnerThreshold)} />
+            </>
+          | CreateStep_OwnerThreshold => <>
+              {step(2)}
+              <CreateStep_OwnerThreshold
+                form onSubmit={() => setModalStep(_ => CreateStep_Review)}
+              />
+            </>
+          | CreateStep_Review => <> {step(3)} <CreateStep_Review form onSubmit=form.submit /> </>
+          | SourceStep(state, raiseSubmitFailed) =>
+            <SourceSelector
+              filter=PublicKeyHash.isImplicit
+              source={Alias.fromAccount(account)}
+              loading={operationSimulateRequest->ApiRequest.isLoading}
+              onSubmit={source =>
+                handleSource(state, raiseSubmitFailed, source->Alias.toAccountExn)} //FIXME
+            />
+          | SigningStep(_, _, operations, dryRun) =>
+            <SignView
+              account
+              state
+              signOpStep
+              dryRun
+              operations
+              name={_ => Some(form.values.name)}
+              loading={operationRequest->ApiRequest.isLoading ||
+                multisigRequest->ApiRequest.isLoading}
+              onOperationAndSigningIntent={handleOperationAndSigningIntent(account.address)}
+            />
+          | SubmittedStep(originator, hash) =>
+            let onPressCancel = _ => {
+              closeAction()
+              setDefaultAccount(originator)
+              Routes.push(Operations)
+            }
+            <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
+          }}
+        </ReactFlipToolkit.FlippedView.Inverse>
+      </ModalFormView>
+    </ReactFlipToolkit.FlippedView>
+  </ReactFlipToolkit.Flipper>
 }

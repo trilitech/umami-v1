@@ -170,7 +170,10 @@ module Overline1 = Make({
   let selectable = true
 })
 
-let overline1 = (~style=?, txt) => <Overline1 ?style> {txt->React.string} </Overline1>
+let overline1 = (~colorStyle=?, ~fontWeightStyle=?, ~fontSize=?, ~selectable=?, ~style=?, txt) =>
+  <Overline1 ?colorStyle ?fontWeightStyle ?fontSize ?selectable ?style>
+    {txt->React.string}
+  </Overline1>
 
 module Overline2 = Make({
   let colorStyle = #mediumEmphasis
@@ -179,7 +182,10 @@ module Overline2 = Make({
   let selectable = true
 })
 
-let overline2 = (~style=?, txt) => <Overline2 ?style> {txt->React.string} </Overline2>
+let overline2 = (~colorStyle=?, ~fontWeightStyle=?, ~fontSize=?, ~selectable=?, ~style=?, txt) =>
+  <Overline2 ?colorStyle ?fontWeightStyle ?fontSize ?selectable ?style>
+    {txt->React.string}
+  </Overline2>
 
 module Overline3 = Make({
   let colorStyle = #mediumEmphasis
@@ -188,7 +194,10 @@ module Overline3 = Make({
   let selectable = true
 })
 
-let overline3 = (~style=?, txt) => <Overline3 ?style> {txt->React.string} </Overline3>
+let overline3 = (~colorStyle=?, ~fontWeightStyle=?, ~fontSize=?, ~selectable=?, ~style=?, txt) =>
+  <Overline3 ?colorStyle ?fontWeightStyle ?fontSize ?selectable ?style>
+    {txt->React.string}
+  </Overline3>
 
 /* SUBTITLE */
 
@@ -218,7 +227,8 @@ module Body1 = Make({
   let fontSize = 16.
   let selectable = true
 })
-let body1 = (~numberOfLines=?, ~style=?, txt) => <Body1 ?numberOfLines ?style> {txt->React.string} </Body1>
+let body1 = (~numberOfLines=?, ~style=?, txt) =>
+  <Body1 ?numberOfLines ?style> {txt->React.string} </Body1>
 
 module Body2 = Make({
   let colorStyle = #highEmphasis

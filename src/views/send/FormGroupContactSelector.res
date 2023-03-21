@@ -220,6 +220,7 @@ let make = (
   ~fieldStyle=?,
   ~label,
   ~value: FormUtils.Alias.any,
+  ~onRemove=?,
   ~onChange: FormUtils.Alias.any => unit,
   ~error,
   ~keep: Umami.Alias.t => bool=_ => true,
@@ -350,6 +351,7 @@ let make = (
       error
       list=items
       clearButton=true
+      ?onRemove
       renderItem
       keyExtractor
       placeholder={buildPlaceholder(contactKind)}

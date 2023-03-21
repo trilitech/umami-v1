@@ -462,11 +462,11 @@ module Expl = {
   let no_multisig_contract = "No contract on the current chain"
   let name_contract = "Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party."
   let set_owners_and_threshold = "You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions."
-  let name_multisig = `Please give a name to the contract you are about to create.\\nThis name is only stored locally on your computer and never shared with Umami or any third-party.`
-  let set_multisig_owners = `You are about to create a new multisig contract that has one or more owners.\\nPlease select the addresses that have permission to submit and approve transactions.`
+  let name_multisig = `Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party.`
+  let set_multisig_owners = `You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions.`
   let set_multisig_threshold = "Set the minimum number of required approvals before any action can be executed."
   let out_of = s => `out of ${s}`
-  let review_multisig = `Please review the details of the multisig contract you are about to create.\\nYou can edit them before submitting by clicking the back button.\\nYou will receive an approval request from your wallet. Please confirm it to continue.`
+  let review_multisig = `Please review the details of the multisig contract you are about to create. You can edit them before submitting by clicking the back button. You will receive an approval request from your wallet. Please confirm it to continue.`
   let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
   let signing_account = "Select signing account."
   let signing_account_multisig = s => `A multisig (${s}) was selected. You need to propose this operation to the co-owners of the selected multisig and then approve it in order to finally execute it. Please select which account will propose.`

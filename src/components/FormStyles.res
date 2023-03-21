@@ -52,11 +52,11 @@ let verticalFormAction = ReactUtils.styles(list{
 
 let header = style(~marginBottom=24.->dp, ~textAlign=#center, ())
 let headerMarginBottom8 = style(~marginBottom=8.->dp, ~textAlign=#center, ())
-let textContent = style(~marginBottom=24.->dp, ~textAlign=#center, ())
-
 let headerWithoutMarginBottom = style(~marginBottom=4.->dp, ~textAlign=#center, ())
 let subtitle = style(~marginTop=10.->dp, ())
 let textAlignCenter = style(~textAlign=#center, ())
+let textContent = style(~marginBottom=24.->dp, ~textAlign=#center, ())
+let marginBottom16 = style(~marginBottom=16.->dp, ())
 
 let amountRow = style(~display=#flex, ~flexDirection=#row, ~justifyContent=#spaceBetween, ())
 
