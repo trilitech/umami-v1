@@ -444,13 +444,17 @@ module SignView = {
 }
 
 let getAddress = (result: ReTaquito.Toolkit.Operation.result) => {
-  result.results[0]
-  ->Option.map(ReTaquitoTypes.Operation.classifiy)
-  ->Option.flatMap(result =>
-    switch result {
-    | Origination(result) => result.metadata.operation_result.originated_contracts[0]
+  let contracts = result.results->Array.keepMap(result =>
+    try {
+      switch result->ReTaquitoTypes.Operation.classifiy {
+      | Origination(result) => result.metadata.operation_result.originated_contracts[0]
+      | exception _ => None
+      }
+    } catch {
+    | _ => None
     }
   )
+  contracts[0]
   ->Promise.fromOption(~error=AddressNotFound)
   ->Promise.mapOk(s => s->PublicKeyHash.build->Result.getExn)
 }
