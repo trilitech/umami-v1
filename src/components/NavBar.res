@@ -207,12 +207,36 @@ module Empty = {
   }
 }
 
+module NavBarItemOperations = {
+  module Implicit = {
+    @react.component
+    let make = (~currentRoute) => {
+      <NavBarItemRoute
+        currentRoute route=Operations title=I18n.navbar_operations icon=Icons.History.build
+      />
+    }
+  }
+
+  module Multisig = {
+    @react.component
+    let make = (~address: PublicKeyHash.t, ~currentRoute) => {
+      let hasPendingWaiting = StoreContext.useHasPendingWaiting()(address)
+      <NavBarItemRoute
+        currentRoute
+        route=Operations
+        title=I18n.navbar_operations
+        icon=Icons.History.build
+        showDot=hasPendingWaiting
+      />
+    }
+  }
+}
+
 @react.component
 let make = (~account: Alias.t, ~route as currentRoute) => {
   let theme = ThemeContext.useTheme()
 
   let {address} = account
-  let hasPendingWaiting = StoreContext.useHasPendingWaiting()(address)
   let batch = GlobalBatchContext.useGlobalBatchContext().batch(address)
   let hasBatchItems = batch != None
 
@@ -237,13 +261,9 @@ let make = (~account: Alias.t, ~route as currentRoute) => {
     <NavBarItemRoute
       currentRoute route=Nft iconSize=28. title=I18n.navbar_nft icon=Icons.Nft.build
     />
-    <NavBarItemRoute
-      currentRoute
-      route=Operations
-      title=I18n.navbar_operations
-      icon=Icons.History.build
-      showDot=hasPendingWaiting
-    />
+    {PublicKeyHash.isImplicit(address)
+      ? <NavBarItemOperations.Implicit currentRoute />
+      : <NavBarItemOperations.Multisig currentRoute address />}
     <NavBarItemRoute
       currentRoute
       route=Batch
