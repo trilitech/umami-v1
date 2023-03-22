@@ -308,15 +308,10 @@ module CreateStep_OwnerThreshold = {
   module OwnerSelector = {
     @react.component
     let make = (~form: Form.api, ~i, ~value) => {
-      let theme = ThemeContext.useTheme()
       let key = i->Int.toString
       let existingOwners = form.values.owners->Array.removeAtIndex(i)
       <FormGroupContactSelector
         keyPopover={"formGroupContactSelector" ++ key}
-        fieldStyle={
-          open Style
-          style(~backgroundColor=theme.colors.elevatedBackground, ())
-        }
         label={i == 0 ? I18n.Label.owners : ""}
         keep={keep(existingOwners)}
         value
