@@ -102,12 +102,12 @@ module Address = {
     let onSubmit = _ => form.submit()
 
     <ModalFormView closing=ModalFormView.Close(closeAction)>
-      <ContractDetailsView.Title text=I18n.Title.add_multisig />
+      <ContractDetailsView.Title text=I18n.Title.add_contract />
       <ContractDetailsView.Tag content="multisig" />
       <ContractDetailsView.Overline text=I18n.add_multisig_contract_sentence />
       <FormAddress form />
       <Buttons.SubmitPrimary
-        text=I18n.Btn.save_and_register
+        text=I18n.Btn.validate
         onPress=onSubmit
         loading
         style=FormStyles.formSubmit

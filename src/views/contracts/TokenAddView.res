@@ -148,7 +148,7 @@ module MetadataForm = {
 
 type step =
   | Address
-  | CheckToken
+  | CheckContract
   | TokenId(PublicKeyHash.t)
   | Metadata(PublicKeyHash.t, TokenRepr.kind)
 
@@ -175,7 +175,7 @@ let make = (
       : Promise.err(TokensAPI.RegisterNotAFungibleToken(token.address, token.kind))
 
   let (title, button) = switch action {
-  | #Add => (I18n.Title.add_token, I18n.Btn.save_and_register)
+  | #Add => (I18n.Title.add_contract, I18n.Btn.validate)
   | #Edit => (I18n.Title.edit_metadata, I18n.Btn.update)
   }
 
@@ -253,7 +253,7 @@ let make = (
   let onSubmit = _ => form.submit()
 
   let onValidPkh = pkh => {
-    setStep(_ => CheckToken)
+    setStep(_ => CheckContract)
     pkh
     ->checkToken
     ->Promise.getOk(x =>
@@ -274,7 +274,7 @@ let make = (
 
   let headlineText = switch step {
   | Address
-  | CheckToken => I18n.add_token_format_contract_sentence
+  | CheckContract => I18n.add_contract_sentence
   | TokenId(_) => I18n.add_token_contract_tokenid_fa2
   | Metadata(_, TokenRepr.FA2(_)) => I18n.add_token_contract_metadata_fa2
   | Metadata(_, TokenRepr.FA1_2) => I18n.add_token_contract_metadata_fa1_2
@@ -315,7 +315,7 @@ let make = (
     <FormAddress form />
     {switch step {
     | Address => React.null
-    | CheckToken => <LoadingView />
+    | CheckContract => <LoadingView />
     | TokenId(_) => <FormTokenId form />
     | Metadata(pkh, kind) => <>
         {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
