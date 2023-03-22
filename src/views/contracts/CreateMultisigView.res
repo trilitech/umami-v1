@@ -28,16 +28,6 @@ open ReactNative
 let styles = {
   open Style
   StyleSheet.create({
-    "description": style(~marginBottom=20.->dp, ()),
-    "textInput": style(~maxWidth=415.->dp, ()),
-    "addressInput": style(
-      ~flex=1.,
-      ~maxWidth=415.->dp,
-      ~marginBottom=16.->dp,
-      ~alignContent=#center,
-      (),
-    ),
-    "numberInput": style(~flex=1., ~maxWidth=201.->dp, ()),
     "suffix": style(~marginLeft=8.->dp, ()),
     "row": style(~flexDirection=#row, ~alignContent=#center, ~alignItems=#center, ()),
     "selectorItemContainer": style(
