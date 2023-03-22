@@ -117,10 +117,8 @@ let styles = {
   })
 }
 
-let makeTokenRowItem = (tokens, currentChain, (token, registered)) =>
-  <ContractRowItem.Token
-    key={token->TokensLibrary.Token.uniqueKey} token registered currentChain tokens
-  />
+let makeTokenRowItem = (tokens, chain, (token, registered)) =>
+  <ContractRowItem.Token key={token->TokensLibrary.Token.uniqueKey} token registered chain tokens />
 
 module Collapsable = {
   //FIXME: Move it somewhere else
@@ -149,7 +147,7 @@ module Collapsable = {
 
 module Token = {
   @react.component
-  let make = (~title, ~tokens, ~currentChain, ~emptyText) => {
+  let make = (~title, ~tokens, ~chain, ~emptyText) => {
     let header = (collapseButton, _expanded) => {
       <View style={styles["header"]}>
         collapseButton
@@ -168,7 +166,7 @@ module Token = {
             <View>
               {tokens
               ->TokensLibrary.Generic.valuesToArray
-              ->Array.map(makeTokenRowItem(tokens, currentChain))
+              ->Array.map(makeTokenRowItem(tokens, chain))
               ->React.array}
             </View>
           </>}
@@ -176,12 +174,12 @@ module Token = {
   }
 }
 
-let makeMultisigRowItem = (currentChain, multisig) =>
-  <ContractRowItem.Multisig key={(multisig.address :> string)} multisig currentChain />
+let makeMultisigRowItem = (chain, multisig) =>
+  <ContractRowItem.Multisig key={(multisig.address :> string)} multisig chain />
 
 module Multisig = {
   @react.component
-  let make = (~multisigs, ~currentChain, ~emptyText) => {
+  let make = (~multisigs, ~chain, ~emptyText) => {
     if Array.length(multisigs) == 0 {
       <View style={styles["container"]}>
         <Table.Empty> {emptyText->React.string} </Table.Empty>
@@ -190,7 +188,7 @@ module Multisig = {
       <View style={styles["container"]}>
         <TableHeader.Multisig />
         <View>
-          {multisigs->Array.map(makeMultisigRowItem(currentChain))->React.array}
+          {multisigs->Array.map(makeMultisigRowItem(chain))->React.array}
           <View style={Style.style(~height=100.->Style.dp, ())} /> // Make sure last item has enough space for dropdown
         </View>
       </View>

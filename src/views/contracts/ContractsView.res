@@ -130,206 +130,256 @@ module ContractTypeSwitch = {
 
 module TokensView = {
   @react.component
-  let make = (~registered, ~unregistered, ~currentChain) => <>
+  let make = (~registered, ~unregistered, ~chain) => <>
+    <ContractRows.Token title=I18n.Title.added_to_wallet tokens=registered chain emptyText=None />
     <ContractRows.Token
-      title=I18n.Title.added_to_wallet tokens=registered currentChain emptyText=None
-    />
-    <ContractRows.Token
-      title=I18n.Title.held tokens=unregistered currentChain emptyText=Some(I18n.empty_held_token)
+      title=I18n.Title.held tokens=unregistered chain emptyText=Some(I18n.empty_held_token)
     />
   </>
 }
 
 module MultisigsView = {
   @react.component
-  let make = (~multisigs: array<Multisig.t>, ~currentChain) =>
-    <ContractRows.Multisig multisigs currentChain emptyText=I18n.Expl.no_multisig_contract />
+  let make = (~multisigs: array<Multisig.t>, ~chain) =>
+    <ContractRows.Multisig multisigs chain emptyText=I18n.Expl.no_multisig_contract />
 }
 
-@react.component
-let make = () => {
-  let apiVersion: option<Network.apiVersion> = StoreContext.useApiVersion()
-  let (syncState, setSyncState) = React.useState(_ => Sync.NotInitiated)
-  let (searched, setSearch) = React.useState(_ => "")
-  let stop = React.useRef(false)
-
-  let (contractType, setContractType) = React.useState(() => Token)
-
-  let accounts = StoreContext.Accounts.useGetAll()
-
-  let accounts = accounts->PublicKeyHash.Map.keysToList
-
-  let tokensRequest = fromCache => {
-    open TokensApiRequest
-    {
-      request: {
-        open Fungible
-        {accounts: accounts, numberByAccount: Tzkt.requestPageSize}
-      },
-      fromCache: fromCache,
+module Base = {
+  @react.component
+  let make = (
+    ~contractState as (contractType, setContractType),
+    ~searchState as (searched, setSearch),
+    ~onRefresh,
+    ~stop: React.ref<bool>,
+    ~syncState as (syncState, setSyncState),
+    ~children,
+  ) => {
+    let onRefresh = () => {
+      setSyncState(_ => Sync.Loading(0.))
+      onRefresh()
     }
+    let onStop = () => {
+      setSyncState(x =>
+        switch x {
+        | Sync.Loading(percentage) => Sync.Canceled(percentage)
+        | state => state
+        }
+      )
+      stop.current = true
+    }
+    <Page>
+      {I18n.Title.contracts->Typography.headline(~style=Styles.title)}
+      <SearchAndSync
+        value=searched
+        onValueChange={value => setSearch(_ => value)}
+        placeholder=I18n.Input_placeholder.search_for_token
+        onRefresh
+        onStop
+        syncState
+        syncIcon=Icons.SyncNFT.build
+        style={styles["header"]}
+      />
+      <View style={styles["actionBar"]}> <ContractTypeSwitch contractType setContractType /> </View>
+      {children}
+    </Page>
   }
+}
 
-  // will be used to indicate a percentage of tokens loaded
-  let onTokens = (~total, ~lastToken) => {
-    let percentage = Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.
-    setSyncState(x =>
-      switch x {
-      | Canceled(_) => Canceled(percentage)
-      | _ => Loading(percentage)
-      }
-    )
-  }
-
-  let (tokensApiRequest, tokensGetRequest) = StoreContext.Tokens.useFetchTokens(
-    onTokens,
-    {() => stop.current},
-    accounts,
-    tokensRequest(true),
+let loadToCanceled = setSyncState =>
+  setSyncState(x =>
+    switch x {
+    | Sync.Loading(percentage) => Sync.Canceled(percentage)
+    | _ => NotInitiated
+    }
   )
 
-  let multisigsApiRequest = StoreContext.Multisig.useRequest()
-
-  let tokens = switch tokensApiRequest {
-  | NotAsked
-  | Loading(None) =>
-    None
-
-  | Loading(Some(#Cached(tokens) | #Fetched(tokens, _)))
-  | Done(Ok(#Cached(tokens) | #Fetched(tokens, _)), _) =>
-    Some(Ok(tokens))
-
-  | Done(Error(error), _) => Some(Error(error))
-  }
-
-  let multisigs = switch multisigsApiRequest {
-  | NotAsked
-  | Loading(None) =>
-    None
-  | Done(Ok(multisigs), _)
-  | Loading(Some(multisigs)) =>
-    Some(Ok(multisigs))
-  | Done(Error(error), _) => Some(Error(error))
-  }
-
-  let loadToCanceled = () =>
-    setSyncState(x =>
-      switch x {
-      | Loading(percentage) => Canceled(percentage)
-      | _ => NotInitiated
-      }
-    )
-
-  let loadToDone = () =>
-    setSyncState(x =>
-      switch x {
-      | Loading(_) => Done
-      | state => state
-      }
-    )
-
-  React.useEffect2(() =>
-    switch (tokensApiRequest, multisigsApiRequest) {
-    | (Done(Ok(#Fetched(_, _)), _), Done(Ok(_), _)) =>
-      loadToDone()
-      stop.current = false
-      None
-
-    | (Done(Ok(#Cached(_)), _), _) =>
-      setSyncState(_ => NotInitiated)
-      None
-
-    | (Done(Error(_), _), Done(Error(_), _)) =>
-      loadToCanceled()
-      None
-
-    | _ => None
+let loadToDone = setSyncState =>
+  setSyncState(x =>
+    switch x {
+    | Sync.Loading(_) => Sync.Done
+    | state => state
     }
-  , (tokensApiRequest, multisigsApiRequest))
+  )
 
-  let currentChain = apiVersion->Option.map(v => v.chain)
+module TokenPage = {
+  @react.component
+  let make = (
+    ~contractState,
+    ~searchState,
+    ~syncState: (Sync.state, (Sync.state => Sync.state) => unit),
+    ~stop: React.ref<bool>,
+    ~chain=?,
+  ) => {
+    let accounts = StoreContext.Accounts.useGetAll()
+    let accounts = accounts->PublicKeyHash.Map.keysToList
+    let (_, setSyncState) = syncState
+    let (searched, _) = searchState
 
-  let onRefresh = () => {
-    setSyncState(_ => Loading(0.))
-    tokensGetRequest(tokensRequest(false))->ignore
-  }
+    let tokensRequest = (fromCache): TokensApiRequest.withCache<
+      TokensApiRequest.Fungible.request,
+    > => {
+      request: {accounts: accounts, numberByAccount: Tzkt.requestPageSize},
+      fromCache: fromCache,
+    }
 
-  let onStop = () => {
-    setSyncState(x =>
-      switch x {
-      | Loading(percentage) => Canceled(percentage)
-      | state => state
+    let (tokensApiRequest, tokensGetRequest) = {
+      // will be used to indicate a percentage of tokens loaded
+      let onTokens = (~total, ~lastToken) => {
+        let percentage = Int.toFloat(lastToken + 1) /. Int.toFloat(total) *. 100.
+        setSyncState(x =>
+          switch x {
+          | Sync.Canceled(_) => Sync.Canceled(percentage)
+          | _ => Loading(percentage)
+          }
+        )
       }
-    )
-    stop.current = true
-  }
+      StoreContext.Tokens.useFetchTokens(
+        onTokens,
+        {() => stop.current},
+        accounts,
+        tokensRequest(true),
+      )
+    }
 
-  let matchToken = (token, searched) => {
-    open TokensLibrary.Token
-    let searched = searched->Js.String.toLocaleLowerCase
-    let matchValue = value => value->Js.String.toLocaleLowerCase->Js.String2.includes(searched)
-    token->name->Option.mapDefault(false, matchValue) ||
-      (token->symbol->Option.mapDefault(false, matchValue) ||
-      (token->address :> string)->matchValue)
-  }
+    let onRefresh = () => tokensGetRequest(tokensRequest(false))->ignore
 
-  let partitionedTokens = React.useMemo1(
-    () =>
+    let tokens = switch tokensApiRequest {
+    | NotAsked
+    | Loading(None) =>
+      None
+    | Loading(Some(#Cached(tokens) | #Fetched(tokens, _)))
+    | Done(Ok(#Cached(tokens) | #Fetched(tokens, _)), _) =>
+      Some(Ok(tokens))
+    | Done(Error(error), _) => Some(Error(error))
+    }
+
+    React.useEffect1(() =>
+      switch tokensApiRequest {
+      | Done(Ok(#Fetched(_, _)), _) =>
+        loadToDone(setSyncState)
+        stop.current = false
+        None
+      | Done(Ok(#Cached(_)), _) =>
+        setSyncState(_ => NotInitiated)
+        None
+      | Done(Error(_), _) =>
+        loadToCanceled(setSyncState)
+        None
+      | _ => None
+      }
+    , [tokensApiRequest])
+
+    let partitionedTokens = {
+      let matchToken = (token, searched) => {
+        open TokensLibrary.Token
+        let searched = searched->Js.String.toLocaleLowerCase
+        let matchValue = value => value->Js.String.toLocaleLowerCase->Js.String2.includes(searched)
+        token->name->Option.mapDefault(false, matchValue) ||
+          (token->symbol->Option.mapDefault(false, matchValue) ||
+          (token->address :> string)->matchValue)
+      }
       tokens->Option.map(tokens =>
         tokens->Result.map(tokens =>
           tokens->TokensLibrary.Generic.keepPartition((_, _, (t, reg)) =>
             t->TokensLibrary.Token.isNFT || !(t->matchToken(searched)) ? None : Some(reg)
           )
         )
-      ),
-    [tokens],
-  )
+      )
+    }
 
-  <Page>
-    <Typography.Headline style=Styles.title>
-      {I18n.Title.contracts->React.string}
-    </Typography.Headline>
-    <SearchAndSync
-      value=searched
-      onValueChange={value => setSearch(_ => value)}
-      placeholder=I18n.Input_placeholder.search_for_token
-      onRefresh
-      onStop
-      syncState
-      syncIcon=Icons.SyncNFT.build
-      style={styles["header"]}
-    />
-    <View style={styles["actionBar"]}> <ContractTypeSwitch contractType setContractType /> </View>
-    {switch contractType {
-    | Token => <>
-        <View style={styles["actionBar"]}>
-          <AddTokenButton
-            chain=?currentChain
-            tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-              t->Result.getWithDefault(TokensLibrary.Generic.empty)
-            )}
-          />
-        </View>
-        {switch partitionedTokens {
-        | None => <LoadingView />
-        | Some(Error(error)) => <ErrorView error />
-        | Some(Ok((registered, unregistered))) =>
-          <TokensView registered unregistered currentChain />
-        }}
-      </>
-    | Multisig => <>
-        <View style={styles["actionBar"]}>
-          <AddMultisigButton chain=?currentChain /> <CreateNewMultisigButton chain=?currentChain />
-        </View>
-        {switch multisigs {
-        | None => <LoadingView />
-        | Some(Error(error)) => <ErrorView error />
-        | Some(Ok(multisigs)) =>
-          <MultisigsView
-            multisigs={Umami.PublicKeyHash.Map.valuesToArray(multisigs)} currentChain
-          />
-        }}
-      </>
-    }}
-  </Page>
+    <Base contractState searchState onRefresh stop syncState>
+      <View style={styles["actionBar"]}>
+        <AddTokenButton
+          ?chain
+          tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
+            t->Result.getWithDefault(TokensLibrary.Generic.empty)
+          )}
+        />
+      </View>
+      {switch partitionedTokens {
+      | None => <LoadingView />
+      | Some(Error(error)) => <ErrorView error />
+      | Some(Ok((registered, unregistered))) => <TokensView registered unregistered chain />
+      }}
+    </Base>
+  }
+}
+
+module MultisigPage = {
+  @react.component
+  let make = (~contractState, ~searchState, ~syncState, ~stop: React.ref<bool>, ~chain=?) => {
+    let (_, setSyncState) = syncState
+    let (searched, _) = searchState
+    let multisigsApiRequest = StoreContext.Multisig.useRequest()
+
+    let multisigs = switch multisigsApiRequest {
+    | NotAsked
+    | Loading(None) =>
+      None
+    | Done(Ok(multisigs), _)
+    | Loading(Some(multisigs)) =>
+      Some(Ok(multisigs))
+    | Done(Error(error), _) => Some(Error(error))
+    }
+
+    React.useEffect1(() =>
+      switch multisigsApiRequest {
+      | Done(Ok(_), _) =>
+        loadToDone(setSyncState)
+        stop.current = false
+        None
+      | Done(Error(_), _) =>
+        loadToCanceled(setSyncState)
+        None
+      | _ => None
+      }
+    , [multisigsApiRequest])
+
+    let onRefresh = () => () // tokensGetRequest(tokensRequest(false))->ignore
+
+    let filteredMultisigs = {
+      let matchMultisig = (searched, multisig: Multisig.t) => {
+        let searched = searched->Js.String.toLocaleLowerCase
+        let matchValue = value => value->Js.String.toLocaleLowerCase->Js.String2.includes(searched)
+        let matchPkh = (value: PublicKeyHash.t) => matchValue((value :> string))
+        matchPkh(multisig.address) ||
+        Array.some(multisig.Multisig.signers, matchPkh) ||
+        matchValue(multisig.Multisig.alias)
+      }
+      multisigs->Option.map(multisigs =>
+        multisigs->Result.map(multisigs =>
+          PublicKeyHash.Map.keep(multisigs, (_, m) => matchMultisig(searched, m))
+        )
+      )
+    }
+
+    <Base contractState searchState onRefresh stop syncState>
+      <View style={styles["actionBar"]}>
+        <AddMultisigButton chain /> <CreateNewMultisigButton chain />
+      </View>
+      {switch filteredMultisigs {
+      | None => <LoadingView />
+      | Some(Error(error)) => <ErrorView error />
+      | Some(Ok(multisigs)) =>
+        <MultisigsView multisigs={Umami.PublicKeyHash.Map.valuesToArray(multisigs)} chain />
+      }}
+    </Base>
+  }
+}
+
+@react.component
+let make = () => {
+  let apiVersion: option<Network.apiVersion> = StoreContext.useApiVersion()
+  let syncState = React.useState(_ => Sync.NotInitiated)
+  let searchState = React.useState(_ => "")
+  let stop = React.useRef(false)
+  let (contractType, _) as contractState = React.useState(() => Token)
+  let chain = apiVersion->Option.map(v => v.chain)
+
+  {
+    switch contractType {
+    | Token => <TokenPage contractState searchState syncState stop ?chain />
+    | Multisig => <MultisigPage contractState searchState syncState stop ?chain />
+    }
+  }
 }

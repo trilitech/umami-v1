@@ -101,8 +101,8 @@ module EditionModal = {
 
 module AddButton = {
   @react.component
-  let make = (~token, ~tokens, ~currentChain) => {
-    let disabled = currentChain == None
+  let make = (~token, ~tokens, ~chain) => {
+    let disabled = chain == None
 
     let item = onPress => {
       let icon = (~color=?, ~style=?) =>
@@ -126,8 +126,8 @@ module AddButton = {
 module MoreMenu = {
   module EditItem = {
     @react.component
-    let make = (~token, ~tokens, ~currentChain) => {
-      let disabled = currentChain == None
+    let make = (~token, ~tokens, ~chain) => {
+      let disabled = chain == None
 
       let item = onPress =>
         <Menu.Item disabled text=I18n.Menu.see_metadata onPress icon=Icons.Search.build />
@@ -138,9 +138,9 @@ module MoreMenu = {
 
   module MultisigDetailsModal = {
     @react.component
-    let make = (~multisig, ~currentChain) => {
+    let make = (~multisig, ~chain) => {
       let (openAction, closeAction, wrapModal) = ModalAction.useModal()
-      let disabled = currentChain == None
+      let disabled = chain == None
       <>
         <Menu.Item
           disabled text=I18n.Menu.see_details onPress={_ => openAction()} icon=Icons.Search.build
@@ -168,14 +168,14 @@ module MoreMenu = {
 
   module ContractLinkItem = {
     @react.component
-    let make = (~address: PublicKeyHash.t, ~currentChain) => {
+    let make = (~address: PublicKeyHash.t, ~chain) => {
       let addToast = LogsContext.useToast()
-      let disabled = currentChain == None
+      let disabled = chain == None
 
       let onPress = _ => {
         let explorer = // EndpointError will actually never been used, since the menu item is
         // disabled in that case
-        currentChain->Option.mapDefault(Error(Network.EndpointError), chain =>
+        chain->Option.mapDefault(Error(Network.EndpointError), chain =>
           chain->Network.fromChainId->Network.externalExplorer
         )
         switch explorer {
@@ -190,15 +190,15 @@ module MoreMenu = {
 
   module Token = {
     @react.component
-    let make = (~token, ~tokens, ~currentChain) => {
+    let make = (~token, ~tokens, ~chain) => {
       let keyPrefix = "tokenMenu-" ++ token->TokensLibrary.Token.uniqueKey
       <Menu icon=Icons.More.build size=46. iconSizeRatio=0.5 keyPopover=keyPrefix>
         [
-          <EditItem key={keyPrefix ++ "-EditItem"} token tokens currentChain />,
+          <EditItem key={keyPrefix ++ "-EditItem"} token tokens chain />,
           <ContractLinkItem
             key={keyPrefix ++ "-ContractLinkItem"}
             address={token->TokensLibrary.Token.address}
-            currentChain
+            chain
           />,
         ]
       </Menu>
@@ -207,13 +207,13 @@ module MoreMenu = {
 
   module Multisig = {
     @react.component
-    let make = (~multisig, ~currentChain) => {
+    let make = (~multisig, ~chain) => {
       let keyPrefix = "multisigMenu-" ++ (multisig.Multisig.address :> string)
       <Menu icon=Icons.More.build size=46. iconSizeRatio=0.5 keyPopover=keyPrefix>
         [
-          <MultisigDetailsModal key={keyPrefix ++ "-MultisigDetailsModal"} multisig currentChain />,
+          <MultisigDetailsModal key={keyPrefix ++ "-MultisigDetailsModal"} multisig chain />,
           <ContractLinkItem
-            key={keyPrefix ++ "-ContractLinkItem"} address=multisig.Multisig.address currentChain
+            key={keyPrefix ++ "-ContractLinkItem"} address=multisig.Multisig.address chain
           />,
           <MultisigDeleteButton
             key={keyPrefix ++ "-MultisigDeleteButton"} address=multisig.Multisig.address
@@ -226,10 +226,10 @@ module MoreMenu = {
 
 module RemoveButton = {
   @react.component
-  let make = (~token: TokensLibrary.Token.t, ~currentChain) => {
+  let make = (~token: TokensLibrary.Token.t, ~chain) => {
     let theme = ThemeContext.useTheme()
     let (_tokenRequest, deleteToken) = StoreContext.Tokens.useDelete(false)
-    let disabled = currentChain == None
+    let disabled = chain == None
 
     let onPress = _e =>
       switch token {
@@ -251,18 +251,18 @@ module RemoveButton = {
 
 module TokenActions = {
   @react.component
-  let make = (~token, ~registered: bool, ~currentChain, ~tokens) =>
+  let make = (~token, ~registered: bool, ~chain:option<Umami.Network.chainId>, ~tokens) =>
     registered
       ? <View style={styles["actions"]}>
-          <MoreMenu.Token token tokens currentChain /> <RemoveButton token currentChain />
+          <MoreMenu.Token token tokens chain /> <RemoveButton token chain />
         </View>
-      : <AddButton token tokens currentChain />
+      : <AddButton token tokens chain />
 }
 
 module MultisigActions = {
   @react.component
-  let make = (~multisig, ~currentChain) =>
-    <View style={styles["actions"]}> <MoreMenu.Multisig multisig currentChain /> </View>
+  let make = (~multisig, ~chain) =>
+    <View style={styles["actions"]}> <MoreMenu.Multisig multisig chain /> </View>
 }
 
 module Base = {
@@ -316,23 +316,23 @@ module Token = {
     ~style=?,
     ~token: TokensLibrary.Token.t,
     ~registered: bool,
-    ~currentChain,
+    ~chain: option<Umami.Network.chainId>,
     ~tokens,
   ) => {
-    open TokensLibrary.Token
-    let tokenId = switch token->kind {
+    let tokenId = switch token->TokensLibrary.Token.kind {
     | #KFA1_2 => I18n.na
-    | #KFA2 => token->id->Int.toString
+    | #KFA2 => token->TokensLibrary.Token.id->Int.toString
     }
-    let action = <TokenActions registered token tokens currentChain />
+    let (chain : option<Umami.Network.chainId>) = chain
+    let action = <TokenActions registered token tokens chain />
     <Base
       ?style
-      kind={token->kind->TokenContract.kindToString}
-      name=?{token->name}
-      symbol=?{token->symbol}
-      address={(token->address :> string)}
+      kind={token->TokensLibrary.Token.kind->TokenContract.kindToString}
+      name=?{token->TokensLibrary.Token.name}
+      symbol=?{token->TokensLibrary.Token.symbol}
+      address={(token->TokensLibrary.Token.address :> string)}
       tokenId
-      uniqueKey={token->uniqueKey}
+      uniqueKey={token->TokensLibrary.Token.uniqueKey}
       action
     />
   }
@@ -340,8 +340,8 @@ module Token = {
 
 module Multisig = {
   @react.component
-  let make = (~style=?, ~multisig: Multisig.t, ~currentChain) => {
-    let action = <MultisigActions multisig currentChain />
+  let make = (~style=?, ~multisig: Multisig.t, ~chain) => {
+    let action = <MultisigActions multisig chain />
     <Base
       ?style
       kind={"multisig"}
