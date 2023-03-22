@@ -30,13 +30,7 @@ let styles = {
   StyleSheet.create({
     "suffix": style(~marginLeft=8.->dp, ()),
     "row": style(~flexDirection=#row, ~alignContent=#center, ~alignItems=#center, ()),
-    "selectorItemContainer": style(
-      ~height=34.->dp,
-      ~marginHorizontal=16.->dp,
-      ~flexDirection=#row,
-      ~alignItems=#center,
-      (),
-    ),
+    "selectorItem": style(~lineHeight=34., ~marginHorizontal=16.->dp, ()),
     "selectorButtonContent": style(
       ~width=201.->dp,
       ~height=44.->dp,
@@ -288,12 +282,7 @@ module CreateStep_OwnerThreshold = {
       owners->Array.mapWithIndex((j, owner) => i == j ? newOwner : owner)
     )
 
-  let renderItem = item =>
-    <View style={styles["selectorItemContainer"]}>
-      <Typography.ButtonSecondary fontSize=14.>
-        {item->Int.toString->React.string}
-      </Typography.ButtonSecondary>
-    </View>
+  let renderItem = item => {item->Int.toString->Typography.body1(~style=styles["selectorItem"])}
 
   module OwnerSelector = {
     @react.component
