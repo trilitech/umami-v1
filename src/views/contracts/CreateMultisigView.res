@@ -359,7 +359,12 @@ module CreateStep_OwnerThreshold = {
         text=I18n.Btn.continue
         onPress={_ => onSubmit()}
         style=FormStyles.formSubmit
-        disabled={form.getFieldState(Field(Owners)) != Valid}
+        disabled={form.values.owners->Array.some(x =>
+          switch x {
+          | Valid(_) => false
+          | _ => true
+          }
+        )}
       />
     </>
   }
