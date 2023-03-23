@@ -80,9 +80,9 @@ let makeFeeCell = (~shouldDisplayFee, ~fee, ~style as styleArg, ~makeIcon, ~onAd
 
 module Header = {
   @react.component
-  let make = (~fee, ~onDeleteAll=() => ()) => {
+  let make = (~style as styleFromProp=?, ~fee, ~onDeleteAll=() => ()) => {
     open ReactNative.Style
-    <Table.Head>
+    <Table.Head style=?styleFromProp>
       {makeGenericHeaderCell(React.null, 10., ~style=style(~minWidth=30.->dp, ()), ())}
       {makeHeaderCell(I18n.global_batch_column_type, 130., ())}
       {makeHeaderCell(I18n.global_batch_subject, 130., ())}
@@ -320,9 +320,9 @@ let make = (
       fa2Position={getFa2Pos(coords, allCoords)}
     />
   }
-
-  <>
-    <Header fee={dryRun != None} onDeleteAll />
+  let gutters = n => Style.style(~marginHorizontal=(LayoutConst.pagePaddingHorizontal *. n)->Style.dp, ())
+  <View style={gutters(-1.)}>
+    <Header style={gutters(1.)} fee={dryRun != None} onDeleteAll />
     <Pagination elements renderItem emptyComponent=React.null />
-  </>
+  </View>
 }
