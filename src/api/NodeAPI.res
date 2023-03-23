@@ -207,7 +207,7 @@ module Operation = {
 module Delegate = DelegateMaker(URL)
 
 module Tokens = {
-  type tokenKind = [OperationRepr.Transaction.tokenKind | #NotAToken]
+  type tokenKind = [OperationRepr.Transaction.tokenKind | #Unknown]
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) =>
     URL.Explorer.checkToken(config, ~contract)

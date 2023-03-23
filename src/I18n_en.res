@@ -286,7 +286,7 @@ module Form_input_error = {
   let api_not_available = "API not available"
   let node_not_available = "Node not available"
   let different_chains = "API and Node are not running on the same network"
-  let not_a_token_contract = "Not a standard token contract"
+  let unknown_contract = "Unknown contract type"
   let no_metadata = pkh => {
     let s = pkh->Option.mapWithDefault("", s => `: ${s}`)
     `No metadata was found for the contract${s}.`

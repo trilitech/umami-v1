@@ -33,6 +33,7 @@ module StateLenses = %lenses(
     decimals: string,
     tokenId: string,
     token: option<TokensLibrary.Token.t>,
+    kind: option<[TokenContract.kind | #Multisig]>,
   }
 )
 module TokenCreateForm = ReForm.Make(StateLenses)
@@ -61,6 +62,33 @@ module FormAddress = {
 }
 
 module FormTokenId = {
+  @react.component
+  let make = (~form: TokenCreateForm.api) => {
+    let tooltipIcon =
+      <IconButton
+        icon=Icons.Info.build
+        size=19.
+        iconSizeRatio=1.
+        tooltip=("formTokenId", I18n.Tooltip.tokenid)
+        disabled=true
+        style={
+          open Style
+          style(~borderRadius=0., ~marginLeft=4.->dp, ~marginTop=5.->dp, ())
+        }
+      />
+
+    <FormGroupTextInput
+      label=I18n.Label.add_token_id
+      value=form.values.tokenId
+      handleChange={form.handleChange(TokenId)}
+      error={form.getFieldError(Field(TokenId))}
+      placeholder=I18n.Input_placeholder.add_token_id
+      tooltipIcon
+    />
+  }
+}
+
+module FormMultisigName = {
   @react.component
   let make = (~form: TokenCreateForm.api) => {
     let tooltipIcon =
@@ -211,32 +239,54 @@ let make = (
   let form: TokenCreateForm.api = TokenCreateForm.use(
     ~schema={
       open TokenCreateForm.Validation
-      Schema(nonEmpty(Name) + custom(state =>
-          switch state.decimals->Int.fromString {
-          | None => Error(I18n.Form_input_error.not_an_int)
-          | Some(i) if i < 0 => Error(I18n.Form_input_error.negative_int)
-          | Some(_) => Valid
+      Schema(nonEmpty(Name) + custom(state => {
+          if state.kind == Some(#Multisig) {
+            Valid
+          } else {
+            switch state.decimals->Int.fromString {
+            | None => Error(I18n.Form_input_error.not_an_int)
+            | Some(i) if i < 0 => Error(I18n.Form_input_error.negative_int)
+            | _ => Valid
+            }
           }
-        , Decimals) + custom(state =>
-          switch state.tokenId->Int.fromString {
-          | None if state.tokenId == "" => Valid
-          | None => Error(I18n.Form_input_error.not_an_int)
-          | Some(i) if i < 0 => Error(I18n.Form_input_error.negative_int)
-          // mouif
-          | Some(_) => Valid
+        }, Decimals) + custom(state => {
+          if state.kind == Some(#Multisig) {
+            Valid
+          } else {
+            switch state.tokenId->Int.fromString {
+            | None if state.tokenId == "" => Valid
+            | None => Error(I18n.Form_input_error.not_an_int)
+            | Some(i) if i < 0 => Error(I18n.Form_input_error.negative_int)
+            // mouif
+            | Some(_) => Valid
+            }
           }
-        , Decimals) + custom(state =>
-          switch PublicKeyHash.buildContract(state.address) {
-          | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
-          | Ok(_) => Valid
+        }, Decimals) + custom(state => {
+          if state.kind == Some(#Multisig) {
+            Valid
+          } else {
+            switch PublicKeyHash.buildContract(state.address) {
+            | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
+            | Ok(_) => Valid
+            }
           }
-        , Address) + custom(state =>
-          switch state.token {
-          | Some(t) if t->TokensLibrary.Token.isNFT && !cacheOnlyNFT =>
-            Error(I18n.error_register_not_fungible)
-          | _ => Valid
+        }, Address) + custom(state => {
+          if state.kind == Some(#Multisig) {
+            Valid
+          } else {
+            switch state.token {
+            | Some(t) if t->TokensLibrary.Token.isNFT && !cacheOnlyNFT =>
+              Error(I18n.error_register_not_fungible)
+            | _ => Valid
+            }
           }
-        , TokenId) + nonEmpty(Symbol))
+        }, TokenId) + custom(state =>
+          if state.kind == Some(#Multisig) || state.symbol != "" {
+            Valid
+          } else {
+            Error(I18n.Form_input_error.mandatory)
+          }
+        , Symbol))
     },
     ~onSubmit,
     ~initialState={
@@ -246,6 +296,7 @@ let make = (
       decimals: "",
       tokenId: kind->Option.mapWithDefault("", k => k->TokenRepr.kindId->Int.toString),
       token: None,
+      kind: None,
     },
     ~i18n=FormUtils.i18n,
     (),
@@ -259,11 +310,17 @@ let make = (
     ->checkContract
     ->Promise.getOk(x =>
       switch x {
-      | #KFA1_2 => setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
-      | #KFA2 => setStep(_ => TokenId(pkh))
-      | #Multisig => setStep(_ => MultisigName(pkh))
+      | #KFA1_2 =>
+        form.handleChange(Kind, Some(#KFA1_2))
+        setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
+      | #KFA2 =>
+        form.handleChange(Kind, Some(#KFA2))
+        setStep(_ => TokenId(pkh))
+      | #Multisig =>
+        form.handleChange(Kind, Some(#Multisig))
+        setStep(_ => MultisigName(pkh))
       | #Unknown =>
-        form.raiseSubmitFailed(I18n.Form_input_error.not_a_token_contract->Some)
+        form.raiseSubmitFailed(I18n.Form_input_error.unknown_contract->Some)
         setStep(_ => Address)
       }
     )
@@ -272,6 +329,7 @@ let make = (
   let onValidTokenId = (pkh, tokenId) => setStep(_ => Metadata(pkh, TokenRepr.FA2(tokenId)))
 
   let pkh = PublicKeyHash.buildContract(form.values.address)
+
   let tokenId = form.values.tokenId->Int.fromString
 
   let headlineText = switch step {
@@ -283,22 +341,23 @@ let make = (
   | MultisigName(_) => I18n.add_token_contract_metadata_fa1_2
   }
 
-  React.useEffect2(() => {
-    switch (pkh, tokenId, step) {
-    // Error case: the address becomes invalid
-    | (Error(_), _, TokenId(_) | Metadata(_, _) | MultisigName(_)) => setStep(_ => Address)
+  React.useEffect1(_ => {
+    switch pkh {
+    | Error(_) => setStep(_ => Address)
+    | Ok(address) => onValidPkh(address)
+    }
+    None
+  }, [form.values.address])
 
+  React.useEffect1(() => {
+    switch (pkh, tokenId) {
     // Error case: the tokenId becomes invalid
-    | (Ok(address), None, Metadata(_, TokenRepr.FA2(_))) => setStep(_ => TokenId(address))
-
-    | (Ok(address), _, Address) => onValidPkh(address)
-
-    | (_, Some(id), TokenId(pkh)) => onValidTokenId(pkh, id)
-
+    | (Ok(address), None) => setStep(_ => TokenId(address))
+    | (Ok(address), Some(id)) => onValidTokenId(address, id)
     | _ => ()
     }
     None
-  }, (pkh, tokenId))
+  }, [tokenId])
 
   let loading = tokenCreateRequest->ApiRequest.isLoading || cacheTokenRequest->ApiRequest.isLoading
 
@@ -324,7 +383,7 @@ let make = (
         {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
         <MetadataForm form pkh kind tokens />
       </>
-    | MultisigName(_) => <View />
+    | MultisigName(_) => <FormMultisigName form />
     }}
     <Buttons.SubmitPrimary
       text=button
