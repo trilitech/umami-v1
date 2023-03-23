@@ -151,6 +151,7 @@ type step =
   | CheckContract
   | TokenId(PublicKeyHash.t)
   | Metadata(PublicKeyHash.t, TokenRepr.kind)
+  | MultisigName(PublicKeyHash.t)
 
 @react.component
 let make = (
@@ -164,7 +165,7 @@ let make = (
 ) => {
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate()
   let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken()
-  let (tokenKind, checkToken) = StoreContext.Tokens.useCheck(tokens)
+  let (contractKind, checkContract) = StoreContext.Contract.useCheck(tokens)
   let (step, setStep) = React.useState(_ => Address)
 
   let createToken = (token: TokenRepr.t) =>
@@ -255,12 +256,13 @@ let make = (
   let onValidPkh = pkh => {
     setStep(_ => CheckContract)
     pkh
-    ->checkToken
+    ->checkContract
     ->Promise.getOk(x =>
       switch x {
       | #KFA1_2 => setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
       | #KFA2 => setStep(_ => TokenId(pkh))
-      | #NotAToken =>
+      | #Multisig => setStep(_ => MultisigName(pkh))
+      | #Unknown =>
         form.raiseSubmitFailed(I18n.Form_input_error.not_a_token_contract->Some)
         setStep(_ => Address)
       }
@@ -278,12 +280,13 @@ let make = (
   | TokenId(_) => I18n.add_token_contract_tokenid_fa2
   | Metadata(_, TokenRepr.FA2(_)) => I18n.add_token_contract_metadata_fa2
   | Metadata(_, TokenRepr.FA1_2) => I18n.add_token_contract_metadata_fa1_2
+  | MultisigName(_) => I18n.add_token_contract_metadata_fa1_2
   }
 
   React.useEffect2(() => {
     switch (pkh, tokenId, step) {
     // Error case: the address becomes invalid
-    | (Error(_), _, TokenId(_) | Metadata(_, _)) => setStep(_ => Address)
+    | (Error(_), _, TokenId(_) | Metadata(_, _) | MultisigName(_)) => setStep(_ => Address)
 
     // Error case: the tokenId becomes invalid
     | (Ok(address), None, Metadata(_, TokenRepr.FA2(_))) => setStep(_ => TokenId(address))
@@ -305,7 +308,7 @@ let make = (
     <ContractDetailsView.Title text=title />
     {
       open ApiRequest
-      switch (tokenKind, pkh) {
+      switch (contractKind, pkh) {
       | (Done(Ok(#...TokenContract.kind as kind), _), Ok(_)) =>
         <ContractDetailsView.Tag content={kind->TokenContract.kindToString} />
       | _ => React.null
@@ -321,6 +324,7 @@ let make = (
         {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
         <MetadataForm form pkh kind tokens />
       </>
+    | MultisigName(_) => <View />
     }}
     <Buttons.SubmitPrimary
       text=button

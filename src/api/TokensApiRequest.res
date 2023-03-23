@@ -25,19 +25,6 @@
 
 include ApiRequest
 
-let useCheckTokenContract = tokens => {
-  let set = (~config: ConfigContext.env, address) =>
-    switch tokens->TokensLibrary.Generic.pickAnyAtAddress(address) {
-    | None => config.network->NodeAPI.Tokens.checkTokenContract(address)
-    | Some((_, _, (token, _))) =>
-      (token->TokensLibrary.Token.kind: TokenContract.kind :> [
-        | TokenContract.kind
-        | #NotAToken
-      ])->Promise.ok
-    }
-  ApiRequest.useSetter(~set, ~kind=Logs.Tokens, ~toast=false, ())
-}
-
 let getOneBalance = (balancesRequest, key) =>
   balancesRequest->ApiRequest.flatMap((balances, isDone, t) =>
     switch balances->TokenRepr.Map.get(key) {

@@ -658,8 +658,6 @@ module Tokens = {
     TokensApiRequest.useCacheToken(~sideEffect=_ => resetTokens(), ())
   }
 
-  let useCheck = tokens => TokensApiRequest.useCheckTokenContract(tokens)
-
   let useDelete = pruneCache => {
     let resetAccounts = useResetAll()
     TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), pruneCache)
@@ -738,6 +736,37 @@ module Aliases = {
   let useDelete = () => {
     let resetAliases = useResetAll()
     AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ())
+  }
+}
+
+module Contract = {
+  let useCheck = tokens => {
+    let set = (~config: ConfigContext.env, address) => {
+      switch tokens->TokensLibrary.Generic.pickAnyAtAddress(address) {
+      | None =>
+        config.network
+        ->NodeAPI.Tokens.checkTokenContract(address)
+        ->Promise.flatMapOk(x =>
+          switch x {
+          | #Unknown =>
+            Multisig.API.getOneFromNetwork(config.network, address)->Promise.map(r =>
+              switch r {
+              | Ok(_) => Ok(#Multisig)
+              | Error(_) => Ok(#Unknown)
+              }
+            )
+          | _ => x->Promise.ok
+          }
+        )
+      | Some((_, _, (token, _))) =>
+        (token->TokensLibrary.Token.kind: TokenContract.kind :> [
+          | TokenContract.kind
+          | #Multisig
+          | #Unknown
+        ])->Promise.ok
+      }
+    }
+    ApiRequest.useSetter(~set, ~kind=Logs.Contract, ~toast=false, ())
   }
 }
 
