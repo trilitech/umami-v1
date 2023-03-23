@@ -750,7 +750,7 @@ module Contract = {
         ->NodeAPI.Tokens.checkTokenContract(address)
         ->Promise.flatMapOk(x =>
           switch x {
-          | #Unknown =>
+          | #NotAToken =>
             Multisig.API.getOneFromNetwork(config.network, address)->Promise.map(r =>
               switch r {
               | Ok(multisig) => Ok(Multisig(multisig))
