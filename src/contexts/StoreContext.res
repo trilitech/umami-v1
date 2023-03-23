@@ -740,6 +740,8 @@ module Aliases = {
 }
 
 module Contract = {
+  type t = Token(TokenContract.kind) | Multisig(Multisig.t) | Unknown
+
   let useCheck = tokens => {
     let set = (~config: ConfigContext.env, address) => {
       switch tokens->TokensLibrary.Generic.pickAnyAtAddress(address) {
@@ -748,22 +750,17 @@ module Contract = {
         ->NodeAPI.Tokens.checkTokenContract(address)
         ->Promise.flatMapOk(x =>
           switch x {
-          | #Unknown =>
+          | #NotAToken =>
             Multisig.API.getOneFromNetwork(config.network, address)->Promise.map(r =>
               switch r {
-              | Ok(_) => Ok(#Multisig)
-              | Error(_) => Ok(#Unknown)
+              | Ok(multisig) => Ok(Multisig(multisig))
+              | Error(_) => Ok(Unknown)
               }
             )
-          | _ => x->Promise.ok
+          | #...TokenContract.kind as kind => Token(kind)->Promise.ok
           }
         )
-      | Some((_, _, (token, _))) =>
-        (token->TokensLibrary.Token.kind: TokenContract.kind :> [
-          | TokenContract.kind
-          | #Multisig
-          | #Unknown
-        ])->Promise.ok
+      | Some((_, _, (token, _))) => Token(token->TokensLibrary.Token.kind)->Promise.ok
       }
     }
     ApiRequest.useSetter(~set, ~kind=Logs.Contract, ~toast=false, ())

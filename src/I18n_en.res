@@ -222,6 +222,7 @@ module Label = {
   let approval_threshold = "Approval threshold:"
   let out_of = (a, b) => `${a} out of ${b}`
   let signing_account = "Signing account"
+  let multisig_tag = "multisig"
 }
 
 module Input_placeholder = {
@@ -234,6 +235,7 @@ module Input_placeholder = {
   let add_contact_or_tz = "Paste a tz address or type in a contact's name"
   let add_token_address = "Enter KT1 address of a contract"
   let add_token_name = "e.g. Tezos"
+  let add_multisig_name = "e.g. Multisig Contract 1"
   let add_token_decimals = "e.g. 0"
   let add_token_id = "e.g. 0"
   let enter_new_password = "Enter new password, at least 8 characters"
@@ -790,6 +792,7 @@ let add_token_contract_metadata_fa1_2 = "Please specify the name, symbol, and de
 let add_token_contract_tokenid_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available."
 let add_token_contract_metadata_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available"
 let add_multisig_contract_sentence = "Please enter the address of a deployed multisig contract."
+let add_multisig_contract_metadata = "We detected that this contract meets the multisig standard ; as such please fill in the following field."
 let delegation_removal = "Delegation Removal"
 let error_check_contract = "Address is not a valid token contract"
 let error_register_not_fungible = "Cannot register an NFT as a fungible token"

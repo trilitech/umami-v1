@@ -33,7 +33,7 @@ module StateLenses = %lenses(
     decimals: string,
     tokenId: string,
     token: option<TokensLibrary.Token.t>,
-    kind: option<[TokenContract.kind | #Multisig]>,
+    kind: option<StoreContext.Contract.t>,
   }
 )
 module TokenCreateForm = ReForm.Make(StateLenses)
@@ -91,26 +91,12 @@ module FormTokenId = {
 module FormMultisigName = {
   @react.component
   let make = (~form: TokenCreateForm.api) => {
-    let tooltipIcon =
-      <IconButton
-        icon=Icons.Info.build
-        size=19.
-        iconSizeRatio=1.
-        tooltip=("formTokenId", I18n.Tooltip.tokenid)
-        disabled=true
-        style={
-          open Style
-          style(~borderRadius=0., ~marginLeft=4.->dp, ~marginTop=5.->dp, ())
-        }
-      />
-
     <FormGroupTextInput
-      label=I18n.Label.add_token_id
-      value=form.values.tokenId
-      handleChange={form.handleChange(TokenId)}
-      error={form.getFieldError(Field(TokenId))}
-      placeholder=I18n.Input_placeholder.add_token_id
-      tooltipIcon
+      label=I18n.Label.add_token_name
+      value=form.values.name
+      handleChange={form.handleChange(Name)}
+      error={form.getFieldError(Field(Name))}
+      placeholder=I18n.Input_placeholder.add_multisig_name
     />
   }
 }
@@ -179,7 +165,7 @@ type step =
   | CheckContract
   | TokenId(PublicKeyHash.t)
   | Metadata(PublicKeyHash.t, TokenRepr.kind)
-  | MultisigName(PublicKeyHash.t)
+  | MultisigName
 
 @react.component
 let make = (
@@ -195,6 +181,7 @@ let make = (
   let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken()
   let (contractKind, checkContract) = StoreContext.Contract.useCheck(tokens)
   let (step, setStep) = React.useState(_ => Address)
+  let (_, updateMultisig) = StoreContext.Multisig.useUpdate(false)
 
   let createToken = (token: TokenRepr.t) =>
     !(token->TokenRepr.isNFT)
@@ -210,8 +197,8 @@ let make = (
 
   let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
     open TokenCreateForm
-    switch step {
-    | Metadata(address, kind) =>
+    switch (state.values.kind, step) {
+    | (Some(Token(_)), Metadata(address, kind)) =>
       let alias = state.values.name
       let symbol = state.values.symbol
       let decimals = state.values.decimals |> Int.fromString |> Option.getExn
@@ -232,6 +219,9 @@ let make = (
       ->createToken
       ->Promise.getOk(_ => closeAction())
       None
+    | (Some(Multisig(multisig)), MultisigName) =>
+      updateMultisig({...multisig, alias: state.values.name})->Promise.getOk(_ => closeAction())
+      None
     | _ => None
     }
   }
@@ -239,20 +229,19 @@ let make = (
   let form: TokenCreateForm.api = TokenCreateForm.use(
     ~schema={
       open TokenCreateForm.Validation
-      Schema(nonEmpty(Name) + custom(state => {
-          if state.kind == Some(#Multisig) {
-            Valid
-          } else {
+      Schema(nonEmpty(Name) + custom(state =>
+          switch state.kind {
+          | Some(Token(_)) =>
             switch state.decimals->Int.fromString {
             | None => Error(I18n.Form_input_error.not_an_int)
             | Some(i) if i < 0 => Error(I18n.Form_input_error.negative_int)
             | _ => Valid
             }
+          | _ => Valid
           }
-        }, Decimals) + custom(state => {
-          if state.kind == Some(#Multisig) {
-            Valid
-          } else {
+        , Decimals) + custom(state =>
+          switch state.kind {
+          | Some(Token(_)) =>
             switch state.tokenId->Int.fromString {
             | None if state.tokenId == "" => Valid
             | None => Error(I18n.Form_input_error.not_an_int)
@@ -260,31 +249,31 @@ let make = (
             // mouif
             | Some(_) => Valid
             }
+          | _ => Valid
           }
-        }, Decimals) + custom(state => {
-          if state.kind == Some(#Multisig) {
-            Valid
-          } else {
+        , Decimals) + custom(state =>
+          switch state.kind {
+          | Some(Token(_)) =>
             switch PublicKeyHash.buildContract(state.address) {
             | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
             | Ok(_) => Valid
             }
+          | _ => Valid
           }
-        }, Address) + custom(state => {
-          if state.kind == Some(#Multisig) {
-            Valid
-          } else {
+        , Address) + custom(state =>
+          switch state.kind {
+          | Some(Token(_)) =>
             switch state.token {
             | Some(t) if t->TokensLibrary.Token.isNFT && !cacheOnlyNFT =>
               Error(I18n.error_register_not_fungible)
             | _ => Valid
             }
+          | _ => Valid
           }
-        }, TokenId) + custom(state =>
-          if state.kind == Some(#Multisig) || state.symbol != "" {
-            Valid
-          } else {
-            Error(I18n.Form_input_error.mandatory)
+        , TokenId) + custom(state =>
+          switch state.kind {
+          | Some(Token(_)) if state.symbol == "" => Error(I18n.Form_input_error.mandatory)
+          | _ => Valid
           }
         , Symbol))
     },
@@ -308,22 +297,17 @@ let make = (
     setStep(_ => CheckContract)
     pkh
     ->checkContract
-    ->Promise.getOk(x =>
+    ->Promise.getOk(x => {
+      form.handleChange(Kind, Some(x))
       switch x {
-      | #KFA1_2 =>
-        form.handleChange(Kind, Some(#KFA1_2))
-        setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
-      | #KFA2 =>
-        form.handleChange(Kind, Some(#KFA2))
-        setStep(_ => TokenId(pkh))
-      | #Multisig =>
-        form.handleChange(Kind, Some(#Multisig))
-        setStep(_ => MultisigName(pkh))
-      | #Unknown =>
+      | Token(#KFA1_2) => setStep(_ => Metadata(pkh, TokenRepr.FA1_2))
+      | Token(#KFA2) => setStep(_ => TokenId(pkh))
+      | Multisig(_) => setStep(_ => MultisigName)
+      | Unknown =>
         form.raiseSubmitFailed(I18n.Form_input_error.unknown_contract->Some)
         setStep(_ => Address)
       }
-    )
+    })
   }
 
   let onValidTokenId = (pkh, tokenId) => setStep(_ => Metadata(pkh, TokenRepr.FA2(tokenId)))
@@ -338,7 +322,7 @@ let make = (
   | TokenId(_) => I18n.add_token_contract_tokenid_fa2
   | Metadata(_, TokenRepr.FA2(_)) => I18n.add_token_contract_metadata_fa2
   | Metadata(_, TokenRepr.FA1_2) => I18n.add_token_contract_metadata_fa1_2
-  | MultisigName(_) => I18n.add_token_contract_metadata_fa1_2
+  | MultisigName => I18n.add_multisig_contract_metadata
   }
 
   React.useEffect1(_ => {
@@ -368,8 +352,10 @@ let make = (
     {
       open ApiRequest
       switch (contractKind, pkh) {
-      | (Done(Ok(#...TokenContract.kind as kind), _), Ok(_)) =>
+      | (Done(Ok(Token(kind)), _), Ok(_)) =>
         <ContractDetailsView.Tag content={kind->TokenContract.kindToString} />
+      | (Done(Ok(Multisig(_)), _), Ok(_)) =>
+        <ContractDetailsView.Tag content=I18n.Label.multisig_tag />
       | _ => React.null
       }
     }
@@ -383,7 +369,7 @@ let make = (
         {kind != TokenRepr.FA1_2 ? <FormTokenId form /> : React.null}
         <MetadataForm form pkh kind tokens />
       </>
-    | MultisigName(_) => <FormMultisigName form />
+    | MultisigName => <FormMultisigName form />
     }}
     <Buttons.SubmitPrimary
       text=button
