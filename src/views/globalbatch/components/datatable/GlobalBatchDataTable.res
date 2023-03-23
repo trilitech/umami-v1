@@ -300,30 +300,29 @@ let make = (
   ~onDetails,
 ) => {
   let allCoords = indexedRows->Array.map(((a, _)) => a)
+  let elements = Array.mapWithIndex(indexedRows, (i, x) => (i, x))
+  let renderItem = ((arrIndex, rowData)) => {
+    let (coords, payload) = rowData
+    let (managerIndex, _) = coords
+    let (amount, recipient, parameter) = payload
+    <TransferRowDisplay
+      key={makeKey(coords)}
+      amount
+      recipient
+      fee={Option.map(dryRun, x => getFeeDisplay(~simulation=x.simulations[managerIndex]))}
+      onDelete={() => onDelete(arrIndex)}
+      parameter
+      onEdit={_ => onEdit(arrIndex)}
+      onDetails={parameter->ProtocolHelper.Transfer.hasParams
+        ? Some(_ => onDetails(arrIndex))
+        : None}
+      onAdvanced={_ => onAdvanced(arrIndex)}
+      fa2Position={getFa2Pos(coords, allCoords)}
+    />
+  }
 
   <>
     <Header fee={dryRun != None} onDeleteAll />
-    {indexedRows
-    ->Array.mapWithIndex((arrIndex, rowData) => {
-      let (coords, payload) = rowData
-
-      let (managerIndex, _) = coords
-      let (amount, recipient, parameter) = payload
-      <TransferRowDisplay
-        key={makeKey(coords)}
-        amount
-        recipient
-        fee={Option.map(dryRun, x => getFeeDisplay(~simulation=x.simulations[managerIndex]))}
-        onDelete={() => onDelete(arrIndex)}
-        parameter
-        onEdit={_ => onEdit(arrIndex)}
-        onDetails={parameter->ProtocolHelper.Transfer.hasParams
-          ? Some(_ => onDetails(arrIndex))
-          : None}
-        onAdvanced={_ => onAdvanced(arrIndex)}
-        fa2Position={getFa2Pos(coords, allCoords)}
-      />
-    })
-    ->React.array}
+    <Pagination elements renderItem emptyComponent=React.null />
   </>
 }
