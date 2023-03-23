@@ -172,7 +172,7 @@ module Base = {
       <SearchAndSync
         value=searched
         onValueChange={value => setSearch(_ => value)}
-        placeholder=I18n.Input_placeholder.search_for_token
+        placeholder=I18n.Input_placeholder.search_for_contract
         onRefresh
         onStop
         syncState
