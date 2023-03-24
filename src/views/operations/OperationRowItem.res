@@ -144,7 +144,7 @@ let memo = component =>
 
 module AddToken = {
   @react.component
-  let make = (~address, ~kind: TokenRepr.kind, ~tooltipSuffix: string, ~tokens) => {
+  let make = (~address, ~kind: TokenRepr.kind, ~tooltipSuffix: string) => {
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
     let closeAction = () => closeAction()
 
@@ -158,7 +158,7 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <ContractAddView action=#Add chain address kind tokens cacheOnlyNFT=true closeAction />
+        <ContractAddView action=#Add chain address kind cacheOnlyNFT=true closeAction />
       </ModalAction>
       <IconButton icon=Icons.AddToken.build iconSizeRatio={5. /. 7.} onPress tooltip />
     </>
@@ -167,7 +167,7 @@ module AddToken = {
 
 module UnknownTokenAmount = {
   @react.component
-  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tokens, ~tooltipSuffix) => {
+  let make = (~amount, ~sign, ~address: PublicKeyHash.t, ~kind, ~tooltipSuffix) => {
     let tooltip = ("unknown_token" ++ tooltipSuffix, I18n.Tooltip.unregistered_token_transaction)
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text> {`${sign} ${amount->TokenRepr.Unit.toNatString}`->React.string} </Text>
@@ -182,7 +182,7 @@ module UnknownTokenAmount = {
           style(~borderRadius=0., ~marginLeft=4.->dp, ())
         }
       />
-      <AddToken address kind tooltipSuffix tokens />
+      <AddToken address kind tooltipSuffix />
     </View>
   }
 }
@@ -194,14 +194,13 @@ module KnownTokenAmount = {
     ~sign,
     ~token as {address, kind, symbol, decimals, _}: TokenRepr.t,
     ~registered,
-    ~tokens,
     ~tooltipSuffix,
   ) =>
     <View style={OperationUtils.styles["rawAddressContainer"]}>
       <Text>
         {`${sign} ${amount->TokenRepr.Unit.toStringDecimals(decimals)} ${symbol}`->React.string}
       </Text>
-      {registered ? React.null : <AddToken address kind tooltipSuffix tokens />}
+      {registered ? React.null : <AddToken address kind tooltipSuffix />}
     </View>
 }
 
@@ -239,10 +238,10 @@ module GenericCellAmount = {
             kind->TokenRepr.kindId,
           )
           switch token {
-          | None => <UnknownTokenAmount amount sign address kind tokens tooltipSuffix />
+          | None => <UnknownTokenAmount amount sign address kind tooltipSuffix />
           | Some((token, _)) if token->TokenRepr.isNFT => <NFTAmount amount sign token />
           | Some((token, registered)) =>
-            <KnownTokenAmount amount sign token registered tokens tooltipSuffix />
+            <KnownTokenAmount amount sign token registered tooltipSuffix />
           }
         }}
       </Typography.Body1>

@@ -117,8 +117,8 @@ let styles = {
   })
 }
 
-let makeTokenRowItem = (tokens, chain, (token, registered)) =>
-  <ContractRowItem.Token key={token->TokensLibrary.Token.uniqueKey} token registered chain tokens />
+let makeTokenRowItem = (chain, (token, registered)) =>
+  <ContractRowItem.Token key={token->TokensLibrary.Token.uniqueKey} token registered chain />
 
 module Collapsable = {
   //FIXME: Move it somewhere else
@@ -166,7 +166,7 @@ module Token = {
             <View>
               {tokens
               ->TokensLibrary.Generic.valuesToArray
-              ->Array.map(makeTokenRowItem(tokens, chain))
+              ->Array.map(makeTokenRowItem(chain))
               ->React.array}
             </View>
           </>}

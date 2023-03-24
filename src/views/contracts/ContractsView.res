@@ -42,7 +42,12 @@ module AddContractButton = {
   }
 
   @react.component
-  let make = (~chain=?, ~popup) => {
+  let make = (~chain=?) => {
+    let popup = closeAction => {
+      <ContractAddView
+        action=#Add chain={chain->Option.getWithDefault(Network.unsafeChainId(""))} closeAction
+      />
+    }
     let (openAction, closeAction, wrapModal) = ModalAction.useModal()
     let tooltip =
       chain == None ? Some(("add_token_button", I18n.Tooltip.chain_not_connected)) : None
@@ -59,29 +64,6 @@ module AddContractButton = {
       />
       {wrapModal(popup(closeAction))}
     </>
-  }
-}
-
-module AddTokenButton = {
-  @react.component
-  let make = (~tokens, ~chain=?) => {
-    let popup = closeAction => {
-      <ContractAddView
-        action=#Add
-        chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
-        tokens
-        closeAction
-      />
-    }
-    <AddContractButton chain popup />
-  }
-}
-
-module AddMultisigButton = {
-  @react.component
-  let make = (~chain=?) => {
-    let popup = closeAction => {<MultisigAddView closeAction />}
-    <AddContractButton chain popup />
   }
 }
 
@@ -288,14 +270,7 @@ module TokenPage = {
     }
 
     <Base contractState searchState onRefresh stop syncState>
-      <View style={styles["actionBar"]}>
-        <AddTokenButton
-          ?chain
-          tokens={tokens->Option.mapDefault(TokensLibrary.Generic.empty, t =>
-            t->Result.getWithDefault(TokensLibrary.Generic.empty)
-          )}
-        />
-      </View>
+      <View style={styles["actionBar"]}> <AddContractButton ?chain /> </View>
       {switch partitionedTokens {
       | None => <LoadingView />
       | Some(Error(error)) => <ErrorView error />
@@ -355,7 +330,8 @@ module MultisigPage = {
 
     <Base contractState searchState onRefresh stop syncState>
       <View style={styles["actionBar"]}>
-        <AddMultisigButton chain /> <CreateNewMultisigButton chain />
+        <AddContractButton chain={chain->Option.getWithDefault(Network.unsafeChainId(""))} />
+        <CreateNewMultisigButton chain />
       </View>
       {switch filteredMultisigs {
       | None => <LoadingView />

@@ -176,10 +176,10 @@ let make = (
   ~chain,
   ~address: option<PublicKeyHash.t>=?,
   ~kind=?,
-  ~tokens,
   ~cacheOnlyNFT=false,
   ~closeAction,
 ) => {
+  let tokens = StoreContext.Tokens.useGetAll()
   let (tokenCreateRequest, createToken) = StoreContext.Tokens.useCreate()
   let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken()
   let (contractKind, checkContract) = StoreContext.Contract.useCheck(tokens)

@@ -79,7 +79,7 @@ let styles = {
 
 module EditionModal = {
   @react.component
-  let make = (~action, ~item, ~token, ~tokens) => {
+  let make = (~action, ~item, ~token) => {
     open TokensLibrary.Token
     let (openAction, closeAction, wrapModal) = ModalAction.useModal()
 
@@ -91,7 +91,6 @@ module EditionModal = {
           address={token->address}
           kind={TokenContract.toTokenKind(token->kind, token->id)}
           chain={token->chain}
-          tokens
           closeAction
         />,
       )}
@@ -101,7 +100,7 @@ module EditionModal = {
 
 module AddButton = {
   @react.component
-  let make = (~token, ~tokens, ~chain) => {
+  let make = (~token, ~chain) => {
     let disabled = chain == None
 
     let item = onPress => {
@@ -119,20 +118,20 @@ module AddButton = {
       <IconButton disabled tooltip onPress icon size=46. iconSizeRatio=1.1 />
     }
 
-    <EditionModal action=#Add item token tokens />
+    <EditionModal action=#Add item token />
   }
 }
 
 module MoreMenu = {
   module EditItem = {
     @react.component
-    let make = (~token, ~tokens, ~chain) => {
+    let make = (~token, ~chain) => {
       let disabled = chain == None
 
       let item = onPress =>
         <Menu.Item disabled text=I18n.Menu.see_metadata onPress icon=Icons.Search.build />
 
-      <> <EditionModal action=#Edit item token tokens /> </>
+      <> <EditionModal action=#Edit item token /> </>
     }
   }
 
@@ -190,11 +189,11 @@ module MoreMenu = {
 
   module Token = {
     @react.component
-    let make = (~token, ~tokens, ~chain) => {
+    let make = (~token, ~chain) => {
       let keyPrefix = "tokenMenu-" ++ token->TokensLibrary.Token.uniqueKey
       <Menu icon=Icons.More.build size=46. iconSizeRatio=0.5 keyPopover=keyPrefix>
         [
-          <EditItem key={keyPrefix ++ "-EditItem"} token tokens chain />,
+          <EditItem key={keyPrefix ++ "-EditItem"} token chain />,
           <ContractLinkItem
             key={keyPrefix ++ "-ContractLinkItem"}
             address={token->TokensLibrary.Token.address}
@@ -251,12 +250,12 @@ module RemoveButton = {
 
 module TokenActions = {
   @react.component
-  let make = (~token, ~registered: bool, ~chain:option<Umami.Network.chainId>, ~tokens) =>
+  let make = (~token, ~registered: bool, ~chain:option<Umami.Network.chainId>) =>
     registered
       ? <View style={styles["actions"]}>
-          <MoreMenu.Token token tokens chain /> <RemoveButton token chain />
+          <MoreMenu.Token token chain /> <RemoveButton token chain />
         </View>
-      : <AddButton token tokens chain />
+      : <AddButton token chain />
 }
 
 module MultisigActions = {
@@ -317,14 +316,13 @@ module Token = {
     ~token: TokensLibrary.Token.t,
     ~registered: bool,
     ~chain: option<Umami.Network.chainId>,
-    ~tokens,
   ) => {
     let tokenId = switch token->TokensLibrary.Token.kind {
     | #KFA1_2 => I18n.na
     | #KFA2 => token->TokensLibrary.Token.id->Int.toString
     }
     let (chain : option<Umami.Network.chainId>) = chain
-    let action = <TokenActions registered token tokens chain />
+    let action = <TokenActions registered token chain />
     <Base
       ?style
       kind={token->TokensLibrary.Token.kind->TokenContract.kindToString}
