@@ -66,7 +66,7 @@ module AddTokenButton = {
   @react.component
   let make = (~tokens, ~chain=?) => {
     let popup = closeAction => {
-      <TokenAddView
+      <ContractAddView
         action=#Add
         chain={chain->Option.getWithDefault(Network.unsafeChainId(""))}
         tokens

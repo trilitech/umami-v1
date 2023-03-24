@@ -86,7 +86,7 @@ module EditionModal = {
     <>
       {item(_ => openAction())}
       {wrapModal(
-        <TokenAddView
+        <ContractAddView
           action
           address={token->address}
           kind={TokenContract.toTokenKind(token->kind, token->id)}

@@ -59,6 +59,7 @@ module Btn = {
   let confirm = "CONFIRM"
   let update = "UPDATE"
   let validate = "VALIDATE"
+  let register = "REGISTER"
   let import_secret = "IMPORT SECRET WITH RECOVERY PHRASE"
   let create_secret_new = "CREATE NEW SECRET"
   let connect_hardware_wallet = "CONNECT LEDGER"

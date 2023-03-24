@@ -34,13 +34,16 @@ type step =
 module FormAddress = {
   @react.component
   let make = (~form: MultisigAddForm.api) =>
-    <ContractAddView.FormAddress
-      value=form.values.address
+    <FormGroupTextInput
+      label=I18n.Label.add_token_address
+      value=""
       handleChange={form.handleChange(Address)}
       error={list{
         form.formState->FormUtils.getFormStateError,
         form.getFieldError(Field(Address)),
       }->Option.firstSome}
+      placeholder=I18n.Input_placeholder.add_token_address
+      clearButton=true
     />
 }
 

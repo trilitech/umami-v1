@@ -158,7 +158,7 @@ module AddToken = {
 
     <>
       <ModalAction visible=visibleModal onRequestClose=closeAction>
-        <TokenAddView action=#Add chain address kind tokens cacheOnlyNFT=true closeAction />
+        <ContractAddView action=#Add chain address kind tokens cacheOnlyNFT=true closeAction />
       </ModalAction>
       <IconButton icon=Icons.AddToken.build iconSizeRatio={5. /. 7.} onPress tooltip />
     </>
