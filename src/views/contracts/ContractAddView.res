@@ -36,6 +36,7 @@ module StateLenses = %lenses(
     kind: option<StoreContext.Contract.t>,
   }
 )
+
 module ContractCreateForm = ReForm.Make(StateLenses)
 
 let styles = {
