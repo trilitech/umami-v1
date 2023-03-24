@@ -172,6 +172,15 @@ module Base = {
   }
 }
 
+module ErrorWrapper = {
+  @react.component
+  let make = (~text) => {
+    <View style={Pagination.styles["listContent"]}>
+      <Table.Empty> {text->Typography.body1} </Table.Empty>
+    </View>
+  }
+}
+
 module OperationsHistory = {
   @react.component
   let make = (~account: Alias.t, ~request) => {
@@ -188,7 +197,7 @@ module OperationsHistory = {
           emptyComponent={I18n.empty_operations->React.string}
           footerStyle
         />
-      | Done(Error(error), _) => error->Errors.toString->React.string
+      | Done(Error(error), _) => <ErrorWrapper text={error->Errors.toString} />
       | NotAsked
       | Loading(Some(_))
       | Loading(None) =>
@@ -221,7 +230,7 @@ module OperationsPending = {
           emptyComponent
           footerStyle
         />
-      | Done(Error(error), _) => error->Errors.toString->React.string
+      | Done(Error(error), _) => <ErrorWrapper text={error->Errors.toString} />
       | NotAsked
       | Loading(Some(_))
       | Loading(None) =>

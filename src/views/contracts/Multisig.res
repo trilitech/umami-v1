@@ -121,6 +121,9 @@ module API = {
     ServerAPI.URL.External.tzktContractStorage(~network, ~contract)
     ->Promise.value
     ->Promise.flatMapOk(url => url->ServerAPI.URL.get)
+    ->Promise.mapError(e =>
+      I18n.Errors.fetching_storage((contract :> string), e->Errors.toString)->Errors.Generic
+    )
     ->Promise.flatMapOk(json => json->JsonEx.decode(Storage.decoder)->Promise.value)
   }
 

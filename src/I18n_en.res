@@ -647,7 +647,7 @@ module Errors = {
     let e = e->Option.mapDefault("", m => " with message: " ++ m)
     `Error when parsing Micheline${e}`
   }
-
+  let fetching_storage = (pkh, e) => `Error while fetching storage of ${pkh}: ${e}`
   let unknown_version = (current, expected) =>
     `Unknown version ${current}, while ${expected} expected`
   let version_not_in_bound = (lowest, highest, version) =>
