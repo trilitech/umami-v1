@@ -36,7 +36,7 @@ module StateLenses = %lenses(
     kind: option<StoreContext.Contract.t>,
   }
 )
-module TokenCreateForm = ReForm.Make(StateLenses)
+module ContractCreateForm = ReForm.Make(StateLenses)
 
 let styles = {
   open Style
@@ -50,7 +50,7 @@ let styles = {
 
 module FormAddress = {
   @react.component
-  let make = (~form: TokenCreateForm.api) =>
+  let make = (~form: ContractCreateForm.api) =>
     <FormGroupTextInput
       label=I18n.Label.add_token_address
       value=""
@@ -66,7 +66,7 @@ module FormAddress = {
 
 module FormTokenId = {
   @react.component
-  let make = (~form: TokenCreateForm.api) => {
+  let make = (~form: ContractCreateForm.api) => {
     let tooltipIcon =
       <IconButton
         icon=Icons.Info.build
@@ -93,7 +93,7 @@ module FormTokenId = {
 
 module FormMultisigName = {
   @react.component
-  let make = (~form: TokenCreateForm.api) => {
+  let make = (~form: ContractCreateForm.api) => {
     <FormGroupTextInput
       label=I18n.Label.add_token_name
       value=form.values.name
@@ -106,7 +106,7 @@ module FormMultisigName = {
 
 module FormMetadata = {
   @react.component
-  let make = (~form: TokenCreateForm.api) => <>
+  let make = (~form: ContractCreateForm.api) => <>
     <FormGroupTextInput
       label=I18n.Label.add_token_name
       value=form.values.name
@@ -133,7 +133,7 @@ module FormMetadata = {
 
 module MetadataForm = {
   @react.component
-  let make = (~form: TokenCreateForm.api, ~pkh, ~kind, ~tokens) => {
+  let make = (~form: ContractCreateForm.api, ~pkh, ~kind, ~tokens) => {
     open TokensLibrary
 
     let token = MetadataApiRequest.useLoadMetadata(tokens, pkh, kind)
@@ -198,8 +198,8 @@ let make = (
   | #Edit => (I18n.Title.edit_metadata, I18n.Btn.update)
   }
 
-  let onSubmit = ({state}: TokenCreateForm.onSubmitAPI) => {
-    open TokenCreateForm
+  let onSubmit = ({state}: ContractCreateForm.onSubmitAPI) => {
+    open ContractCreateForm
     switch (state.values.kind, step) {
     | (Some(Token(_)), Metadata(address, kind)) =>
       let alias = state.values.name
@@ -229,9 +229,9 @@ let make = (
     }
   }
 
-  let form: TokenCreateForm.api = TokenCreateForm.use(
+  let form: ContractCreateForm.api = ContractCreateForm.use(
     ~schema={
-      open TokenCreateForm.Validation
+      open ContractCreateForm.Validation
       Schema(nonEmpty(Name) + custom(state =>
           switch state.kind {
           | Some(Token(_)) =>
