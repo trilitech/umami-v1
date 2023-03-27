@@ -94,6 +94,8 @@ macos-dist:
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || export CSC_KEY_PASSWORD="${CSC_KEY_PASSWORD}"'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your apple ID>/${SECRET_APPLEID}/g" ./scripts/notarize.js)'
     - '[ "${CI_COMMIT_REF_PROTECTED}" != "true" ] || (sed -i "" "s/<your app-specific password>/${SECRET_APPLEIDPASSWORD}/g" ./scripts/notarize.js)'
+    # Temporary "fix". Notarization is disabled until apple dev account is updated.
+    - echo 'exports.default=async function notarizing(context){return;}' > ./scripts/notarize.js
     # Prevent notarization if we do not have secret Apple ID and password
     - '[ "${CI_COMMIT_REF_PROTECTED}" == "true" ] || (echo ''exports.default=async function notarizing(context){return;}'' > ./scripts/notarize.js)'
     - yarn
