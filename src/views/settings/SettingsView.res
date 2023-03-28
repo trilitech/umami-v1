@@ -34,7 +34,10 @@ let make = () =>
     <BackupSettingView />
     {System.hasAutoUpdate() ? <UpdateSettingView /> : React.null}
     <DangerSettingView />
-    <SettingsComponents.Block isLast=true>
-      <Typography.Body1> {I18n.Settings.about_ELEMENT} </Typography.Body1>
-    </SettingsComponents.Block>
+    {
+      let onClick = _ => System.openExternal("https://tzkt.io/")
+      <SettingsComponents.Block isLast=true>
+        <Typography.Body1> {I18n.Settings.about_ELEMENT(onClick)} </Typography.Body1>
+      </SettingsComponents.Block>
+    }
   </Page>

@@ -535,10 +535,10 @@ module Settings = {
   let backup_text = "Create and save a backup file for the entire wallet"
   let backup_path_saved = "Backup file path saved"
   let app_update = "APP UPDATE"
-  let about_ELEMENT =
+  let about_ELEMENT = onClick =>
     <>
       {"Powered by "->React.string}
-      <span onClick={_ => System.openExternal("https://tzkt.io/")}> {"TzKT"->React.string} </span>
+      <span onClick> {"TzKT"->React.string} </span>
       {" API"->React.string}
     </>
 }
