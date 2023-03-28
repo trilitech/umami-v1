@@ -159,7 +159,10 @@ module Headline = Make({
   let selectable = true
 })
 
-let headline = (~style=?, txt) => <Headline ?style> {txt->React.string} </Headline>
+let headline = (~colorStyle=?, ~fontWeightStyle=?, ~fontSize=?, ~selectable=?, ~style=?, txt) =>
+  <Headline ?colorStyle ?fontWeightStyle ?fontSize ?selectable ?style>
+    {txt->React.string}
+  </Headline>
 
 /* OVERLINE */
 

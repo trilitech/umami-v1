@@ -469,7 +469,8 @@ module Expl = {
   let review_multisig = `Please review the details of the multisig contract you are about to create. You can edit them before submitting by clicking the back button. You will receive an approval request from your wallet. Please confirm it to continue.`
   let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
   let signing_account = "Select signing account."
-  let signing_account_multisig = s => `A multisig (${s}) was selected. You need to propose this operation to the co-owners of the selected multisig and then approve it in order to finally execute it. Please select which account will propose.`
+  let signing_account_multisig = s =>
+    `A multisig (${s}) was selected. You need to propose this operation to the co-owners of the selected multisig and then approve it in order to finally execute it. Please select which account will propose.`
   let unrecognized_operation = "Umami does not support this type of operation. Please review the details of the operation before signing it."
 }
 
@@ -534,7 +535,12 @@ module Settings = {
   let backup_text = "Create and save a backup file for the entire wallet"
   let backup_path_saved = "Backup file path saved"
   let app_update = "APP UPDATE"
-  ()
+  let about_ELEMENT =
+    <>
+      {"Powered by "->React.string}
+      <span onClick={_ => System.openExternal("https://tzkt.io/")}> {"TzKT"->React.string} </span>
+      {" API"->React.string}
+    </>
 }
 
 module Help = {

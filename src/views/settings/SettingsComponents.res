@@ -144,7 +144,7 @@ module Block = {
   }
 
   @react.component
-  let make = (~title, ~children, ~isLast=false, ~actionButton=?) => {
+  let make = (~title=?, ~children, ~isLast=false, ~actionButton=?) => {
     let theme = ThemeContext.useTheme()
 
     <View
@@ -159,12 +159,12 @@ module Block = {
           ),
         ])
       }>
-      <View style={styles["titleaction"]}>
-        <Typography.Headline fontSize=16. style={styles["title"]}>
-          {title->React.string}
-        </Typography.Headline>
-        {actionButton->ReactUtils.opt}
-      </View>
+      {title->Option.mapWithDefault(React.null, title =>
+        <View style={styles["titleaction"]}>
+          {title->Typography.headline(~fontSize=16., ~style={styles["title"]})}
+          {actionButton->ReactUtils.opt}
+        </View>
+      )}
       <View style={styles["content"]}> children </View>
     </View>
   }
