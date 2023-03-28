@@ -307,7 +307,8 @@ module Multisig = {
         parameter: {entrypoint: Some(("approve" | "execute") as entrypoint), value: Some(value)},
       }) =>
       lambdaApproveOrExecute(~contract=destination, ~entrypoint, ~value)
-    | Transfer({data: Simple({destination, amount})}) => transfer(destination, amount)
+    | Transfer({data: Simple({destination, amount}), parameter: {entrypoint: None, value: None}}) =>
+      transfer(destination, amount)
     | Transfer({data: FA2Batch(batch)}) => batchFA2(batch)
     | _ => failwith(__LOC__ ++ ": unsupported")
     }
