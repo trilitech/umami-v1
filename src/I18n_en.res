@@ -535,12 +535,11 @@ module Settings = {
   let backup_text = "Create and save a backup file for the entire wallet"
   let backup_path_saved = "Backup file path saved"
   let app_update = "APP UPDATE"
-  let about_ELEMENT = onClick =>
-    <>
-      {"Powered by "->React.string}
-      <span onClick> {"TzKT"->React.string} </span>
-      {" API"->React.string}
-    </>
+  let about_ELEMENT = onPress => <>
+    {"Powered by "->React.string}
+    <ReactNative.Pressable onPress> {_ => "TzKT"->React.string} </ReactNative.Pressable>
+    {" API"->React.string}
+  </>
 }
 
 module Help = {
