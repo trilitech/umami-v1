@@ -191,6 +191,20 @@ module AppView = {
 
     let toastBox = LogsContext.useToastBox()
 
+    let fallbackElement = (e: RescriptReactErrorBoundary.params<string>) => {
+      open Style
+      <Page>
+        <View style={style(~flex=1., ~alignItems=#center, ~justifyContent=#center, ())}>
+          {I18n.Errors.unhandled_error(e.error)->Typography.body1(
+            ~style=style(~marginBottom=24.->dp, ()),
+          )}
+          <Buttons.SubmitPrimary
+            text=I18n.Errors.reload_btn onPress={_ => System.reload()} style=FormStyles.formSubmit
+          />
+        </View>
+      </Page>
+    }
+
     <>
       toastBox
       <DocumentContext>
@@ -203,29 +217,32 @@ module AppView = {
           {eulaSignature
             ? <DisclaimerModal onSign />
             : <View style={styles["main"]}>
-                {switch selectedAccount {
-                | Some(account) if displayNavbar => <NavBar account route />
-                | Some(_)
-                | None =>
-                  <NavBar.Empty />
-                }}
-                <View style={styles["content"]}>
-                  {switch mainPageState {
-                  | Onboarding => <OnboardingView />
-                  | AddAccountModal => <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
-                  | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
-                  | Dashboard =>
-                    <SelectedAccountView>
-                      {account =>
-                        <Dashboard
-                          account
-                          showBuyTez={url => setMainPage(_ => BuyTez(url))}
-                          route
-                          setMainPage
-                        />}
-                    </SelectedAccountView>
+                <RescriptReactErrorBoundary fallback=fallbackElement>
+                  {switch selectedAccount {
+                  | Some(account) if displayNavbar => <NavBar account route />
+                  | Some(_)
+                  | None =>
+                    <NavBar.Empty />
                   }}
-                </View>
+                  <View style={styles["content"]}>
+                    {switch mainPageState {
+                    | Onboarding => <OnboardingView />
+                    | AddAccountModal =>
+                      <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
+                    | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
+                    | Dashboard =>
+                      <SelectedAccountView>
+                        {account =>
+                          <Dashboard
+                            account
+                            showBuyTez={url => setMainPage(_ => BuyTez(url))}
+                            route
+                            setMainPage
+                          />}
+                      </SelectedAccountView>
+                    }}
+                  </View>
+                </RescriptReactErrorBoundary>
               </View>}
         </View>
       </DocumentContext>

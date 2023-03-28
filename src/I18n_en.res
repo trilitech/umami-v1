@@ -663,6 +663,7 @@ module Errors = {
   let unexpected_decimals = v => `${v} does not accept decimals`
   let expected_decimals = (v, d) => `${v} does not accept more that ${string_of_int(d)} decimals`
   let fetch404 = "Error 404 - Not Found"
+  let reload_btn = "RELOAD PAGE"
 }
 
 module Csv = {

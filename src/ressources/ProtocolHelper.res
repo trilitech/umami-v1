@@ -310,7 +310,7 @@ module Multisig = {
     | Transfer({data: Simple({destination, amount}), parameter: {entrypoint: None, value: None}}) =>
       transfer(destination, amount)
     | Transfer({data: FA2Batch(batch)}) => batchFA2(batch)
-    | _ => failwith(__LOC__ ++ ": unsupported")
+    | _ => Js.Exn.raiseError(__LOC__ ++ ": unsupported")
     }
 
   @ocaml.doc(" Create lambda from a list of operations ")
