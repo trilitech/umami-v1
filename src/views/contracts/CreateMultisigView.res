@@ -303,7 +303,6 @@ module CreateStep_OwnerThreshold = {
 
   @react.component
   let make = (~form: Form.api, ~onSubmit) => {
-    let theme = ThemeContext.useTheme()
     <>
       {I18n.Title.set_owners_and_threshold->Typography.overline1(
         ~style=FormStyles.headerWithoutMarginBottom,
@@ -334,10 +333,6 @@ module CreateStep_OwnerThreshold = {
             StyleSheet.flatten([styles["row"], style(~marginBottom=12.->dp, ())])
           }>
           <Selector
-            globalStyle=#button
-            chevron={<Icons.ChevronDown
-              size=22. color=theme.colors.iconHighEmphasis style={Selector.styles["icon"]}
-            />}
             innerStyle={styles["selectorButtonContent"]}
             items={Array.range(1, validOwnersNumber)}
             getItemKey={item => item->Int.toString}
@@ -347,8 +342,7 @@ module CreateStep_OwnerThreshold = {
             renderButton={(selectedItem, _) => {
               selectedItem->Option.mapWithDefault(React.null, item => renderItem(item))
             }}
-            keyPopover="Selector"
-            backgroundColor=theme.colors.elevatedBackground
+            keyPopover="selector-threshold"
           />
           {I18n.Expl.out_of(validOwnersNumber->Int.toString)->Typography.body1(
             ~style=styles["suffix"],
