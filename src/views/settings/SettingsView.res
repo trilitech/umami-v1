@@ -35,9 +35,13 @@ let make = () =>
     {System.hasAutoUpdate() ? <UpdateSettingView /> : React.null}
     <DangerSettingView />
     {
-      let onClick = _ => System.openExternal("https://tzkt.io/")
+      let tzkt =
+        <ReactNative.Pressable onPress={_ => System.openExternal("https://tzkt.io/")}>
+          {_ => "TzKT"->React.string}
+        </ReactNative.Pressable>
+
       <SettingsComponents.Block isLast=true>
-        <Typography.Body1> {I18n.Settings.about_ELEMENT(onClick)} </Typography.Body1>
+        <Typography.Body1> {I18n.Settings.about_ELEMENT(tzkt)} </Typography.Body1>
       </SettingsComponents.Block>
     }
   </Page>
