@@ -191,62 +191,78 @@ module AppView = {
 
     let toastBox = LogsContext.useToastBox()
 
-    let fallbackElement = (e: RescriptReactErrorBoundary.params<string>) => {
+    let rootStyle = {
       open Style
-      <Page>
-        <View style={style(~flex=1., ~alignItems=#center, ~justifyContent=#center, ())}>
-          {I18n.Errors.unhandled_error(e.error)->Typography.body1(
-            ~style=style(~marginBottom=24.->dp, ()),
-          )}
-          <Buttons.SubmitPrimary
-            text=I18n.Errors.reload_btn onPress={_ => System.reload()} style=FormStyles.formSubmit
-          />
-        </View>
-      </Page>
+      array([styles["layout"], style(~backgroundColor=theme.colors.background, ())])
     }
 
-    <>
+    let fallbackElement = (e: RescriptReactErrorBoundary.params<string>) => {
+      open Style
+      let err = ` ${e.error} ` // Make sure that error is a string
+      let stacktrace = e.info.componentStack
+      let btn = (text, onPress) =>
+        <Buttons.SubmitPrimary
+          text
+          onPress
+          style={array([
+            FormStyles.formSubmit,
+            style(~marginHorizontal=12.->dp, ~marginVertical=24.->dp, ()),
+          ])}
+        />
+      <View style=rootStyle>
+        <Page>
+          <View style={style(~flex=1., ~alignItems=#center, ~justifyContent=#center, ())}>
+            {I18n.Errors.unhandled_error_title->Typography.headline}
+            <View style={style(~flexDirection=#row, ())}>
+              {btn(I18n.Errors.reload_btn, _ => System.reload())}
+              {btn(I18n.Errors.relaunch_btn, _ => {
+                System.relaunch()
+                System.quit()
+              })}
+              {btn(I18n.Help.support_text, _ =>
+                Linking.openURL(MailToSupportButton.buildMailtoUrl(err))->ignore
+              )}
+            </View>
+            <ScrollView> {err->Typography.body1} {stacktrace->Typography.body1} </ScrollView>
+          </View>
+        </Page>
+      </View>
+    }
+    <RescriptReactErrorBoundary fallback=fallbackElement>
       toastBox
       <DocumentContext>
-        <View
-          style={
-            open Style
-            array([styles["layout"], style(~backgroundColor=theme.colors.background, ())])
-          }>
+        <View style=rootStyle>
           <Header />
           {eulaSignature
             ? <DisclaimerModal onSign />
             : <View style={styles["main"]}>
-                <RescriptReactErrorBoundary fallback=fallbackElement>
-                  {switch selectedAccount {
-                  | Some(account) if displayNavbar => <NavBar account route />
-                  | Some(_)
-                  | None =>
-                    <NavBar.Empty />
+                {switch selectedAccount {
+                | Some(account) if displayNavbar => <NavBar account route />
+                | Some(_)
+                | None =>
+                  <NavBar.Empty />
+                }}
+                <View style={styles["content"]}>
+                  {switch mainPageState {
+                  | Onboarding => <OnboardingView />
+                  | AddAccountModal => <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
+                  | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
+                  | Dashboard =>
+                    <SelectedAccountView>
+                      {account =>
+                        <Dashboard
+                          account
+                          showBuyTez={url => setMainPage(_ => BuyTez(url))}
+                          route
+                          setMainPage
+                        />}
+                    </SelectedAccountView>
                   }}
-                  <View style={styles["content"]}>
-                    {switch mainPageState {
-                    | Onboarding => <OnboardingView />
-                    | AddAccountModal =>
-                      <OnboardingView onClose={_ => setMainPage(_ => Dashboard)} />
-                    | BuyTez(src) => <BuyTezView src onClose=handleCloseBuyTezView />
-                    | Dashboard =>
-                      <SelectedAccountView>
-                        {account =>
-                          <Dashboard
-                            account
-                            showBuyTez={url => setMainPage(_ => BuyTez(url))}
-                            route
-                            setMainPage
-                          />}
-                      </SelectedAccountView>
-                    }}
-                  </View>
-                </RescriptReactErrorBoundary>
+                </View>
               </View>}
         </View>
       </DocumentContext>
-    </>
+    </RescriptReactErrorBoundary>
   }
 }
 
