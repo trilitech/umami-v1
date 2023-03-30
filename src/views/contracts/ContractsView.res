@@ -330,7 +330,7 @@ module MultisigPage = {
 
     <Base contractState searchState onRefresh stop syncState>
       <View style={styles["actionBar"]}>
-        <AddContractButton chain={chain->Option.getWithDefault(Network.unsafeChainId(""))} />
+        <AddContractButton ?chain />
         <CreateNewMultisigButton chain />
       </View>
       {switch filteredMultisigs {

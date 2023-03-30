@@ -54,7 +54,7 @@ module FormAddress = {
   let make = (~form: ContractCreateForm.api) =>
     <FormGroupTextInput
       label=I18n.Label.add_token_address
-      value=""
+      value=form.values.address
       handleChange={form.handleChange(Address)}
       error={list{
         form.formState->FormUtils.getFormStateError,
@@ -256,13 +256,9 @@ let make = (
           | _ => Valid
           }
         , Decimals) + custom(state =>
-          switch state.kind {
-          | Some(Token(_)) =>
-            switch PublicKeyHash.buildContract(state.address) {
-            | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
-            | Ok(_) => Valid
-            }
-          | _ => Valid
+          switch PublicKeyHash.buildContract(state.address) {
+          | Error(_) => Error(I18n.Form_input_error.invalid_key_hash)
+          | Ok(_) => Valid
           }
         , Address) + custom(state =>
           switch state.kind {
@@ -345,7 +341,7 @@ let make = (
     | _ => ()
     }
     None
-  }, [tokenId])
+  }, [form.values.tokenId])
 
   let loading = tokenCreateRequest->ApiRequest.isLoading || cacheTokenRequest->ApiRequest.isLoading
 
