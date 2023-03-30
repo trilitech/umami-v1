@@ -185,7 +185,7 @@ let make = (
   let (cacheTokenRequest, cacheToken) = StoreContext.Tokens.useCacheToken()
   let (contractKind, checkContract) = StoreContext.Contract.useCheck(tokens)
   let (step, setStep) = React.useState(_ => Address)
-  let (_, updateMultisig) = StoreContext.Multisig.useUpdate(false)
+  let (_, updateMultisig) = StoreContext.Multisig.useRegister()
 
   let createToken = (token: TokenRepr.t) =>
     !(token->TokenRepr.isNFT)

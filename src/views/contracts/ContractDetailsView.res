@@ -156,7 +156,7 @@ module Multisig = {
 
   @react.component
   let make = (~multisig: Multisig.t, ~closeAction) => {
-    let (_, updateMultisig) = StoreContext.Multisig.useUpdate(false)
+    let (_, updateMultisig) = StoreContext.Multisig.useEdit()
 
     let onSubmit = ({state}: MultisigEdition.Form.onSubmitAPI) => {
       updateMultisig({...multisig, alias: state.values.name})->Promise.getOk(_ => closeAction())
