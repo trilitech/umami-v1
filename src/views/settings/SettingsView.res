@@ -37,7 +37,10 @@ let make = () =>
     {
       let tzkt =
         <ReactNative.Pressable onPress={_ => System.openExternal("https://tzkt.io/")}>
-          {_ => "TzKT"->React.string}
+          {
+            // wrap in <></> to fix 'A text node cannot be a child of a <View>' error
+            _ => <> {"TzKT"->React.string} </>
+          }
         </ReactNative.Pressable>
 
       <SettingsComponents.Block isLast=true>
