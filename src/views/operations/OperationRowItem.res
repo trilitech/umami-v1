@@ -618,6 +618,7 @@ module Pending = {
   module WithConfirmationButton = {
     @react.component
     let make = (
+      ~text=I18n.Btn.sign,
       ~title=I18n.Title.approval_threshold_reached,
       ~contentText=I18n.Expl.approval_threshold_reached,
       ~children,
@@ -626,7 +627,7 @@ module Pending = {
       let cancelText = I18n.Btn.cancel
       let action = children(closeAction)
       <>
-        <Buttons.SubmitPrimary text=I18n.Btn.sign onPress={_ => openAction()} style=btnStyle />
+        <Buttons.SubmitPrimary text onPress={_ => openAction()} style=btnStyle />
         {wrapModal(
           <ModalDialogConfirm.ModalBase action title contentText cancelText closeAction />,
         )}
@@ -635,10 +636,10 @@ module Pending = {
   }
   module WithReviewButton = {
     @react.component
-    let make = (~children) => {
+    let make = (~text=?, ~children) => {
       let title = I18n.Title.unrecognized_operation
       let contentText = I18n.Expl.unrecognized_operation
-      <WithConfirmationButton title contentText> {children} </WithConfirmationButton>
+      <WithConfirmationButton ?text title contentText> {children} </WithConfirmationButton>
     }
   }
 
@@ -673,7 +674,7 @@ module Pending = {
           : <ApproveButton multisig signer id disabled=false />}
         {missing == 1 && !hasSigned
           ? unknown
-              ? <WithReviewButton>
+              ? <WithReviewButton text=I18n.Btn.submit>
                   {closeAction =>
                     <ApproveAndExecuteButton
                       style multisig signer id disabled=false callback=closeAction
