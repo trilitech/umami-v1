@@ -451,14 +451,14 @@ module ExplorerMaker = (
 
   let filterMalformedDuplicates = ops => {
     open Operation
-    let l = ops->List.fromArray->List.sort((o1, o2) => compare((o1.hash, o1.id), (o2.hash, o2.id)))
+    let l = ops->List.fromArray->List.sort((o1, o2) => compare((o1.hash, o1.id, o1.internal), (o2.hash, o2.id, o2.internal)))
 
     let rec loop = (acc, l) =>
       switch l {
       | list{} => acc
       | list{h} => list{h, ...acc}
       | list{h1, h2, ...t} =>
-        if h1.hash == h2.hash && h1.id == h2.id {
+        if h1.hash == h2.hash && h1.id == h2.id && h1.internal == h2.internal {
           let h1 = h1->isMalformedTokenTransfer ? None : Some(h1)
           let h2 = h2->isMalformedTokenTransfer ? None : Some(h2)
 
