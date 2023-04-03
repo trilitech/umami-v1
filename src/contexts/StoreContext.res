@@ -216,17 +216,10 @@ let make = (~children) => {
   , [network])
 
   let resetNetwork = () => {
-    let setMultisigs = snd(multisigsRequestState)
-    setMultisigs(ApiRequest.expireCache)
-    // Multisigs are used in alias listing, so we need to reset aliases cache as well
-    let setAliases = snd(aliasesRequestState)
-    setAliases(ApiRequest.expireCache)
-    let setBalances = snd(balanceRequestsState)
-    setBalances(ApiRequest.expireCache)
-    let setBalancesToken = snd(balanceTokenRequestsState)
-    setBalancesToken(ApiRequest.expireCache)
-    let (_, setSelectedToken) = selectedTokenState
-    setSelectedToken(_ => None)
+    snd(multisigsRequestState)(ApiRequest.expireCache)
+    snd(balanceRequestsState)(ApiRequest.expireCache)
+    snd(balanceTokenRequestsState)(ApiRequest.expireCache)
+    snd(selectedTokenState)(_ => None)
   }
 
   React.useEffect1(() => {
@@ -256,6 +249,13 @@ let make = (~children) => {
     }
     None
   }, (accountsRequest, selectedAccount))
+
+  // When multisigs or implicit accounts are updated,
+  // aliases should be updated as well.
+  React.useEffect2(() => {
+    snd(aliasesRequestState)(ApiRequest.expireCache)
+    None
+  }, (fst(accountsRequestState), fst(multisigsRequestState)))
 
   let _ = useLoadBalances(accounts, multisigs, balanceRequestsState)
 
@@ -807,11 +807,7 @@ module Multisig = {
 
   let useUpdate = message => {
     let resetMultisigs = useResetAll()
-    let resetAliases = Aliases.useResetAll()
-    let sideEffect = () => {
-      resetMultisigs()
-      resetAliases()
-    }
+    let sideEffect = resetMultisigs
     MultisigApiRequest.useUpdate(message)(~sideEffect, ())
   }
 
@@ -821,11 +817,7 @@ module Multisig = {
 
   let useDelete = () => {
     let resetMultisigs = useResetAll()
-    let resetAliases = Aliases.useResetAll()
-    let sideEffect = () => {
-      resetMultisigs()
-      resetAliases()
-    }
+    let sideEffect = resetMultisigs
     MultisigApiRequest.useDelete(~sideEffect, ())
   }
 
@@ -879,24 +871,20 @@ module Accounts = {
   }
 
   let useResetNames = () => {
-    let resetAliases = Aliases.useResetAll()
     let resetOperations = Operations.useResetNames()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
-      resetAliases()
       resetOperations()
     }
   }
 
   let useResetAll = () => {
     let resetOperations = Operations.useResetAll()
-    let resetAliases = Aliases.useResetAll()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
       resetOperations()
-      resetAliases()
     }
   }
 
@@ -984,8 +972,8 @@ module Secrets = {
   }
 
   let useDerive = () => {
-    let resetAccounts = useResetAll()
-    SecretApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ())
+    let resetSecrets = useResetAll()
+    SecretApiRequest.useDerive(~sideEffect=_ => resetSecrets(), ())
   }
 
   let useUpdate = () => {
@@ -996,7 +984,6 @@ module Secrets = {
   let useDelete = () => {
     let config = ConfigContext.useContent()
     let resetAll = useResetAll()
-    let resetAliases = Aliases.useResetAll()
     let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => resetAll(), ())
     (
       request,
@@ -1017,9 +1004,6 @@ module Secrets = {
           )
         )
         ->Promise.mapOk(Multisig_API.removeFromCache)
-        // Alias cache is reset as sideEffect od `setRequest`
-        // but you need to reset it now that multisigs have actually been removed from cache
-        ->Promise.tapOk(_ => resetAliases())
       },
     )
   }
