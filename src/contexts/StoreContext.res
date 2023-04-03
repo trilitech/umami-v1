@@ -218,6 +218,9 @@ let make = (~children) => {
   let resetNetwork = () => {
     let setMultisigs = snd(multisigsRequestState)
     setMultisigs(ApiRequest.expireCache)
+    // Multisigs are used in alias listing, so we need to reset aliases cache as well
+    let setAliases = snd(aliasesRequestState)
+    setAliases(ApiRequest.expireCache)
     let setBalances = snd(balanceRequestsState)
     setBalances(ApiRequest.expireCache)
     let setBalancesToken = snd(balanceTokenRequestsState)
