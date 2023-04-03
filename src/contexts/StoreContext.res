@@ -995,8 +995,9 @@ module Secrets = {
 
   let useDelete = () => {
     let config = ConfigContext.useContent()
-    let resetAccounts = useResetAll()
-    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
+    let resetAll = useResetAll()
+    let resetAliases = Aliases.useResetAll()
+    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => resetAll(), ())
     (
       request,
       i => {
@@ -1016,6 +1017,9 @@ module Secrets = {
           )
         )
         ->Promise.mapOk(Multisig_API.removeFromCache)
+        // Alias cache is reset as sideEffect od `setRequest`
+        // but you need to reset it now that multisigs have actually been removed from cache
+        ->Promise.tapOk(_ => resetAliases())
       },
     )
   }
