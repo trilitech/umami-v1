@@ -216,17 +216,10 @@ let make = (~children) => {
   , [network])
 
   let resetNetwork = () => {
-    let setMultisigs = snd(multisigsRequestState)
-    setMultisigs(ApiRequest.expireCache)
-    // Multisigs are used in alias listing, so we need to reset aliases cache as well
-    let setAliases = snd(aliasesRequestState)
-    setAliases(ApiRequest.expireCache)
-    let setBalances = snd(balanceRequestsState)
-    setBalances(ApiRequest.expireCache)
-    let setBalancesToken = snd(balanceTokenRequestsState)
-    setBalancesToken(ApiRequest.expireCache)
-    let (_, setSelectedToken) = selectedTokenState
-    setSelectedToken(_ => None)
+    snd(multisigsRequestState)(ApiRequest.expireCache)
+    snd(balanceRequestsState)(ApiRequest.expireCache)
+    snd(balanceTokenRequestsState)(ApiRequest.expireCache)
+    snd(selectedTokenState)(_ => None)
   }
 
   React.useEffect1(() => {
@@ -256,6 +249,13 @@ let make = (~children) => {
     }
     None
   }, (accountsRequest, selectedAccount))
+
+  // When multisigs or implicit accounts are updated,
+  // aliases should be updated as well.
+  React.useEffect2(() => {
+    snd(aliasesRequestState)(ApiRequest.expireCache)
+    None
+  }, (fst(accountsRequestState), fst(multisigsRequestState)))
 
   let _ = useLoadBalances(accounts, multisigs, balanceRequestsState)
 
@@ -535,13 +535,11 @@ module Operations = {
   let useCreate = () => {
     let resetOperations = useResetAll()
     let settings = ConfigContext.useContent()
-    OperationApiRequest.useCreate(
-      ~sideEffect=result =>
-        OperationApiRequest.waitForConfirmation(settings, result.hash)->Promise.get(_ =>
-          resetOperations()
-        ),
-      (),
-    )
+    let sideEffect = (result: ReTaquito.Toolkit.Operation.result) =>
+      OperationApiRequest.waitForConfirmation(settings, result.hash)->Promise.get(_ =>
+        resetOperations()
+      )
+    OperationApiRequest.useCreate(~sideEffect, ())
   }
 
   let useSimulate = () => {
@@ -652,18 +650,18 @@ module Tokens = {
   }
 
   let useCreate = () => {
-    let resetTokens = useResetAll()
-    TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ())
+    let sideEffect = useResetAll()
+    TokensApiRequest.useCreate(~sideEffect, ())
   }
 
   let useCacheToken = () => {
-    let resetTokens = useResetAll()
-    TokensApiRequest.useCacheToken(~sideEffect=_ => resetTokens(), ())
+    let sideEffect = useResetAll()
+    TokensApiRequest.useCacheToken(~sideEffect, ())
   }
 
   let useDelete = pruneCache => {
-    let resetAccounts = useResetAll()
-    TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), pruneCache)
+    let sideEffect = useResetAll()
+    TokensApiRequest.useDelete(~sideEffect, pruneCache)
   }
 }
 
@@ -727,18 +725,18 @@ module Aliases = {
   }
 
   let useCreate = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useCreate(~sideEffect, ())
   }
 
   let useUpdate = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useUpdate(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useDelete(~sideEffect, ())
   }
 }
 
@@ -806,12 +804,7 @@ module Multisig = {
   }
 
   let useUpdate = message => {
-    let resetMultisigs = useResetAll()
-    let resetAliases = Aliases.useResetAll()
-    let sideEffect = () => {
-      resetMultisigs()
-      resetAliases()
-    }
+    let sideEffect = useResetAll()
     MultisigApiRequest.useUpdate(message)(~sideEffect, ())
   }
 
@@ -820,12 +813,7 @@ module Multisig = {
   let useRegister = () => useUpdate(I18n.multisig_registered)
 
   let useDelete = () => {
-    let resetMultisigs = useResetAll()
-    let resetAliases = Aliases.useResetAll()
-    let sideEffect = () => {
-      resetMultisigs()
-      resetAliases()
-    }
+    let sideEffect = useResetAll()
     MultisigApiRequest.useDelete(~sideEffect, ())
   }
 
@@ -879,40 +867,36 @@ module Accounts = {
   }
 
   let useResetNames = () => {
-    let resetAliases = Aliases.useResetAll()
     let resetOperations = Operations.useResetNames()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
-      resetAliases()
       resetOperations()
     }
   }
 
   let useResetAll = () => {
     let resetOperations = Operations.useResetAll()
-    let resetAliases = Aliases.useResetAll()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
       resetOperations()
-      resetAliases()
     }
   }
 
   let useUpdate = () => {
-    let resetAccounts = useResetNames()
-    AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetNames()
+    AccountApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
-    let resetAccounts = useResetAll()
-    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    AccountApiRequest.useDelete(~sideEffect, ())
   }
 
   let useCustomAuthLogin = () => {
-    let resetAccounts = useResetAll()
-    CustomAuthApiRequest.useLogin(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    CustomAuthApiRequest.useLogin(~sideEffect=_ => sideEffect(), ())
   }
 }
 
@@ -959,45 +943,44 @@ module Secrets = {
   }
 
   let useCreateWithMnemonics = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useCreateWithMnemonics(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useCreateWithMnemonics(~sideEffect, ())
   }
 
   let useCreateFromBackupFile = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useCreateFromBackupFile(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useCreateFromBackupFile(~sideEffect, ())
   }
 
   let useMnemonicImportKeys = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useMnemonicImportKeys(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useMnemonicImportKeys(~sideEffect=_ => sideEffect(), ())
   }
 
   let useLedgerImport = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useLedgerImport(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useLedgerImport(~sideEffect=_ => sideEffect(), ())
   }
 
   let useLedgerScan = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useLedgerScan(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useLedgerScan(~sideEffect=_ => sideEffect(), ())
   }
 
   let useDerive = () => {
-    let resetAccounts = useResetAll()
-    SecretApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useDerive(~sideEffect=_ => sideEffect(), ())
   }
 
   let useUpdate = () => {
-    let resetSecrets = useResetNames()
-    SecretApiRequest.useUpdate(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetNames()
+    SecretApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
     let config = ConfigContext.useContent()
-    let resetAll = useResetAll()
-    let resetAliases = Aliases.useResetAll()
-    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => resetAll(), ())
+    let sideEffect = useResetAll()
+    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => sideEffect(), ())
     (
       request,
       i => {
@@ -1017,9 +1000,6 @@ module Secrets = {
           )
         )
         ->Promise.mapOk(Multisig_API.removeFromCache)
-        // Alias cache is reset as sideEffect od `setRequest`
-        // but you need to reset it now that multisigs have actually been removed from cache
-        ->Promise.tapOk(_ => resetAliases())
       },
     )
   }
@@ -1089,14 +1069,14 @@ module Beacon = {
 
     let useDelete = () => {
       let (client, _) = useClient()
-      let resetBeaconPeers = useResetAll()
-      BeaconApiRequest.Peers.useDelete(~client, ~sideEffect=_ => resetBeaconPeers(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Peers.useDelete(~client, ~sideEffect, ())
     }
 
     let useDeleteAll = () => {
       let (client, _) = useClient()
-      let resetBeaconPeers = useResetAll()
-      BeaconApiRequest.Peers.useDeleteAll(~client, ~sideEffect=_ => resetBeaconPeers(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Peers.useDeleteAll(~client, ~sideEffect, ())
     }
   }
 
@@ -1119,18 +1099,14 @@ module Beacon = {
 
     let useDelete = () => {
       let (client, _) = useClient()
-      let resetBeaconPermissions = useResetAll()
-      BeaconApiRequest.Permissions.useDelete(~client, ~sideEffect=_ => resetBeaconPermissions(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Permissions.useDelete(~client, ~sideEffect, ())
     }
 
     let useDeleteAll = () => {
       let (client, _) = useClient()
-      let resetBeaconPermissions = useResetAll()
-      BeaconApiRequest.Permissions.useDeleteAll(
-        ~client,
-        ~sideEffect=_ => resetBeaconPermissions(),
-        (),
-      )
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Permissions.useDeleteAll(~client, ~sideEffect, ())
     }
   }
 }
