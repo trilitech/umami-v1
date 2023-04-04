@@ -88,10 +88,8 @@ let buildImplicit = (a: string) =>
 
 let getShrinked = (address: t, ~n=6, ()) => {
   let address = (address :> string)
-  let l = address->String.length
   let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1)
-  let endSlice = address->Js.String2.slice(~from=l - n - 1, ~to_=l - 1)
-
+  let endSlice = address->Js.String2.sliceToEnd(~from=-n - 1)
   `${startSlice}...${endSlice}`
 }
 
