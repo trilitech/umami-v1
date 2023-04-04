@@ -53,7 +53,11 @@ let sort = (op: array<Operation.t>): array<Operation.t> => {
   open Operation
   op->SortArray.stableSortBy((op1, op2) =>
     switch Pervasives.compare(Js.Date.getTime(op2.timestamp), Js.Date.getTime(op1.timestamp)) {
-    | 0 => Pervasives.compare(op2.op_id, op1.op_id)
+    | 0 =>
+      switch Pervasives.compare(op2.op_id, op1.op_id) {
+      | 0 => Pervasives.compare(op2.internal, op1.internal)
+      | x => x
+      }
     | x => x
     }
   )
