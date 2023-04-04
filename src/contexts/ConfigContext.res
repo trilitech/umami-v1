@@ -26,6 +26,7 @@
 type env = {
   network: Network.t,
   defaultNetwork: bool,
+  customNetworks: array<Network.t>,
   theme: [#system | #dark | #light],
   confirmations: int,
   baseDir: unit => System.Path.t,
@@ -38,6 +39,7 @@ let defaultNetwork = #Mainnet
 let default = {
   network: Network.mainnet,
   defaultNetwork: true,
+  customNetworks:[],
   theme: #system,
   baseDir: () => {
     open System
@@ -55,6 +57,7 @@ let fromFile = f => {
   | Some(#Custom(_)) => false
   | _ => true
   },
+  customNetworks:f.customNetworks->List.toArray,
   confirmations: f.confirmations->Option.getWithDefault(default.confirmations),
   baseDir: f.sdkBaseDir->Option.mapWithDefault(default.baseDir, (bd, ()) => bd),
   network: switch f.ConfigFile.network {

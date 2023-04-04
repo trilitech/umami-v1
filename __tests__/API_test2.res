@@ -5,6 +5,7 @@ let config = {
   {
     defaultNetwork: true,
     network: Network.ghostnet,
+    customNetworks: [],
     theme: #system,
     baseDir: () => {
       open System
