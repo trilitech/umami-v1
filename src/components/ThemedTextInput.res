@@ -34,12 +34,14 @@ let clearIconSize = 28.
 let styles = {
   open Style
   StyleSheet.create({
-    "clearMargin": style(~paddingRight=35.->dp, ()),
+    "clearMargin1": style(~paddingRight=35.->dp, ()),
+    "clearMargin2": style(~paddingRight=61.->dp, ()),
     "clearBtn": style(
       ~right=5.->dp,
       ~top=50.->pct,
       ~marginTop=(-.clearIconSize /. 2.)->dp,
       ~position=#absolute,
+      ~flexDirection=#row,
       (),
     ),
     "container": style(~borderWidth=2., ~borderRadius=4., ~justifyContent=#center, ()),
@@ -60,6 +62,7 @@ let makeFrameStyle = (
   ~hasError,
   ~value,
   ~onClear,
+  ~onRemove,
   ~styleFromProp,
   ~paddingVertical,
   ~paddingLeft,
@@ -87,7 +90,11 @@ let makeFrameStyle = (
       ? Some(style(~borderColor=theme.colors.borderPrimary, ~borderWidth=2., ()))
       : None,
     hasError ? Some(style(~borderColor=theme.colors.error, ~borderWidth=2., ())) : None,
-    value != "" && onClear != None ? Some(styles["clearMargin"]) : None,
+    value != "" && onClear != None
+      ? onRemove != None ? Some(styles["clearMargin2"]) : Some(styles["clearMargin1"])
+      : onRemove != None
+      ? Some(styles["clearMargin1"])
+      : None,
     styleFromProp,
     disabled
       ? Some(
@@ -111,6 +118,7 @@ let make = (
   ~keyboardType=?,
   ~onBlur=?,
   ~onClear=?,
+  ~onRemove=?,
   ~onFocus=?,
   ~onKeyPress=?,
   ~textContentType=?,
@@ -139,6 +147,7 @@ let make = (
     ~hasError,
     ~value,
     ~onClear,
+    ~onRemove,
     ~styleFromProp,
     ~paddingVertical,
     ~paddingLeft,
@@ -146,13 +155,18 @@ let make = (
   )
 
   <View style=frameStyle>
-    {onClear
-    ->ReactUtils.mapOpt(onClear =>
-      <View style={styles["clearBtn"]}>
-        <IconButton onPress={_ => onClear()} icon=Icons.Close.build size=clearIconSize />
-      </View>
-    )
-    ->ReactUtils.onlyWhen(value != "")}
+    {onRemove != None || onClear != None
+      ? <View style={styles["clearBtn"]}>
+          {onRemove->ReactUtils.mapOpt(onRemove =>
+            <IconButton onPress={_ => onRemove()} icon=Icons.Delete.build size=clearIconSize />
+          )}
+          {onClear
+          ->ReactUtils.mapOpt(onClear =>
+            <IconButton onPress={_ => onClear()} icon=Icons.Close.build size=clearIconSize />
+          )
+          ->ReactUtils.onlyWhen(value != "")}
+        </View>
+      : React.null}
     {switch icon {
     | Some(build) =>
       build(~color=?Some(theme.colors.textMediumEmphasis), ~style=?Some(styles["icon"]), ~size=24.)

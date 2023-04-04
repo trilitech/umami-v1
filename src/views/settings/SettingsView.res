@@ -26,9 +26,7 @@
 @react.component
 let make = () =>
   <Page>
-    <Typography.Headline style=Styles.title>
-      {I18n.Title.settings->React.string}
-    </Typography.Headline>
+    {I18n.Title.settings->Typography.headline(~style=Styles.title)}
     <VerificationSettingView />
     <ThemeSettingView />
     <ChainSettingView />
@@ -36,4 +34,17 @@ let make = () =>
     <BackupSettingView />
     {System.hasAutoUpdate() ? <UpdateSettingView /> : React.null}
     <DangerSettingView />
+    {
+      let tzkt =
+        <ReactNative.Pressable onPress={_ => System.openExternal("https://tzkt.io/")}>
+          {
+            // wrap in <></> to fix 'A text node cannot be a child of a <View>' error
+            _ => <> {"TzKT"->React.string} </>
+          }
+        </ReactNative.Pressable>
+
+      <SettingsComponents.Block isLast=true>
+        <Typography.Body1> {I18n.Settings.about_ELEMENT(tzkt)} </Typography.Body1>
+      </SettingsComponents.Block>
+    }
   </Page>

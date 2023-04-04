@@ -252,7 +252,7 @@ let styles = {
 
 @react.component
 let make = () =>
-  <Block title=I18n.Settings.danger_title isLast=true>
+  <Block title=I18n.Settings.danger_title>
     <View style={styles["inner"]}>
       <View style={styles["row"]}>
         <ColumnLeft style={styles["columnLeft"]}>

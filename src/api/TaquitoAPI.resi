@@ -83,7 +83,7 @@ module Batch: {
     ~endpoint: ReTaquito.endpoint,
     ~baseDir: System.Path.t,
     ~source: KeyWallet.PkhAlias.t,
-    ~ops: Protocol.batch,
+    ~ops: array<Protocol.manager>,
     ~signingIntent: Signer.intent,
     unit,
   ) => Promise.t<ReTaquito.Toolkit.Operation.result>
@@ -94,7 +94,7 @@ module Batch: {
       ~baseDir: System.Path.t,
       ~source: PublicKeyHash.t,
       ~customValues: array<(option<int>, option<int>, option<int>)>,
-      ~ops: Protocol.batch,
+      ~ops: array<Protocol.manager>,
       unit,
     ) => Promise.t<Protocol.Simulation.results>
   }

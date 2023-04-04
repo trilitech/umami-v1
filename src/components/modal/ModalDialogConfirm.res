@@ -25,7 +25,7 @@
 
 open ReactNative
 
-module Modal = {
+module ModalBase = {
   @react.component
   let make = (
     ~closeAction,
@@ -35,9 +35,8 @@ module Modal = {
     ~subtitle=?,
     ~contentText=?,
     ~cancelText,
-    ~actionText,
+    ~cancelStyle=?,
   ) => {
-    let theme = ThemeContext.useTheme()
     <ModalTemplate.Dialog>
       <Typography.Headline style=FormStyles.header> {title->React.string} </Typography.Headline>
       {subtitle->ReactUtils.mapOpt(sub =>
@@ -49,18 +48,29 @@ module Modal = {
         </Typography.Body1>
       )}
       <View style=FormStyles.formAction>
+        {action}
         <Buttons.Form
-          style={
-            open Style
-            style(~backgroundColor=theme.colors.stateActive, ())
-          }
-          text=cancelText
-          onPress={_ => closeAction()}
-          disabled=?loading
+          style=?cancelStyle text=cancelText onPress={_ => closeAction()} disabled=?loading
         />
-        <Buttons.Form onPress={_ => action()} text=actionText ?loading />
       </View>
     </ModalTemplate.Dialog>
+  }
+}
+
+module Modal = {
+  @react.component
+  let make = (
+    ~closeAction,
+    ~action,
+    ~loading=?,
+    ~title,
+    ~subtitle=?,
+    ~contentText=?,
+    ~cancelText,
+  ) => {
+    let theme = ThemeContext.useTheme()
+    let cancelStyle = Style.style(~backgroundColor=theme.colors.stateActive, ())
+    <ModalBase closeAction action ?loading title ?subtitle ?contentText cancelText cancelStyle />
   }
 }
 
@@ -76,7 +86,7 @@ let useModal = (
 ) => {
   let (openModal, closeModal, wrapModal) = ModalAction.useModal()
 
-  let action = () =>
+  let onPress = _ =>
     action()->Promise.get(x =>
       switch x {
       | Ok(_) => closeModal()
@@ -84,11 +94,11 @@ let useModal = (
       }
     )
 
+  let action = <Buttons.Form onPress text=actionText ?loading />
+
   let modal = () =>
     wrapModal(
-      <Modal
-        action ?loading title ?subtitle ?contentText cancelText actionText closeAction=closeModal
-      />,
+      <Modal action ?loading title ?subtitle ?contentText cancelText closeAction=closeModal />,
     )
 
   (openModal, closeModal, modal)

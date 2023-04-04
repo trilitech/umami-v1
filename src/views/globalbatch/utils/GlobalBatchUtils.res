@@ -43,16 +43,11 @@ let matchTransfer = manager =>
   | _ => None
   }
 
-let replaceManagerInBatch = (batch: Protocol.batch, newManager, index) => {
-  ...batch,
-  managers: Array.replaceAtIndex(batch.managers, index, newManager),
-}
+let replaceManagerInBatch = (batch: array<Protocol.manager>, newManager, index) =>
+  Array.replaceAtIndex(batch, index, newManager)
 
-let appendManagerToBatch = (~manager, ~batch: Protocol.batch) => {
-  let newManager = manager
-  let newManagers = Array.concat(batch.managers, [newManager])
-
-  {source: batch.source, managers: newManagers}
+let appendManagerToBatch = (~manager, ~batch: array<Protocol.manager>) => {
+  Array.concat(batch, [manager])
 }
 
 let findTransferWithSameAddress = (managers: array<Protocol.manager>, searchedAddress) =>
@@ -87,7 +82,7 @@ let addTransfer = (~transfer, ~batch) => {
   switch newTransfer.data {
   | Simple(_) => nominalResult()
   | FA2Batch(newFa2Batch) =>
-    batch.managers
+    batch
     ->lookupByAddress(newFa2Batch.address)
     ->Option.map(((managerIndex, transfer)) =>
       switch transfer.data {
@@ -106,13 +101,13 @@ let addTransfer = (~transfer, ~batch) => {
   }
 }
 
-let rec removeTransfer = (~batch: Protocol.batch, ~coords: managerCoords) => {
+let rec removeTransfer = (~batch: array<Protocol.manager>, ~coords: managerCoords) => {
   open Option
   let (i, j) = coords
 
   let result = switch j {
   | Some(j) =>
-    batch.managers
+    batch
     ->Array.get(i)
     ->flatMap(matchFA2)
     ->map(((fa2Batch, options, parameter)) => {
@@ -134,9 +129,7 @@ let rec removeTransfer = (~batch: Protocol.batch, ~coords: managerCoords) => {
       }
     })
     ->getWithDefault(batch)
-  | None =>
-    let newManagers = Array.removeAtIndex(batch.managers, i)
-    {...batch, managers: newManagers}
+  | None => Array.removeAtIndex(batch, i)
   }
   result
 }
@@ -144,12 +137,12 @@ let rec removeTransfer = (~batch: Protocol.batch, ~coords: managerCoords) => {
 let mergeTransfer = (
   newTr: Transfer.t,
   target: GlobalBatchTypes.managerCoords,
-  batch: Protocol.batch,
+  batch: array<Protocol.manager>,
 ) => {
   let (i, _) = target
 
   let (managerIndex, _) = target
-  let managers = batch.managers
+  let managers = batch
 
   managers
   ->Array.get(managerIndex)
@@ -158,42 +151,30 @@ let mergeTransfer = (
     switch (oldTr.data, newTr.data) {
     | (Simple(_), Simple(_)) =>
       let newManager = Transfer({...oldTr, data: newTr.data})
-      let newBatch = replaceManagerInBatch(batch, newManager, i)
-      newBatch.managers
-
+      replaceManagerInBatch(batch, newManager, i)
     | (Simple(_), FA2Batch(_))
     | (FA2Batch(_), FA2Batch(_))
     | (FA2Batch(_), Simple(_)) =>
       let batchSpliced = removeTransfer(~batch, ~coords=target)
-      let newBatch = addTransfer(~transfer=newTr, ~batch=batchSpliced)
-      newBatch.managers
+      addTransfer(~transfer=newTr, ~batch=batchSpliced)
     }
   )
 }
 
-let set = (batch: Protocol.batch, coords, payload) => {
+let set = (batch: array<Protocol.manager>, coords, payload) => {
   let (amount, recipient, parameter) = payload
   let newTransfer =
     (Factories.makeTransferData(amount, recipient), parameter)->transferDataToTransfer
-
-  let newManagers = mergeTransfer(newTransfer, coords, batch)
-
-  {...batch, managers: newManagers}
+  mergeTransfer(newTransfer, coords, batch)
 }
 
 let add = (~payload, ~batch) => addTransfer(~transfer=transferPayloadToTransfer(payload), ~batch)
 
 let remove = removeTransfer
 
-// Batch genesis with first transfer
-let makeInitialBatch = (~payload: transferPayload, ~account: Account.t) => {
-  let transfer = transferPayloadToTransfer(payload)
-
-  ProtocolHelper.Transfer.makeBatch(~source=account, ~transfers=[transfer], ())
-}
-
-let addToExistingOrNew = (account: Account.t, batch, payload: transferPayload) =>
+//
+let addToExistingOrNew = (batch, payload: transferPayload) =>
   switch batch {
   | Some(batch) => add(~payload, ~batch)
-  | None => makeInitialBatch(~payload, ~account)
+  | None => [transferPayloadToTransfer(payload)->Protocol.Transfer]
   }

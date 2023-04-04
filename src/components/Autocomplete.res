@@ -81,6 +81,7 @@ let make = (
   ~onBlur=?,
   ~placeholder=?,
   ~clearButton=false,
+  ~onRemove=?,
   ~reversePositionPct=?,
   ~keyPopover,
   ~dropdownOnEmpty=true,
@@ -171,6 +172,7 @@ let make = (
       paddingLeft=?inputPaddingLeft
       paddingRight=?inputPaddingRight
       onClear=?{clearButton ? Some(() => onChangeItem("")) : None}
+      ?onRemove
       paddingVertical=?inputPaddingVertical
       ?placeholder
       value

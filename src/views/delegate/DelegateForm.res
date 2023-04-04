@@ -25,16 +25,10 @@
 
 module StateLenses = %lenses(
   type state = {
-    sender: Account.t,
+    sender: Alias.t,
     baker: string,
     fee: string,
   }
 )
 
 include ReForm.Make(StateLenses)
-
-module Password = {
-  module StateLenses = %lenses(type state = {password: string})
-
-  include ReForm.Make(StateLenses)
-}

@@ -162,6 +162,22 @@ module Toolkit = {
   external originate: (contract, originateParams) => Js.Promise.t<Types.Operation.result> =
     "originate"
 
+  module Lambda = {
+    include Types.Lambda
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external setDelegate: string => t = "setDelegate"
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external removeDelegate: unit => t = "removeDelegate"
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external transferImplicit: (string, ReBigNumber.t) => t = "transferImplicit"
+
+    @module("@taquito/taquito") @scope("MANAGER_LAMBDA")
+    external transferToContract: (string, ReBigNumber.t) => t = "transferToContract"
+  }
+
   module Batch = {
     include Types.Batch
 

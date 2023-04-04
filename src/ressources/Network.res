@@ -93,10 +93,12 @@ let () = Errors.registerHandler("Network", x =>
   }
 )
 
-type nativeChains = [#Mainnet | #Ghostnet | #Limanet | #Mumbainet]
+type nativeChains = [#Mainnet | #Ghostnet]
 
 type supportedChains = [
   | nativeChains
+  | #Mumbainet
+  | #Limanet
   | #Kathmandunet
   | #Jakartanet
   | #Hangzhounet
@@ -139,14 +141,11 @@ let fromChainId = x =>
 
 let mkChainAssoc = c => (c, getChainId(c))
 
-let nativeChains = list{
-  mkChainAssoc(#Mainnet),
-  mkChainAssoc(#Ghostnet),
-  mkChainAssoc(#Limanet),
-  mkChainAssoc(#Mumbainet),
-}
+let nativeChains = list{mkChainAssoc(#Mainnet), mkChainAssoc(#Ghostnet)}
 
 let supportedChains = list{
+  mkChainAssoc(#Mumbainet),
+  mkChainAssoc(#Limanet),
   mkChainAssoc(#Kathmandunet),
   mkChainAssoc(#Jakartanet),
   mkChainAssoc(#Hangzhounet),
@@ -273,13 +272,13 @@ module Decode = {
     switch x {
     | "Mainnet" => #Mainnet
     | "Ithacanet" /* Kill? */ | "Ghostnet" => #Ghostnet
-    | "Limanet" => #Limanet
-    | "Mumbainet" => #Mumbainet
     | n => raise(Json.Decode.DecodeError("Unknown network " ++ n))
     }
 
   let chainFromString = x =>
     switch x {
+    | "Mumbainet" => #Mumbainet
+    | "Limanet" => #Limanet
     | "Kathmandunet" => #Kathmandunet
     | "Jakartanet" => #Jakartanet
     | "Hangzhounet" => #Hangzhounet
@@ -338,24 +337,10 @@ let ghostnet = mk(
   #Ghostnet,
 )
 
-let limanet = mk(
-  ~explorer="https://limanet.umamiwallet.com",
-  ~endpoint="https://limanet.ecadinfra.com",
-  #Limanet,
-)
-
-let mumbainet = mk(
-  ~explorer="https://mumbainet.umamiwallet.com",
-  ~endpoint="https://mumbainet.ecadinfra.com",
-  #Mumbainet,
-)
-
 let getNetwork = x =>
   switch x {
   | #Mainnet => mainnet
   | #Ghostnet => ghostnet
-  | #Limanet => limanet
-  | #Mumbainet => mumbainet
   }
 
 let getNetworks = (c: nativeChains) => {
@@ -374,17 +359,6 @@ let getNetworks = (c: nativeChains) => {
       withEP("https://ghostnet.ecadinfra.com"),
       withEP("https://ghostnet.smartpy.io"),
       withEP("https://ghostnet.tezos.marigold.dev"),
-    }
-  | #Limanet => list{
-      withEP("https://rpc.limanet.teztnets.xyz"),
-      withEP("https://limanet.ecadinfra.com"),
-      withEP("https://limanet.smartpy.io"),
-      withEP("https://limanet.tezos.marigold.dev"),
-    }
-  | #Mumbainet => list{
-      withEP("https://rpc.mumbainet.teztnets.xyz"),
-      withEP("https://mumbainet.ecadinfra.com"),
-      withEP("https://mumbainet.tezos.marigold.dev"),
     }
   }
 }

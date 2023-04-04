@@ -110,3 +110,34 @@ module Migration: {
 
   let migrate: (TokenContract.t, bcd) => t
 }
+
+module type BigmapParamKey = {
+  type t
+  let decoder: Js.Json.t => t
+}
+
+module type BigmapParamValue = {
+  type t
+  let decoder: Js.Json.t => t
+}
+
+module Bigmap: (ParamKey: BigmapParamKey, ParamValue: BigmapParamValue) =>
+{
+  module Key: {
+    @ocaml.doc(
+      " Bigmap keys as defined by api.tzkt.io. See [https://api.tzkt.io/#operation/BigMaps_GetKeys]"
+    )
+    type t = {
+      id: int,
+      active: bool,
+      hash: option<string>,
+      key: option<ParamKey.t>,
+      value: option<ParamValue.t>,
+      firstLevel: int,
+      lastLevel: int,
+      updates: int,
+    }
+
+    let decoder: Js.Json.t => t
+  }
+}

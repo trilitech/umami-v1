@@ -39,11 +39,15 @@ type state = {
   selectedAccountState: reactState<option<PublicKeyHash.t>>,
   selectedTokenState: reactState<option<(PublicKeyHash.t, TokenRepr.kind)>>,
   accountsRequestState: requestState<PublicKeyHash.Map.map<Account.t>>,
+  multisigsRequestState: requestState<PublicKeyHash.Map.map<Multisig.t>>,
   secretsRequestState: reactState<ApiRequest.t<array<Secret.derived>>>,
   balanceRequestsState: requestState<PublicKeyHash.Map.map<Tez.t>>,
   delegateRequestsState: apiRequestsState<option<PublicKeyHash.t>>,
   delegateInfoRequestsState: apiRequestsState<option<NodeAPI.Delegate.delegationInfo>>,
   operationsRequestsState: apiRequestsState<OperationApiRequest.operationsResponse>,
+  pendingOperationsRequestsState: apiRequestsState<
+    ReBigNumber.Map.t<ReBigNumber.Map.key, Multisig.API.PendingOperation.t, ReBigNumber.Map.id>,
+  >,
   aliasesRequestState: reactState<ApiRequest.t<PublicKeyHash.Map.map<Alias.t>>>,
   bakersRequestState: reactState<ApiRequest.t<array<Delegate.t>>>,
   tokensRequestState: reactState<ApiRequest.t<TokensApiRequest.Fungible.fetched>>,
@@ -69,11 +73,13 @@ let initialState = {
   selectedAccountState: (None, _ => ()),
   selectedTokenState: (None, _ => ()),
   accountsRequestState: (NotAsked, _ => ()),
+  multisigsRequestState: (NotAsked, _ => ()),
   secretsRequestState: (NotAsked, _ => ()),
   balanceRequestsState: (NotAsked, _ => ()),
   delegateRequestsState: initialApiRequestsState,
   delegateInfoRequestsState: initialApiRequestsState,
   operationsRequestsState: initialApiRequestsState,
+  pendingOperationsRequestsState: initialApiRequestsState,
   aliasesRequestState: (NotAsked, _ => ()),
   bakersRequestState: (NotAsked, _ => ()),
   tokensRequestState: (NotAsked, _ => ()),
@@ -105,24 +111,28 @@ module Provider = {
 
 let useStoreContext = () => React.useContext(context)
 
-let useLoadBalances = (~forceFetch=true, accounts, balances) => {
+let extractAddresses = x =>
+  x->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)->PublicKeyHash.Map.keysToList
+
+let useLoadBalances = (~forceFetch=true, accounts, multisigs, balances) => {
   let requestState = balances
-  let accounts =
-    accounts
-    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
-    ->PublicKeyHash.Map.toList
-    ->Belt.List.map(((b, _)) => b)
-  let addresses = accounts
+  let accounts = extractAddresses(accounts)
+  let multisigs = extractAddresses(multisigs)
+  let addresses = List.reverseConcat(multisigs, accounts)
   BalanceApiRequest.useLoadBalances(~forceFetch, ~requestState, addresses)
 }
 
-let useLoadTokensBalances = (~forceFetch=true, accounts, tokensBalances, selectedToken) => {
+let useLoadTokensBalances = (
+  ~forceFetch=true,
+  accounts,
+  multisigs,
+  tokensBalances,
+  selectedToken,
+) => {
   let requestState = tokensBalances
-  let addresses =
-    accounts
-    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
-    ->PublicKeyHash.Map.toList
-    ->Belt.List.map(((b, _)) => b)
+  let accounts = extractAddresses(accounts)
+  let multisigs = extractAddresses(multisigs)
+  let addresses = List.reverseConcat(multisigs, accounts)
   TokensApiRequest.useLoadBalances(~forceFetch, ~requestState, ~addresses, ~selectedToken)
 }
 
@@ -150,10 +160,13 @@ let make = (~children) => {
     _setAccountsRequest,
   ) = accountsRequestState
 
+  let multisigsRequestState = React.useState(() => ApiRequest.NotAsked)
+
   let balanceRequestsState = React.useState(() => ApiRequest.NotAsked)
   let delegateRequestsState = React.useState(() => Map.String.empty)
   let delegateInfoRequestsState = React.useState(() => Map.String.empty)
   let operationsRequestsState = React.useState(() => Map.String.empty)
+  let pendingOperationsRequestsState = React.useState(() => Map.String.empty)
   let accountsTokensRequestState = React.useState(() => Map.String.empty)
   let accountsTokensNumberRequestState = React.useState(() => Map.String.empty)
   let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked)
@@ -181,6 +194,7 @@ let make = (~children) => {
 
   let _: ApiRequest.t<_> = SecretApiRequest.useLoad(secretsRequestState)
   let accounts: ApiRequest.t<_> = AccountApiRequest.useLoad(accountsRequestState)
+  let multisigs: ApiRequest.t<_> = MultisigApiRequest.useLoad(multisigsRequestState)
   let _: ApiRequest.t<_> = AliasApiRequest.useLoad(aliasesRequestState)
   let _: ApiRequest.t<_> = TokensApiRequest.useLoadTokensFromCache(tokensRequestState, #FT)
 
@@ -202,12 +216,10 @@ let make = (~children) => {
   , [network])
 
   let resetNetwork = () => {
-    let setBalances = snd(balanceRequestsState)
-    setBalances(ApiRequest.expireCache)
-    let setBalancesToken = snd(balanceTokenRequestsState)
-    setBalancesToken(ApiRequest.expireCache)
-    let (_, setSelectedToken) = selectedTokenState
-    setSelectedToken(_ => None)
+    snd(multisigsRequestState)(ApiRequest.expireCache)
+    snd(balanceRequestsState)(ApiRequest.expireCache)
+    snd(balanceTokenRequestsState)(ApiRequest.expireCache)
+    snd(selectedTokenState)(_ => None)
   }
 
   React.useEffect1(() => {
@@ -238,20 +250,29 @@ let make = (~children) => {
     None
   }, (accountsRequest, selectedAccount))
 
-  let _ = useLoadBalances(accounts, balanceRequestsState)
+  // When multisigs or implicit accounts are updated,
+  // aliases should be updated as well.
+  React.useEffect2(() => {
+    snd(aliasesRequestState)(ApiRequest.expireCache)
+    None
+  }, (fst(accountsRequestState), fst(multisigsRequestState)))
 
-  let _ = useLoadTokensBalances(accounts, balanceTokenRequestsState, selectedToken)
+  let _ = useLoadBalances(accounts, multisigs, balanceRequestsState)
+
+  let _ = useLoadTokensBalances(accounts, multisigs, balanceTokenRequestsState, selectedToken)
 
   <Provider
     value={
       selectedAccountState: selectedAccountState,
       selectedTokenState: selectedTokenState,
       accountsRequestState: accountsRequestState,
+      multisigsRequestState: multisigsRequestState,
       secretsRequestState: secretsRequestState,
       balanceRequestsState: balanceRequestsState,
       delegateRequestsState: delegateRequestsState,
       delegateInfoRequestsState: delegateInfoRequestsState,
       operationsRequestsState: operationsRequestsState,
+      pendingOperationsRequestsState: pendingOperationsRequestsState,
       aliasesRequestState: aliasesRequestState,
       bakersRequestState: bakersRequestState,
       tokensRequestState: tokensRequestState,
@@ -325,15 +346,18 @@ let setEulaSignature = () => {
 }
 
 module Balance = {
-  let useLoad = (~forceFetch=true, address: PublicKeyHash.t) => {
+  let useAll = forceFetch => {
     let store = useStoreContext()
-    let balancesRequest = useLoadBalances(
+    useLoadBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
+      store.multisigsRequestState->fst,
       store.balanceRequestsState,
     )
+  }
 
-    balancesRequest->BalanceApiRequest.getOne(address)
+  let useOne = (request, address: PublicKeyHash.t) => {
+    BalanceApiRequest.getOne(request, address)
   }
 
   let handleBalance = (map: PublicKeyHash.Map.map<Tez.t>) =>
@@ -374,26 +398,28 @@ module Balance = {
 }
 
 module BalanceToken = {
-  let useLoad = (
-    ~forceFetch,
-    address: PublicKeyHash.t,
-    token: PublicKeyHash.t,
-    kind: TokenRepr.kind,
-  ) => {
+  let useAll = (forceFetch, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
     let store = useStoreContext()
-    let balancesRequest = useLoadTokensBalances(
+    useLoadTokensBalances(
       ~forceFetch,
       store.accountsRequestState->fst,
+      store.multisigsRequestState->fst,
       store.balanceTokenRequestsState,
       Some((token, kind)),
     )
+  }
 
+  let useOne = (
+    request,
+    token: PublicKeyHash.t,
+    kind: TokenRepr.kind,
+    ~address: PublicKeyHash.t,
+  ) => {
     let mapKey = switch kind {
     | TokenRepr.FA1_2 => (address, (token, None))
     | FA2(tokenId) => (address, (token, Some(tokenId)))
     }
-
-    balancesRequest->TokensApiRequest.getOneBalance(mapKey)
+    TokensApiRequest.getOneBalance(request, mapKey)
   }
 
   let handleBalance = (selectedToken, map: TokenRepr.Map.map<TokenRepr.Unit.t>) =>
@@ -509,16 +535,18 @@ module Operations = {
   let useCreate = () => {
     let resetOperations = useResetAll()
     let settings = ConfigContext.useContent()
-    OperationApiRequest.useCreate(
-      ~sideEffect=result =>
-        OperationApiRequest.waitForConfirmation(settings, result.hash)->Promise.get(_ =>
-          resetOperations()
-        ),
-      (),
-    )
+    let sideEffect = (result: ReTaquito.Toolkit.Operation.result) =>
+      OperationApiRequest.waitForConfirmation(settings, result.hash)->Promise.get(_ =>
+        resetOperations()
+      )
+    OperationApiRequest.useCreate(~sideEffect, ())
   }
 
-  let useSimulate = () => OperationApiRequest.useSimulate()
+  let useSimulate = () => {
+    let (operationSimulateRequest, sendOperationSimulate) = OperationApiRequest.useSimulate()
+    let sendOperationSimulate = (source, managers) => sendOperationSimulate((source, managers))
+    (operationSimulateRequest, sendOperationSimulate)
+  }
 }
 
 module Bakers = {
@@ -622,20 +650,18 @@ module Tokens = {
   }
 
   let useCreate = () => {
-    let resetTokens = useResetAll()
-    TokensApiRequest.useCreate(~sideEffect=_ => resetTokens(), ())
+    let sideEffect = useResetAll()
+    TokensApiRequest.useCreate(~sideEffect, ())
   }
 
   let useCacheToken = () => {
-    let resetTokens = useResetAll()
-    TokensApiRequest.useCacheToken(~sideEffect=_ => resetTokens(), ())
+    let sideEffect = useResetAll()
+    TokensApiRequest.useCacheToken(~sideEffect, ())
   }
 
-  let useCheck = tokens => TokensApiRequest.useCheckTokenContract(tokens)
-
   let useDelete = pruneCache => {
-    let resetAccounts = useResetAll()
-    TokensApiRequest.useDelete(~sideEffect=_ => resetAccounts(), pruneCache)
+    let sideEffect = useResetAll()
+    TokensApiRequest.useDelete(~sideEffect, pruneCache)
   }
 }
 
@@ -650,33 +676,40 @@ module Aliases = {
     aliasesRequest
   }
 
-  let filterAccounts = (~aliases, ~accounts) =>
-    aliases->PublicKeyHash.Map.keep((k, _) => !(accounts->PublicKeyHash.Map.has(k)))
+  let filterAccounts = (~aliases, ~accounts, ~multisigs) =>
+    aliases->PublicKeyHash.Map.keep((k, _) =>
+      !(accounts->PublicKeyHash.Map.has(k) || multisigs->PublicKeyHash.Map.has(k))
+    )
 
   let useRequestExceptAccounts = () => {
     let store = useStoreContext()
     let (aliasesRequest, _) = store.aliasesRequestState
     let (accountsRequest, _) = store.accountsRequestState
+    let (multisigsRequest, _) = store.multisigsRequestState
 
-    switch (aliasesRequest, accountsRequest) {
-    | (ApiRequest.Done(Ok(aliases), t), Done(Ok(accounts), t')) =>
-      ApiRequest.Done(Ok(filterAccounts(~aliases, ~accounts)), min(t, t'))
+    switch (aliasesRequest, accountsRequest, multisigsRequest) {
+    | (ApiRequest.Done(Ok(aliases), t), Done(Ok(accounts), t'), Done(Ok(multisigs), t'')) =>
+      ApiRequest.Done(Ok(filterAccounts(~aliases, ~accounts, ~multisigs)), min(t, min(t', t'')))
 
-    | (Loading(Some(aliases)), Loading(Some(accounts))) =>
-      Loading(Some(filterAccounts(~aliases, ~accounts)))
+    | (
+        Loading(Some(aliases)) | Done(Ok(aliases), _),
+        Loading(Some(accounts)) | Done(Ok(accounts), _),
+        Loading(Some(multisigs)) | Done(Ok(multisigs), _),
+      ) =>
+      Loading(Some(filterAccounts(~aliases, ~accounts, ~multisigs)))
 
-    | (Loading(Some(aliases)), Done(Ok(accounts), _))
-    | (Done(Ok(aliases), _), Loading(Some(accounts))) =>
-      Loading(Some(filterAccounts(~aliases, ~accounts)))
-    | (Done(Error(e), t), _)
-    | (_, Done(Error(e), t)) =>
+    | (Done(Error(e), t), _, _)
+    | (_, Done(Error(e), t), _)
+    | (_, _, Done(Error(e), t)) =>
       Done(Error(e), t)
 
-    | (Loading(None), _)
-    | (_, Loading(None)) =>
+    | (Loading(None), _, _)
+    | (_, Loading(None), _)
+    | (_, _, Loading(None)) =>
       Loading(None)
-    | (NotAsked, _)
-    | (_, NotAsked) =>
+    | (NotAsked, _, _)
+    | (_, NotAsked, _)
+    | (_, _, NotAsked) =>
       NotAsked
     }
   }
@@ -692,18 +725,114 @@ module Aliases = {
   }
 
   let useCreate = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useCreate(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useCreate(~sideEffect, ())
   }
 
   let useUpdate = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useUpdate(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
-    let resetAliases = useResetAll()
-    AliasApiRequest.useDelete(~sideEffect=_ => resetAliases(), ())
+    let sideEffect = useResetAll()
+    AliasApiRequest.useDelete(~sideEffect, ())
+  }
+}
+
+module Contract = {
+  type t = Token(TokenContract.kind) | Multisig(Multisig.t) | Unknown
+
+  let useCheck = tokens => {
+    let set = (~config: ConfigContext.env, address) => {
+      switch tokens->TokensLibrary.Generic.pickAnyAtAddress(address) {
+      | None =>
+        config.network
+        ->NodeAPI.Tokens.checkTokenContract(address)
+        ->Promise.flatMapOk(x =>
+          switch x {
+          | #NotAToken =>
+            Multisig.API.getOneFromNetwork(config.network, address)->Promise.map(r =>
+              switch r {
+              | Ok(multisig) => Ok(Multisig(multisig))
+              | Error(_) => Ok(Unknown)
+              }
+            )
+          | #...TokenContract.kind as kind => Token(kind)->Promise.ok
+          }
+        )
+      | Some((_, _, (token, _))) => Token(token->TokensLibrary.Token.kind)->Promise.ok
+      }
+    }
+    ApiRequest.useSetter(~set, ~kind=Logs.Contract, ~toast=false, ())
+  }
+}
+
+module Multisig_ = Multisig
+module Multisig_API = Multisig.API
+
+module Multisig = {
+  let useRequestState = () => {
+    let store = useStoreContext()
+    store.multisigsRequestState
+  }
+
+  let useRequest = () => {
+    let (multisigsRequest, _) = useRequestState()
+    multisigsRequest
+  }
+
+  let useCreate = () => {
+    ()
+  }
+
+  let useGetAll = () => {
+    let config = ConfigContext.useContent()
+    let multisigsRequest = useRequest()
+    multisigsRequest->ApiRequest.getWithDefault(
+      Multisig.API.getAllFromCache(config.network)->Result.getWithDefault(PublicKeyHash.Map.empty),
+    )
+  }
+
+  let useGetFromAddress = () => {
+    let multisigs = useGetAll()
+    (address: PublicKeyHash.t) => multisigs->PublicKeyHash.Map.get(address)
+  }
+
+  let useResetAll = () => {
+    let (_, setMultisigRequest) = useRequestState()
+    () => setMultisigRequest(ApiRequest.expireCache)
+  }
+
+  let useUpdate = message => {
+    let sideEffect = useResetAll()
+    MultisigApiRequest.useUpdate(message)(~sideEffect, ())
+  }
+
+  let useOriginate = () => useUpdate(I18n.multisig_originated)
+  let useEdit = () => useUpdate(I18n.multisig_updated)
+  let useRegister = () => useUpdate(I18n.multisig_registered)
+
+  let useDelete = () => {
+    let sideEffect = useResetAll()
+    MultisigApiRequest.useDelete(~sideEffect, ())
+  }
+
+  module PendingOperations = {
+    let useRequestState = useRequestsState(store => store.pendingOperationsRequestsState)
+
+    let usePendingOperations = (~address: PublicKeyHash.t) => {
+      let requestState = useRequestState((address->Some :> option<string>))
+      MultisigApiRequest.usePendingOperations(~requestState, ~address)
+    }
+
+    let useResetAll = () => {
+      let store = useStoreContext()
+      let (_, setPendingOperationsRequests) = store.pendingOperationsRequestsState
+      () => {
+        setPendingOperationsRequests(resetRequests)
+      }
+    }
   }
 }
 
@@ -739,40 +868,36 @@ module Accounts = {
   }
 
   let useResetNames = () => {
-    let resetAliases = Aliases.useResetAll()
     let resetOperations = Operations.useResetNames()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
-      resetAliases()
       resetOperations()
     }
   }
 
   let useResetAll = () => {
     let resetOperations = Operations.useResetAll()
-    let resetAliases = Aliases.useResetAll()
     let (_, setAccountsRequest) = useRequestState()
     () => {
       setAccountsRequest(ApiRequest.expireCache)
       resetOperations()
-      resetAliases()
     }
   }
 
   let useUpdate = () => {
-    let resetAccounts = useResetNames()
-    AccountApiRequest.useUpdate(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetNames()
+    AccountApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
-    let resetAccounts = useResetAll()
-    AccountApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    AccountApiRequest.useDelete(~sideEffect, ())
   }
 
   let useCustomAuthLogin = () => {
-    let resetAccounts = useResetAll()
-    CustomAuthApiRequest.useLogin(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    CustomAuthApiRequest.useLogin(~sideEffect=_ => sideEffect(), ())
   }
 }
 
@@ -808,78 +933,105 @@ module Secrets = {
   }
 
   let useResetAll = () => {
+    let resetMultisigs = Multisig.useResetAll()
     let resetAccounts = Accounts.useResetAll()
     let (_, setSecretsRequest) = useRequestState()
     () => {
       setSecretsRequest(ApiRequest.expireCache)
       resetAccounts()
+      resetMultisigs()
     }
   }
 
   let useCreateWithMnemonics = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useCreateWithMnemonics(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useCreateWithMnemonics(~sideEffect, ())
   }
 
   let useCreateFromBackupFile = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useCreateFromBackupFile(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useCreateFromBackupFile(~sideEffect, ())
   }
 
   let useMnemonicImportKeys = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useMnemonicImportKeys(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useMnemonicImportKeys(~sideEffect=_ => sideEffect(), ())
   }
 
   let useLedgerImport = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useLedgerImport(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useLedgerImport(~sideEffect=_ => sideEffect(), ())
   }
 
   let useLedgerScan = () => {
-    let resetSecrets = useResetAll()
-    SecretApiRequest.useLedgerScan(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useLedgerScan(~sideEffect=_ => sideEffect(), ())
   }
 
   let useDerive = () => {
-    let resetAccounts = useResetAll()
-    SecretApiRequest.useDerive(~sideEffect=_ => resetAccounts(), ())
+    let sideEffect = useResetAll()
+    SecretApiRequest.useDerive(~sideEffect=_ => sideEffect(), ())
   }
 
   let useUpdate = () => {
-    let resetSecrets = useResetNames()
-    SecretApiRequest.useUpdate(~sideEffect=_ => resetSecrets(), ())
+    let sideEffect = useResetNames()
+    SecretApiRequest.useUpdate(~sideEffect, ())
   }
 
   let useDelete = () => {
-    let resetAccounts = useResetAll()
-    SecretApiRequest.useDelete(~sideEffect=_ => resetAccounts(), ())
-  }
-}
+    let config = ConfigContext.useContent()
 
-module SelectedAccount = {
-  let useGetAtInit = () => {
-    let store = useStoreContext()
-    let accounts = Accounts.useGetAll()
+    let networks = Array.concat(
+      Network.nativeChains->List.toArray->Array.map(x => x->fst->Network.getNetwork),
+      config.customNetworks,
+    )
 
-    let (selected, _set) = store.selectedAccountState
-    let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
-
-    switch selected {
-    | Some(selectedAccount) => Some(selectedAccount)
-    | None =>
-      accounts
-      ->PublicKeyHash.Map.valuesToArray
-      ->SortArray.stableSortBy(Account.compareName)
-      ->Array.get(0)
-    }
-  }
-
-  let useSet = () => {
-    let store = useStoreContext()
-    let (_, setSelectedAccount) = store.selectedAccountState
-
-    newAccount => setSelectedAccount(_ => Some(newAccount))
+    let sideEffect = useResetAll()
+    let (request, setRequest) = SecretApiRequest.useDelete(~sideEffect=_ => sideEffect(), ())
+    (
+      request,
+      i => {
+        setRequest(i)
+        // Remove from cache multisigs that:
+        // - are related to one of the removed pkh
+        // - AND have the default generated name (assume it has been automatically added by umami)
+        // If another remaining secret is related to any deleted multisig, the multisig
+        // will be re-added with the same name so it is ok to remove it here
+        // FIXME: we probably should be able to load everything from cache and filter this
+        //        instead of asking mezos for addresses.
+        //        But I don't have time to test it correctly and don't want to risk breaking anything.
+        //        Current implementation should leave useless multisigs in the cache if you do this:
+        //        1. have an implicit related to a multisig on a custom network (the multisig will be cached)
+        //        2. remove the custom network via the setting view
+        //        3. remove the implicit account
+        //        4. custom network not listed anymore in config file: related multisigs won't be selected for deletion
+        //        It is very unlikely to actually happen, especially when umami needs a mezos instance in order to run
+        ->Promise.flatMapOk(addresses =>
+          Promise.allArray(
+            networks->Array.map(network =>
+              Multisig_API.getAddresses(network, ~addresses)->Promise.flatMapOk(contracts =>
+                Multisig_API.get(network, contracts)
+              )
+            ),
+          )
+        )
+        ->Promise.mapOk(contracts =>
+          Array.reduce(contracts, PublicKeyHash.Map.empty, (acc, r) =>
+            switch r {
+            | Result.Ok(map) =>
+              PublicKeyHash.Map.merge(acc, map, (_, a, b) => {
+                let c = (a == None ? b : a)->Option.getExn
+                c.alias == Multisig_API.defaultName(c.address) ? Some(c) : None
+              })
+            | Result.Error(_) => acc
+            }
+          )
+        )
+        ->Promise.mapOk(PublicKeyHash.Map.valuesToArray)
+        ->Promise.mapOk(Js.Array.map((x: Multisig_.t) => x.address))
+        ->Promise.mapOk(Multisig_API.removeFromCache)
+      },
+    )
   }
 }
 
@@ -947,14 +1099,14 @@ module Beacon = {
 
     let useDelete = () => {
       let (client, _) = useClient()
-      let resetBeaconPeers = useResetAll()
-      BeaconApiRequest.Peers.useDelete(~client, ~sideEffect=_ => resetBeaconPeers(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Peers.useDelete(~client, ~sideEffect, ())
     }
 
     let useDeleteAll = () => {
       let (client, _) = useClient()
-      let resetBeaconPeers = useResetAll()
-      BeaconApiRequest.Peers.useDeleteAll(~client, ~sideEffect=_ => resetBeaconPeers(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Peers.useDeleteAll(~client, ~sideEffect, ())
     }
   }
 
@@ -977,18 +1129,182 @@ module Beacon = {
 
     let useDelete = () => {
       let (client, _) = useClient()
-      let resetBeaconPermissions = useResetAll()
-      BeaconApiRequest.Permissions.useDelete(~client, ~sideEffect=_ => resetBeaconPermissions(), ())
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Permissions.useDelete(~client, ~sideEffect, ())
     }
 
     let useDeleteAll = () => {
       let (client, _) = useClient()
-      let resetBeaconPermissions = useResetAll()
-      BeaconApiRequest.Permissions.useDeleteAll(
-        ~client,
-        ~sideEffect=_ => resetBeaconPermissions(),
-        (),
-      )
+      let sideEffect = useResetAll()
+      BeaconApiRequest.Permissions.useDeleteAll(~client, ~sideEffect, ())
     }
+  }
+}
+
+let useAliasesAccountsMultisigs = () => {
+  let aliasesRequest = Aliases.useRequest()
+  let accountsRequest = Accounts.useRequest()
+  let multisigsRequest = Multisig.useRequest()
+
+  switch (aliasesRequest, accountsRequest, multisigsRequest) {
+  | (Done(Error(e), t), _, _) | (_, Done(Error(e), t), _) | (_, _, Done(Error(e), t)) =>
+    ApiRequest.Done(Error(e), t)
+  | (Done(Ok(aliases), v1), Done(Ok(accounts), v2), Done(Ok(multisigs), v3)) =>
+    let cache = Ok(aliases, accounts, multisigs)
+    let cacheValidity = switch (v1, v2, v3) {
+    | (ValidSince(v1), ValidSince(v2), ValidSince(v3)) =>
+      ApiRequest.ValidSince(Js.Math.minMany_float([v1, v2, v3]))
+    | _ => ApiRequest.Expired
+    }
+    ApiRequest.Done(cache, cacheValidity)
+  | (NotAsked, _, _) | (_, NotAsked, _) | (_, _, NotAsked) => ApiRequest.NotAsked
+  | (Loading(None), Loading(None), Loading(None)) => ApiRequest.Loading(None)
+  | (Loading(_), _, _) | (_, Loading(_), _) | (_, _, Loading(_)) =>
+    ApiRequest.Loading(
+      Some(
+        aliasesRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+        accountsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+        multisigsRequest->ApiRequest.getWithDefault(PublicKeyHash.Map.empty),
+      ),
+    )
+  }
+}
+
+module AccountsMultisigs = {
+  // Return accounts and multisigs,
+  // formatted as aliases or corresponding registred alias if it exists.
+  let useRequest = () => {
+    ApiRequest.map(useAliasesAccountsMultisigs(), ((aliases, accounts, multisigs)) => {
+      let replaceName = v => {
+        switch PublicKeyHash.Map.get(aliases, v.Alias.address) {
+        | Some(alias) => {...v, name: alias.Alias.name}
+        | None => v
+        }
+      }
+      let acc = PublicKeyHash.Map.empty
+      let acc = PublicKeyHash.Map.reduce(accounts, acc, (acc, k, v) => {
+        let v = Alias.fromAccount(v)
+        let v = replaceName(v)
+        PublicKeyHash.Map.set(acc, k, v)
+      })
+      let acc = PublicKeyHash.Map.reduce(multisigs, acc, (acc, k, v) => {
+        let v = Alias.fromMultisig(v)
+        let v = replaceName(v)
+        PublicKeyHash.Map.set(acc, k, v)
+      })
+      acc
+    })
+  }
+
+  let useGetAll = () => {
+    useRequest()
+    ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+    ->PublicKeyHash.Map.keep((_, a) =>
+      switch a.kind {
+      | Some(Account(_)) | Some(Multisig) => true
+      | _ => false
+      }
+    )
+  }
+
+  let useGetAllWithDelegates = () => {
+    let accounts = useGetAll()
+    let delegates = Delegate.useGetAll()
+    accounts->PublicKeyHash.Map.map(account => {
+      let delegate = delegates->Map.String.get((account.address :> string))
+      (account, delegate)
+    })
+  }
+}
+
+let useHasPendingWaiting = () => {
+  let getMultisig = Multisig.useGetFromAddress()
+  let accountsRequest = Accounts.useRequest()
+  let multisigsRequest = Multisig.useRequest()
+  address => {
+    let accounts =
+      accountsRequest
+      ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      ->PublicKeyHash.Map.keysToArray
+    let multisigs =
+      multisigsRequest
+      ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+      ->PublicKeyHash.Map.keysToArray
+    let pkhs = Array.concat(accounts, multisigs)
+    let pending =
+      Multisig.PendingOperations.usePendingOperations(~address)->ApiRequest.getWithDefault(
+        ReBigNumber.Map.empty,
+      )
+    !ReBigNumber.Map.isEmpty(pending) && {
+      let m = getMultisig(address)->Option.getExn
+      let threshold = ReBigNumber.toInt(m.threshold)
+      let signers = Array.keep(m.signers, x => Js.Array.includes(x, pkhs))
+      ReBigNumber.Map.some(pending, (_, p) => {
+        Array.length(p.approvals) >= threshold ||
+          Array.some(signers, x => !Js.Array.includes(x, p.approvals))
+      })
+    }
+  }
+}
+
+// For backward compatibility. To be removed.
+let useGetAccountsMultisigsAliasesAsAliases = AccountsMultisigs.useRequest
+
+let useGetImplicitFromAlias = () => {
+  let accounts = Accounts.useGetAll()
+  let multisigs = Multisig.useGetAll()
+  alias => {
+    let getAccount = k => PublicKeyHash.Map.get(accounts, k)
+    let getMultisig = k => PublicKeyHash.Map.get(multisigs, k)
+    switch alias.Alias.kind {
+    | Some(Account(_)) => getAccount(alias.Alias.address)
+    | Some(Multisig) =>
+      getMultisig(alias.Alias.address)
+      ->Option.flatMap(multisig => Js.Array.find(PublicKeyHash.Map.has(accounts), multisig.signers))
+      ->Option.flatMap(signer => PublicKeyHash.Map.get(accounts, signer))
+    | Some(Contact) => None
+    | None => None
+    }
+  }
+}
+
+module SelectedAccount = {
+  let useGetAtInit = () => {
+    let store = useStoreContext()
+    let accounts =
+      useGetAccountsMultisigsAliasesAsAliases()->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+
+    let (selected, _set) = store.selectedAccountState
+    let selected = selected->Option.flatMap(pkh => accounts->PublicKeyHash.Map.get(pkh))
+    switch selected {
+    | Some(selectedAccount) => Some(selectedAccount)
+    | None =>
+      accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Alias.compare)->Array.get(0)
+    }
+  }
+
+  let useGetImplicit = () => {
+    let store = useStoreContext()
+    let accounts = Accounts.useGetAll()
+    let (selected, _set) = store.selectedAccountState
+    let selected =
+      selected->Option.flatMap(pkh =>
+        PublicKeyHash.isImplicit(pkh) ? accounts->PublicKeyHash.Map.get(pkh) : None
+      )
+    switch selected {
+    | Some(_) => selected
+    | None =>
+      accounts
+      ->PublicKeyHash.Map.valuesToArray
+      ->SortArray.stableSortBy(Account.compareName)
+      ->Array.get(0)
+    }
+  }
+
+  let useSet = () => {
+    let store = useStoreContext()
+    let (_, setSelectedAccount) = store.selectedAccountState
+
+    newAccount => setSelectedAccount(_ => Some(newAccount))
   }
 }

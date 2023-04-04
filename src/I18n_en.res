@@ -1,27 +1,27 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 module Btn = {
   let json = "JSON"
@@ -58,19 +58,22 @@ module Btn = {
   let go_operations = "GO TO OPERATIONS"
   let confirm = "CONFIRM"
   let update = "UPDATE"
-  let save_and_register = "SAVE AND REGISTER"
+  let validate = "VALIDATE"
+  let register = "REGISTER"
   let import_secret = "IMPORT SECRET WITH RECOVERY PHRASE"
   let create_secret_new = "CREATE NEW SECRET"
   let connect_hardware_wallet = "CONNECT LEDGER"
   let create_account_record_ok = "OK, I'VE RECORDED IT"
   let add_account = "ADD ACCOUNT"
   let add_contact = "ADD CONTACT"
-  let add_token = "REGISTER TOKEN"
+  let add_contract = "REGISTER CONTRACT"
   let advanced_options = "ADVANCED OPTIONS"
   let delegate = "DELEGATE"
   let add_transaction = "ADD TRANSACTION"
   let send_submit = "SUBMIT TRANSACTION"
+  let proposal_submit = "PREPARE TRANSACTION"
   let batch_submit = "SUBMIT BATCH"
+  let batch_proposal = "PREPARE BATCH"
   let send_cancel = "CANCEL TRANSACTION"
   let delegation_submit = "CONFIRM DELEGATION"
   let delegated = "DELEGATED"
@@ -98,6 +101,20 @@ module Btn = {
   let browse_for_folder = "BROWSE FOR FOLDER"
   let setup_later = "Set up later in settings"
   let check_for_updates = "CHECK FOR UPDATES"
+  let individual_accounts = "Individual Accounts"
+  let multisig_accounts = "Multisig Accounts"
+  let token = "Token"
+  let multisig = "Multisig"
+  let create_new_multisig = "CREATE NEW MULTISIG"
+  let add_another_owner = "ADD ANOTHER OWNER"
+  let back = "BACK"
+  let submit = "SUBMIT"
+  let history = "History"
+  let pending_operations = "In preparation"
+  let sign = "SIGN"
+  let sign_anyway = "SIGN ANYWAY"
+  let global_batch_add_short = "INSERT INTO BATCH"
+  let update_cancel = "CANCEL UPDATE"
 }
 
 module Tooltip = {
@@ -107,7 +124,7 @@ module Tooltip = {
   let addressbook_edit = "Edit Contact"
   let addressbook_delete = "Delete Contact"
   let add_contact = "Add to Contacts"
-  let add_token = "Register token"
+  let add_contract = "Register contract"
   let unregistered_token_transaction = "This transaction was made using an unregistered token."
   let no_tez_no_delegation = "Delegation requires tez"
   let refresh = "Refresh"
@@ -122,11 +139,11 @@ module Tooltip = {
   let see_network_info = "See network info"
   let tokenid = "A non-negative number that identifies the asset inside a FA2 contract"
   let add_to_wallet = "Add to wallet"
-  let reject_on_provider = (s) => `Reject on ${s} popup to cancel operation`
+  let reject_on_provider = s => `Reject on ${s} popup to cancel operation`
 }
 
 module Log = {
-  let copied_to_clipboard = (s) => `${s} copied to clipboard`
+  let copied_to_clipboard = s => `${s} copied to clipboard`
   let copy_to_clipboard_err = "Copying to Clipboard failed"
   let log_content = "Log content"
   let address = "Address"
@@ -201,6 +218,12 @@ module Label = {
   let storage_location = "Storage location"
   let entrypoint = "Entrypoint"
   let parameter = "Parameter"
+  let add_contract_name = "Contract name"
+  let owners = "Owners"
+  let approval_threshold = "Approval threshold:"
+  let out_of = (a, b) => `${a} out of ${b}`
+  let signing_account = "Signing account"
+  let multisig_tag = "multisig"
 }
 
 module Input_placeholder = {
@@ -213,6 +236,7 @@ module Input_placeholder = {
   let add_contact_or_tz = "Paste a tz address or type in a contact's name"
   let add_token_address = "Enter KT1 address of a contract"
   let add_token_name = "e.g. Tezos"
+  let add_multisig_name = "e.g. Multisig Contract 1"
   let add_token_decimals = "e.g. 0"
   let add_token_id = "e.g. 0"
   let enter_new_password = "Enter new password, at least 8 characters"
@@ -221,10 +245,12 @@ module Input_placeholder = {
   let enter_derivation_path = "Enter your derivation path"
   let custom_network_name = "e.g. Test Network"
   let search_for_nft = "Search for NFT by name"
-  let search_for_token = "Search for Token by name, symbol or KT address"
+  let search_for_contract = "Search by name, symbol or KT address"
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net"
   let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet"
   let select_backup_path = "Browse to the required folder or enter a path"
+  let add_contract_name = "Enter contract name"
+  let set_owner = "Paste tz address/Tezos Domains alias"
 }
 
 module Form_input_error = {
@@ -263,13 +289,13 @@ module Form_input_error = {
   let api_not_available = "API not available"
   let node_not_available = "Node not available"
   let different_chains = "API and Node are not running on the same network"
-  let not_a_token_contract = "Not a standard token contract"
+  let unknown_contract = "Unknown contract type"
   let no_metadata = pkh => {
-    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    let s = pkh->Option.mapWithDefault("", s => `: ${s}`)
     `No metadata was found for the contract${s}.`
   }
   let no_token_metadata = pkh => {
-    let s = pkh->Option.mapWithDefault("", (s) => `: ${s}`);
+    let s = pkh->Option.mapWithDefault("", s => `: ${s}`)
     `No token metadata was found for the contract${s}.`
   }
   let token_id_not_found = x =>
@@ -279,6 +305,8 @@ module Form_input_error = {
     }
   let illformed_token_metadata = (pkh, tokenId, field) =>
     `Field ${field} for token id ${string_of_int(tokenId)} illformed for contract ${pkh}`
+  let not_a_multisig_contract = "Contract not supported by Umami"
+  let permissions_error = "Unable to propose a multisig transaction: none of your wallet accounts is a co-owner ot the selected contract."
 }
 
 module Title = {
@@ -313,7 +341,8 @@ module Title = {
   let secret_update = "Edit Secret"
   let add_contact = "Add Contact"
   let update_contact = "Edit Contact"
-  let add_token = "Register Token"
+  let contract_details = "Contract Details"
+  let add_contract = "Register Contract"
   let edit_metadata = "Token Metadata"
   let export_to_mobile = "Export to Umami Mobile"
   let show_recovery_phrase = "Show Recovery Phrase"
@@ -328,6 +357,10 @@ module Title = {
   let withdraw_baker = "Withdraw Baker"
   let confirm_delegate = "Confirm Delegate"
   let confirm_batch = "Confirm"
+  let confirm_multisig_origination = "Confirm"
+  let confirm_operation_approval = "Confirm"
+  let confirm_operation_execution = "Confirm"
+  let confirm_operation_approval_and_execution = "Confirm"
   let delegate = "Delegate"
   let delegate_update = "Change Baker"
   let delegate_delete = "End Delegation"
@@ -342,6 +375,7 @@ module Title = {
   let send_many_transactions = "Send one or many transactions"
   let delete_account = "Delete Account?"
   let delete_batch = "Delete this batch?"
+  let delete_contract = "Delete contract?"
   let delete_secret = "Delete Secret?"
   let scan = "Scan"
   let disclaimer = "User Agreement"
@@ -360,13 +394,14 @@ module Title = {
   let operations = "Operations"
   let addressbook = "Address Book"
   let delegations = "Delegations"
-  let tokens = "Tokens"
+  let contracts = "Contracts"
   let settings = "Settings"
   let collected = "Collected"
   let gallery = "Gallery"
   let notice = "Disclaimer Notice"
   let buy_tez = "Buy tez"
   let wert_recipient = "Please select the recipient account"
+  let multisig_sender = "Please select the sender account"
   let added_to_wallet = "Added to wallet"
   let held = "Held"
   let restore_account = "Restore from Backup"
@@ -375,6 +410,16 @@ module Title = {
   let details = "Details"
   let help = "Help"
   let scan_with_mobile_to_import = "Scan with Umami Mobile to import"
+  let create_new_multisig = "Create New Multisig"
+  let name_contract = "Name contract"
+  let set_owners_and_threshold = "Set owners & threshold"
+  let review_and_submit = "Review and Submit"
+  let contract_name = "Contract name"
+  let owners = s => `Owners (${s})`
+  let approval_threshold = "Approval threshold"
+  let approval_threshold_reached = "Signature threshold reached"
+  let unrecognized_operation = "Unrecognized Operation"
+  let propose_batch = "Prepare Batch"
 }
 
 module Expl = {
@@ -416,6 +461,19 @@ module Expl = {
   let custom_network = "Please specify the parameters of the network you want to connect to."
   let external_service = "Notice: you are using Wert, which is an external service to Umami."
   let secret_select_backup_path = `If you ever need to restore your wallet, you can do so with this backup file and your password.`
+  let no_multisig_contract = "No contract on the current chain"
+  let name_contract = "Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party."
+  let set_owners_and_threshold = "You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions."
+  let name_multisig = `Please give a name to the contract you are about to create. This name is only stored locally on your computer and never shared with Umami or any third-party.`
+  let set_multisig_owners = `You are about to create a new multisig contract that has one or more owners. Please select the addresses that have permission to submit and approve transactions.`
+  let set_multisig_threshold = "Set the minimum number of required approvals before any action can be executed."
+  let out_of = s => `out of ${s}`
+  let review_multisig = `Please review the details of the multisig contract you are about to create. You can edit them before submitting by clicking the back button. You will receive an approval request from your wallet. Please confirm it to continue.`
+  let approval_threshold_reached = "This operation has already gathered the required number of signatures to be submitted. You signature is therefore no longer necessary."
+  let signing_account = "Select signing account."
+  let signing_account_multisig = s =>
+    `A multisig (${s}) was selected. You need to propose this operation to the co-owners of the selected multisig and then approve it in order to finally execute it. Please select which account will propose.`
+  let unrecognized_operation = "Umami does not support this type of operation. Please review the details of the operation before signing it."
 }
 
 module Menu = {
@@ -429,6 +487,7 @@ module Menu = {
   let batch_delete = "Delete Transfer"
   let delete_account = "Delete"
   let delete_secret = "Delete"
+  let delete_contract = "Delete"
   let edit = "Edit"
   let scan = "Scan"
   let show = "Show"
@@ -478,7 +537,7 @@ module Settings = {
   let backup_text = "Create and save a backup file for the entire wallet"
   let backup_path_saved = "Backup file path saved"
   let app_update = "APP UPDATE"
-  ()
+  let about_ELEMENT = link => <> {"Powered by "->React.string} {link} {" API"->React.string} </>
 }
 
 module Help = {
@@ -498,8 +557,7 @@ module Network = {
   let api_version_rpc_error = err => `The API \`/version\` RPC parsing returned an error: ${err}`
   let api_version_format_error = a =>
     `The API \`/version\` RPC parsing returned an unknown version format: ${a}`
-  let api_monitor_rpc_error = a =>
-    `The API \`/monitor/blocks\` RPC parsing returned an error: ${a}`
+  let api_monitor_rpc_error = a => `The API \`/monitor/blocks\` RPC parsing returned an error: ${a}`
   let node_not_available = "The node is not available"
   let node_version_rpc_error = a =>
     `Node \`/chains/main/chain_id\` RPC parsing returned an error: ${a}`
@@ -579,14 +637,14 @@ module Errors = {
   let storage_migration_failed = v => `Internal error: storage migration failed at version ${v}`
   let unknown_network = c => `No public network exists for chain ${c}`
   let script_parsing = e => {
-    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    let e = e->Option.mapDefault("", m => " with message: " ++ m)
     `Error when parsing script${e}`
   }
   let micheline_parsing = e => {
-    let e = e->Option.mapDefault("", m => " with message: " ++ m);
+    let e = e->Option.mapDefault("", m => " with message: " ++ m)
     `Error when parsing Micheline${e}`
   }
-    
+  let fetching_storage = (pkh, e) => `Error while fetching storage of ${pkh}: ${e}`
   let unknown_version = (current, expected) =>
     `Unknown version ${current}, while ${expected} expected`
   let version_not_in_bound = (lowest, highest, version) =>
@@ -603,31 +661,38 @@ module Errors = {
   let unexpected_decimals = v => `${v} does not accept decimals`
   let expected_decimals = (v, d) => `${v} does not accept more that ${string_of_int(d)} decimals`
   let fetch404 = "Error 404 - Not Found"
+  let reload_btn = "RELOAD PAGE"
+  let relaunch_btn = "RELAUNCH APP"
+  let unhandled_error_title = "Unhandled error"
 }
 
 module Csv = {
-  let cannot_parse_number = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a number`
-  let cannot_parse_boolean = (row, col) => `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a boolean`
+  let cannot_parse_number = (row, col) =>
+    `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a number`
+  let cannot_parse_boolean = (row, col) =>
+    `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not a boolean`
   let cannot_parse_custom_value = (err, row, col) =>
     `Value at row ${string_of_int(row)} column ${string_of_int(col)} is not valid:\n${err}`
-  let cannot_parse_row = row => `Row ${string_of_int(row)} is not valid, some columns are probably missing`
+  let cannot_parse_row = row =>
+    `Row ${string_of_int(row)} is not valid, some columns are probably missing`
   let cannot_parse_csv = "CSV is not valid"
   let no_rows = "CSV is empty"
   let cannot_parse_token_amount = (v, row, col) => {
-    let v = ReBigNumber.toString(v);
-    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid token amount`
+    let v = ReBigNumber.toString(v)
+    `Value ${v} at row ${string_of_int(row)} column ${string_of_int(
+        col,
+      )} is not a valid token amount`
   }
   let cannot_parse_tez_amount = (v, row, col) => {
-    let v = ReBigNumber.toString(v);
+    let v = ReBigNumber.toString(v)
     `Value ${v} at row ${string_of_int(row)} column ${string_of_int(col)} is not a valid tez amount`
   }
   let unknown_token = (pkh, id) => {
-    let id = id->Option.mapWithDefault("", n => ` and tokenId ${string_of_int(n)}`);
+    let id = id->Option.mapWithDefault("", n => ` and tokenId ${string_of_int(n)}`)
     `Unknown token ${pkh}${id}`
   }
   let cannot_parse_address = (a, reason) => `${a} in not a valid address: ${reason}.`
-  let fa1_2_invalid_token_id = pkh =>
-    `Contract ${pkh} is an FA1.2 token, it cannot have a token id`
+  let fa1_2_invalid_token_id = pkh => `Contract ${pkh} is an FA1.2 token, it cannot have a token id`
   let fa2_invalid_token_id = pkh => `Contract ${pkh} is an FA2 token, it must have a token id`
 }
 
@@ -642,6 +707,7 @@ let support_mailto_error_body = "The following error happened in Umami:"
 let download_question = "Do you want to download the latest update?"
 let restart_to_install_question = "Do you want to restart the app to install now? Please note that the update will be applied next time you restart Umami."
 let unknown_operation = "Unknown"
+let unrecognized_operation = "Unrecognized Operation"
 let error404 = "404 - Route Not Found :("
 let no_balance_amount = "---- "
 let logs_no_recent = "No Recent Message"
@@ -651,7 +717,7 @@ let tezos = "Tez"
 let tez = "tez"
 let you_dont_have_nft = "You don't have any NFT yet"
 let tez_amount = a => `${a} ${tez}`
-let tez_amount_ELEMENT = a => <>{a}<span>{` ${tez}`->React.string}</span></>
+let tez_amount_ELEMENT = a => <> {a} <span> {` ${tez}`->React.string} </span> </>
 let tez_op_amount = (op, a) => `${op} ${tez_amount(a)}`
 let account = "Account"
 let operation_reveal = "Reveal"
@@ -659,6 +725,7 @@ let operation_transaction = "Transaction"
 let operation_contract_call = "Call"
 let operation_origination = "Origination"
 let operation_delegation = "Delegation"
+let operation_batch = "Batch"
 let operation_token_batch = "Token batch"
 let operation_column_type = "TYPE"
 let operation_column_amount = "AMOUNT"
@@ -667,12 +734,15 @@ let operation_column_timestamp = "TIMESTAMP"
 let operation_column_fee = "FEE"
 let operation_column_sender = "SENDER"
 let operation_column_status = "STATUS"
+let operation_column_ID = "ID"
+let operation_column_signatures = "SIGNATURES"
 let global_batch_column_type = "TYPE"
 let global_batch_subject = "SUBJECT"
 let global_batch_recipient = "RECIPIENT"
 let global_batch_fee = "FEE"
 let global_batch_delete_all = "DELETE ALL"
 let global_batch_add = "INSERT TRANSACTION INTO BATCH"
+let global_batch_add_multisig_exectute = "ADD TO BATCH"
 let state_mempool = "Mempool"
 let state_levels = (a, b) => `${string_of_int(a)}/${string_of_int(b)} blocks`
 let state_confirmed = "Confirmed"
@@ -681,6 +751,10 @@ let optional_stepof = (a, b) => `Step ${string_of_int(a)} of ${string_of_int(b)}
 let account_create_record_recovery = "Record your recovery phrase"
 let contact_added = "Contact Added"
 let contact_updated = "Contact Updated"
+let multisig_originated = "Multisig Originated"
+let multisig_updated = "Multisig Edited"
+let multisig_registered = "Multisig Registered"
+let contract_removed_from_cache = "Contract removed from cache"
 let contact_deleted = "Contact Deleted"
 let account_created = "Account Created"
 let account_updated = "Account Updated"
@@ -695,7 +769,7 @@ let navbar_nft = "NFT"
 let navbar_operations = "OPERATIONS"
 let navbar_addressbook = "ADDRESS BOOK"
 let navbar_delegations = "DELEGATIONS"
-let navbar_tokens = "TOKENS"
+let navbar_contracts = "CONTRACTS"
 let navbar_settings = "SETTINGS"
 let navbar_logs = "LOGS"
 let navbar_global_batch = "BATCH"
@@ -715,11 +789,14 @@ let na = "N/A"
 let empty_held_token = "No token held and not registered on the current chain"
 let empty_delegations = "No Delegation"
 let empty_operations = "No Operation"
+let empty_pending_operations = "No pending operation"
 let empty_address_book = "No Contact"
-let add_token_format_contract_sentence = "Please enter the address of a deployed token contract for which you would like to view balances as well as to perform operations."
+let add_contract_sentence = "Register a contract so that you can query its balances and perform operations. We support FA1.2, FA2 standards as well as some multisig contracts."
 let add_token_contract_metadata_fa1_2 = "Please specify the name, symbol, and decimals of a token contract for which you would like to view balances as well as to perform operations. Umami will prefill the fields if any metadata is available."
 let add_token_contract_tokenid_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available."
 let add_token_contract_metadata_fa2 = "Please specify the token ID of the token you would like to perform operations on. Umami will prefill the fields if any metadata is available"
+let add_multisig_contract_sentence = "Please enter the address of a deployed multisig contract."
+let add_multisig_contract_metadata = "We detected that this contract meets the multisig standard ; as such please fill in the following field."
 let delegation_removal = "Delegation Removal"
 let error_check_contract = "Address is not a valid token contract"
 let error_register_not_fungible = "Cannot register an NFT as a fungible token"
@@ -736,3 +813,5 @@ let percent_complete = "% complete"
 let update_available = "An update is available"
 let downloading_update = s => `Downloading update (${s}%)`
 let download_complete = "Download complete"
+let a_of_b = (a, b) => `${a} of ${b}`
+let approved_a_of_b = (a, b) => `Approved (${a} of ${b})`

@@ -31,27 +31,21 @@ let make = (
   ~ledgerState,
   ~dryRun,
   ~secondaryButton=?,
-  ~operation: Protocol.batch,
+  ~operations: array<Protocol.manager>,
   ~sendOperation,
   ~loading,
   ~setAdvancedOptions,
   ~advancedOptionsDisabled=true,
   ~onClose,
 ) => <>
-  <ModalFormView
-    title=I18n.Title.confirm_batch
-    closing={
-      open ModalFormView
-      Close(_ => onClose())
-    }>
-    <View style=FormStyles.header>
-      <Typography.Overline1> {I18n.Expl.global_batch->React.string} </Typography.Overline1>
-    </View>
-    {switch operation.managers {
+  <ModalFormView title=I18n.Title.confirm_batch closing=ModalFormView.Close(_ => onClose())>
+    <View style=FormStyles.header> {I18n.Expl.global_batch->Typography.overline1} </View>
+    {switch operations {
     | [Delegation(_)] => React.null
     | _ =>
       <OperationSummaryView.Batch
-        operation
+        signer=source
+        operations
         dryRun
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
@@ -63,7 +57,7 @@ let make = (
       state=ledgerState
       ?secondaryButton
       loading
-      sendOperation={sendOperation(~operation)}
+      sendOperation={sendOperation(~operations)}
     />
   </ModalFormView>
 </>

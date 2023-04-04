@@ -78,7 +78,7 @@ module ContactKindSelector = {
   }
 
   @react.component
-  let make = (~value, ~onValueChange) => {
+  let make = (~keyPopover="ContactKindSelector", ~value, ~onValueChange) => {
     let theme = ThemeContext.useTheme()
 
     let chevron =
@@ -94,7 +94,7 @@ module ContactKindSelector = {
       selectedValueKey={value->toStringKey}
       onValueChange
       renderButton
-      keyPopover="ContactKindSelector"
+      keyPopover
     />
   }
 }
@@ -216,17 +216,24 @@ let onBlurProvider = (valRef: React.ref<_>, callback, provider, value) => {
 
 @react.component
 let make = (
+  ~keyPopover="FormGroupContactSelector",
+  ~fieldStyle=?,
   ~label,
-  ~filterOut: option<Alias.t>,
-  ~aliases: PublicKeyHash.Map.map<Alias.t>,
   ~value: FormUtils.Alias.any,
-  ~handleChange: FormUtils.Alias.any => unit,
+  ~onRemove=?,
+  ~onChange: FormUtils.Alias.any => unit,
   ~error,
+  ~keep: Umami.Alias.t => bool=_ => true,
 ) => {
+  let aliases =
+    StoreContext.Aliases.useRequest()
+    ->ApiRequest.getDoneOk
+    ->Option.getWithDefault(PublicKeyHash.Map.empty)
+
   let aliasArray =
     aliases
     ->PublicKeyHash.Map.valuesToArray
-    ->Array.keep((v: Alias.t) => Some(v.address) != filterOut->Option.map(a => a.address))
+    ->Array.keep(keep)
     ->SortArray.stableSortBy(Alias.compareName)
 
   let theme = ThemeContext.useTheme()
@@ -270,7 +277,12 @@ let make = (
     <View style={styles["label"]}>
       <FormLabel label hasError />
       {<ContactKindSelector
-        value=contactKind onValueChange={v => setContactKind(_ => v)}
+        keyPopover={keyPopover ++ "ContactKindSelector"}
+        value=contactKind
+        onValueChange={v => {
+          setContactKind(_ => v)
+          onChange(valueRef.current)
+        }}
       />->ReactUtils.onlyWhen(ReCustomAuth.flagOn)}
     </View>
 
@@ -305,7 +317,7 @@ let make = (
 
   <FormGroup style={styles["formGroup"]}>
     <Autocomplete
-      keyPopover="formGroupContactSelector"
+      keyPopover
       value={switch value {
       | Valid(Alias(a)) => a.name
       | Temp(s, _) => s
@@ -327,18 +339,19 @@ let make = (
               | Error(_) => s->FormUtils.Alias.AnyString
               }
             })
-          ->handleChange
+          ->onChange
         | #...ReCustomAuth.handledProvider =>
-          s == "" ? s->AnyString->handleChange : FormUtils.Alias.Temp(s, NotAsked)->handleChange
+          (s == "" ? s->AnyString : FormUtils.Alias.Temp(s, NotAsked))->onChange
         }}
       onBlur={_ =>
         switch contactKind {
-        | #...ReCustomAuth.handledProvider as p => onBlurProvider(valueRef, handleChange, p, value)
+        | #...ReCustomAuth.handledProvider as p => onBlurProvider(valueRef, onChange, p, value)
         | #Default => ()
         }}
       error
       list=items
       clearButton=true
+      ?onRemove
       renderItem
       keyExtractor
       placeholder={buildPlaceholder(contactKind)}
@@ -347,7 +360,7 @@ let make = (
       numItemsToDisplay
       style={
         open Style
-        arrayOption([Some(styles["input"]), styleValidAlias])
+        arrayOption([Some(styles["input"]), styleValidAlias, fieldStyle])
       }
     />
     {error == None ? customAuthAddress : <FormError style={styles["error"]} ?error />}

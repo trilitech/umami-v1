@@ -39,6 +39,7 @@ module Transaction = {
     amount: Tez.t,
     destination: PublicKeyHash.t,
     parameters: option<Js.Dict.t<string>>,
+    entrypoint: option<string>,
   }
   type token_info = {
     kind: TokenRepr.kind,
@@ -109,6 +110,7 @@ module Transaction = {
       |> PublicKeyHash.build
       |> Result.getExn,
       parameters: json |> optional(field("parameters", dict(string))),
+      entrypoint: json |> field("data", JsonEx.Decode.optionalOrNull("entrypoint", string)),
     }
 
     let t = json => {
@@ -118,32 +120,81 @@ module Transaction = {
       | #KTez => Tez(common(json))
       }
     }
+
+    module Tzkt = {
+      let t = json => {
+        let common = json => {
+          amount: json |> field("amount", int) |> Tez.fromMutezInt,
+          destination: json
+          |> field("target", field("address", string))
+          |> PublicKeyHash.build
+          |> Result.getExn,
+          entrypoint: json |> optional(
+            field("parameter", json =>
+              Option.getWithDefault(json |> optional(field("entrypoint", string)), "default")
+            ),
+          ),
+          parameters: json |> optional(field("parameter", dict(string))),
+        }
+        json |> optional(field("tokenTransfersCount", int)) == None ? Some(Tez(common(json))) : None
+      }
+    }
   }
 }
 
 module Origination = {
   type t = {contract: string}
 
-  open Json.Decode
+  module Decode = {
+    open Json.Decode
 
-  let decode = json => {
-    let ca = json |> optional(field("data", field("contract", string)))
+    let t = json => {
+      let ca = json |> optional(field("data", field("contract", string)))
 
-    ca->Option.map(contract => {contract: contract})
+      ca->Option.map(contract => {contract: contract})
+    }
+
+    module Tzkt = {
+      let t = json => {
+        let ca = json |> optional(field("originatedContract", optional(field("address", string))))
+
+        ca->Option.flatMap(x => x->Option.map(x => {contract: x}))
+      }
+    }
   }
 }
 
 module Delegation = {
   type t = {delegate: option<PublicKeyHash.t>}
 
-  let decode = json => {
+  module Decode = {
     open Json.Decode
-    {
-      delegate: switch json |> optional(field("data", field("delegate", string))) {
-      | Some(delegate) =>
-        delegate->Js.String2.length == 0 ? None : Some(delegate->PublicKeyHash.build->Result.getExn)
-      | None => None
-      },
+
+    let t = json => {
+      {
+        delegate: switch json |> optional(field("data", field("delegate", string))) {
+        | Some(delegate) =>
+          delegate->Js.String2.length == 0
+            ? None
+            : Some(delegate->PublicKeyHash.build->Result.getExn)
+        | None => None
+        },
+      }
+    }
+
+    module Tzkt = {
+      let t = json => {
+        {
+          delegate: json
+          |> field("newDelegate", field("address", string))
+          |> (
+            delegate =>
+              delegate->Js.String2.length == 0
+                ? None
+                : Some(delegate->PublicKeyHash.build->Result.getExn)
+          ),
+        }
+      }
     }
   }
 }
@@ -163,13 +214,14 @@ type t = {
   block: option<string>,
   fee: Tez.t,
   hash: string,
-  id: string,
+  id: string, // FIXME: make it an integer
   level: int,
-  op_id: int,
+  op_id: int, // FIXME: remove this one, which is juste `id` converted to int
   payload: payload,
   source: PublicKeyHash.t,
   status: status,
   timestamp: Js.Date.t,
+  internal: int,
 }
 
 let internal_op_id = op =>
@@ -178,9 +230,9 @@ let internal_op_id = op =>
   | _ => None
   }
 
-let uniqueId = op => (op.hash, op.id, internal_op_id(op))
-let uniqueIdToString = ((hash, id, iid)) =>
-  hash ++ (id ++ iid->Option.mapWithDefault("", Int.toString))
+let uniqueId = op => (op.hash, op.id, op.internal, op->internal_op_id)
+let uniqueIdToString = ((hash, id, iid, iiid)) =>
+  hash ++ id ++ iid->Int.toString ++ iiid->Option.mapWithDefault("", Int.toString)
 
 type operation = t
 
@@ -191,8 +243,8 @@ module Decode = {
     switch ty {
     | "reveal" => Reveal(json->Reveal.decode)
     | "transaction" => Transaction(json->Transaction.Decode.t)
-    | "origination" => Origination(json->Origination.decode)
-    | "delegation" => Delegation(json->Delegation.decode)
+    | "origination" => Origination(json->Origination.Decode.t)
+    | "delegation" => Delegation(json->Delegation.Decode.t)
     | _ => Unknown
     }
 
@@ -203,18 +255,52 @@ module Decode = {
     Option.isNone(block_hash) ? Mempool : Chain
   }
 
+  let internal = json => (json |> optional(field("internal", int)))->Option.getWithDefault(0)
+
   let t = json => {
-    block: json |> optional(field("block_hash", string)),
-    fee: (json |> optional(field("fee", string)))
-      ->Option.mapWithDefault(Tez.zero, Tez.fromMutezString),
-    hash: json |> field("hash", string),
-    id: json |> field("id", string),
-    level: json |> field("level", string) |> int_of_string,
-    op_id: json |> field("id", string) |> int_of_string,
-    payload: json |> payload(json |> field("kind", string)),
-    source: json |> source,
-    status: status(json),
-    timestamp: json |> field("op_timestamp", date),
+    let internal = json |> internal
+    {
+      block: json |> optional(field("block_hash", string)),
+      fee: internal == 0 ? (json |> optional(field("fee", string)))->Option.mapWithDefault(Tez.zero, Tez.fromMutezString) : Tez.zero,
+      hash: json |> field("hash", string),
+      id: json |> field("id", string),
+      level: json |> field("level", string) |> int_of_string,
+      op_id: json |> field("id", string) |> int_of_string,
+      payload: json |> payload(json |> field("kind", string)),
+      source: json |> source,
+      status: status(json),
+      timestamp: json |> field("op_timestamp", date),
+      internal: internal,
+    }
+  }
+
+  module Tzkt = {
+    let payload = (ty, json) =>
+      switch ty {
+      | "reveal" => None
+      | "transaction" => Option.map(json->Transaction.Decode.Tzkt.t, t => Transaction(t))
+      | "origination" => json->Origination.Decode.Tzkt.t->Origination->Some
+      | "delegation" => json->Delegation.Decode.Tzkt.t->Delegation->Some
+      | _ => None
+      }
+
+    let t = json =>
+      Option.map(json |> payload(json |> field("type", string)), payload => {
+        block: json |> optional(field("block", string)),
+        fee: json |> field("bakerFee", int) |> Tez.fromMutezInt, // Mezos does not use storageFee or allocationFee
+        hash: json |> field("hash", string),
+        id: json |> field("id", int) |> Int.toString,
+        level: json |> field("level", int),
+        op_id: json |> field("id", int),
+        payload: payload,
+        source: json
+        |> field("sender", field("address", string))
+        |> PublicKeyHash.build
+        |> Result.getExn,
+        status: json |> field("status", string) == "applied" ? Chain : Mempool,
+        timestamp: json |> field("timestamp", date),
+        internal: json |> optional(field("initiator", Json.Decode.id)) == None ? 0 : 1, // Can't have a real position, only true or false
+      })
   }
 }
 

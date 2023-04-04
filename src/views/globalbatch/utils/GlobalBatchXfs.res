@@ -93,21 +93,19 @@ let transferPayloadToTransferData = ((amount, destination, parameter): transferP
   }
 
 // Adds default options to Trasfer.data to create a Transfer.t
-let transferDataToTransfer = ((data: Transfer.data, parameter)) => {
+let transferDataToTransfer = ((data: Transfer.data, parameter)): Transfer.t => {
   let options = ProtocolOptions.make()
-  let result: Transfer.t = {data: data, options: options, parameter: parameter}
-  result
+  {data: data, options: options, parameter: parameter}
 }
 let transferPayloadToTransfer = (p: transferPayload) => {
-  let result = transferPayloadToTransferData(p)->transferDataToTransfer
-  result
+  transferPayloadToTransferData(p)->transferDataToTransfer
 }
 
-let batchToIndexedRows = (batch: Protocol.batch) => {
+let batchToIndexedRows = (batch: array<Protocol.manager>) => {
   open Protocol.Amount
   let result = []
 
-  batch.managers
+  batch
   ->Array.mapWithIndex((i, manager) => {
     switch manager {
     | Delegation(_) => ()

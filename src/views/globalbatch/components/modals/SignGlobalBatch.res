@@ -26,17 +26,19 @@
 let useSendTransfer = () => {
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
 
-  let sendTransfer = (~operation: Protocol.batch, signingIntent) =>
+  let sendTransfer = (~source, ~operations, signingIntent) => {
+    let operation = {Protocol.source: source, managers: operations}
     sendOperation({operation: operation, signingIntent: signingIntent})
-
+  }
   (operationRequest, sendTransfer)
 }
 
 @react.component
 let make = (
-  ~dryRun,
-  ~operation: option<Protocol.batch>,
-  ~closeModal,
+  ~source,
+  ~operations: array<Protocol.manager>,
+  ~dryRun: option<Umami.Protocol.Simulation.results>,
+  ~closeAction,
   ~resetGlobalBatch,
   ~ledgerState,
 ) => {
@@ -45,39 +47,29 @@ let make = (
   let loading = sendTransferState->ApiRequest.isLoading
 
   let handlePressCancel = _ => {
-    closeModal()
+    closeAction()
     open Routes
     push(Operations)
   }
-
-  let renderSummary = () =>
-    operation->Option.mapWithDefault(React.null, operation =>
-      dryRun->Option.mapWithDefault(React.null, dryRun =>
-        <GlobalBatchSummary
-          source=operation.source
-          loading
-          ledgerState
-          dryRun
-          operation
-          sendOperation=sendTransfer
-          setAdvancedOptions={_ => ()}
-          advancedOptionsDisabled=true
-          onClose=closeModal
-        />
-      )
-    )
 
   switch sendTransferState {
   | Done(Ok({hash}), _) =>
     resetGlobalBatch()
 
-    <ModalFormView
-      closing={
-        open ModalFormView
-        Close(_ => closeModal())
-      }>
+    <ModalFormView closing={ModalFormView.Close(_ => closeAction())}>
       <SubmittedView hash onPressCancel=handlePressCancel submitText=I18n.Btn.go_operations />
     </ModalFormView>
-  | _ => renderSummary()
+  | _ =>
+    <GlobalBatchSummary
+      source
+      loading
+      ledgerState
+      dryRun
+      operations
+      sendOperation={sendTransfer(~source)}
+      setAdvancedOptions={_ => ()}
+      advancedOptionsDisabled=true
+      onClose=closeAction
+    />
   }
 }

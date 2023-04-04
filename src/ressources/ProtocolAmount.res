@@ -24,6 +24,7 @@
 /* *************************************************************************** */
 
 type token = {
+  source: PublicKeyHash.t, //FIXME: move this elsewhere?
   amount: TokenRepr.Unit.t,
   token: TokenRepr.t,
 }
@@ -33,7 +34,13 @@ type t =
   | Token(token)
 
 let makeTez = t => t->Tez
-let makeToken = (~amount, ~token) => Token({amount: amount, token: token})
+let makeToken = (~source, ~amount, ~token) => Token({source: source, amount: amount, token: token})
+
+let isZero = x =>
+  switch x {
+  | Tez(t) => Tez.zero == t
+  | Token({amount: a}) => TokenRepr.Unit.zero == a
+  }
 
 let toString = x =>
   switch x {
@@ -89,13 +96,14 @@ let reduce = l =>
           open Tez.Infix
           acc + v
         })
-      | (Some(Token({amount: acc, token})), Token({amount})) =>
+      | (Some(Token({amount: acc, token, source})), Token({amount})) =>
         Token({
           amount: {
             open TokenRepr.Unit.Infix
             acc + amount
           },
           token: token,
+          source: source,
         })
       | (Some(acc), _) => acc
       },

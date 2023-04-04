@@ -53,12 +53,12 @@ let styles = {
 
 module CSVFilePicker = {
   @react.component
-  let make = (~onAddCSVList) => {
+  let make = (~source, ~onAddCSVList) => {
     let addLog = LogsContext.useAdd()
     let tokens = StoreContext.Tokens.useGetAll()
 
     let onChange = fileTextContent => {
-      let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~tokens)
+      let parsedCSV = fileTextContent->CSVEncoding.parseCSV(~source, ~tokens)
       switch parsedCSV {
       | Result.Ok(parsedCSV) => onAddCSVList(parsedCSV)
       | Result.Error(error) => addLog(true, Logs.error(~origin=Logs.Batch, error))

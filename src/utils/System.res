@@ -39,6 +39,8 @@ type Errors.t +=
 
 @scope("app") @val external getVersion: unit => string = "getVersion"
 @scope("app") @val external getName: unit => string = "getName"
+@scope("app") @val external relaunch: unit => unit = "relaunch"
+@scope("app") @val external quit: unit => unit = "quit"
 
 @scope("shell") @val
 external openExternal: string => Js.Promise.t<unit> = "openExternal"

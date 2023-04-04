@@ -34,6 +34,7 @@ module Head = {
         ~alignItems=#center,
         ~height=30.->dp,
         ~paddingLeft=22.->dp,
+        ~marginTop=16.->dp,
         ~borderBottomWidth=1.,
         (),
       ),
@@ -65,16 +66,16 @@ module Row = {
 
   module Base = {
     @react.component
-    let make = (~style=?, ~height=48., ~children) =>
-      <RowItem.Base height>
+    let make = (~style=?, ~minHeight=48., ~children) =>
+      <RowItem.Base minHeight>
         {<> <View style={Style.arrayOption([Some(styles["borderSpacer"]), style])} /> children </>}
       </RowItem.Base>
   }
 
   module Bordered = {
     @react.component
-    let make = (~style=?, ~height=48., ~children) =>
-      <RowItem.Bordered height>
+    let make = (~style=?, ~rowStyle=?, ~minHeight=48., ~children) =>
+      <RowItem.Bordered style=?rowStyle minHeight>
         <View style={Style.arrayOption([Some(styles["borderSpacer"]), style])} /> children
       </RowItem.Bordered>
   }
@@ -110,6 +111,7 @@ module type StyleForCell = {
 }
 
 module MakeCell = (CustomStyle: StyleForCell) => {
-  let makeProps = Cell.makeProps(~style=CustomStyle.style)
-  let make = Cell.make
+  @react.component
+  let make = (~style=?, ~children: option<React.element>=?) =>
+    <Cell style={Style.arrayOption([CustomStyle.style->Some, style])} ?children />
 }

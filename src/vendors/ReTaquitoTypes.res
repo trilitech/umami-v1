@@ -24,15 +24,13 @@
 /* *************************************************************************** */
 
 module BigNumber: {
-  type fixed
+  type fixed = private string
   let toFixed: (~decimals: int=?, ReBigNumber.t) => fixed
   let fromInt64: Int64.t => ReBigNumber.t
   let toInt64: ReBigNumber.t => Int64.t
 } = {
   type fixed = string
-
   let toFixed = ReBigNumber.toFixed
-
   let fromInt64 = ReBigNumber.fromInt64
   let toInt64 = ReBigNumber.toInt64
 }
@@ -74,7 +72,31 @@ module Operation = {
 
   type confirmationResult = {block: block}
 
-  type result = {hash: string}
+  module Result = {
+    type origination = {originated_contracts: array<string>}
+  }
+
+  module Metadata = {
+    type origination = {operation_result: Result.origination}
+  }
+
+  type origination = {metadata: Metadata.origination}
+
+  type contentsAndResultType = [
+    | #origination
+  ]
+  type baseContentsAndResult = {kind: contentsAndResultType}
+
+  type contentsAndResult = Origination(origination)
+
+  external toOrigination: baseContentsAndResult => origination = "%identity"
+
+  let classifiy = (contentsAndResult: baseContentsAndResult): contentsAndResult =>
+    switch contentsAndResult {
+    | {kind: #origination} => Origination(contentsAndResult->toOrigination)
+    }
+
+  type result = {hash: string, results: array<baseContentsAndResult>}
 }
 
 module Toolkit = {
@@ -101,11 +123,18 @@ module MichelsonV1Expression: {
 }
 
 module Code = {
-  type t = string
+  // code: string | object[];
+  type t
+  external fromString: string => t = "%identity"
+  external fromArray: array<Js.Json.t> => t = "%identity"
 }
 
 module Storage = {
   type t = string
+}
+
+module Lambda = {
+  type t = MichelsonV1Expression.t
 }
 
 module Transfer = {

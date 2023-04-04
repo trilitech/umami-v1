@@ -115,10 +115,9 @@ let mapOptions = (values: validState, o) => {
   }
 }
 
-let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) => {
+let updateOperation = (index, values: StateLenses.state, managers: array<Protocol.manager>) => {
   let values = values->extractValidState
-
-  let managers = ops.managers->Array.mapWithIndex((i, op) =>
+  managers->Array.mapWithIndex((i, op) =>
     if index == i {
       switch op {
       | Transfer(t) =>
@@ -135,28 +134,30 @@ let updateOperation = (index, values: StateLenses.state, ops: Protocol.batch) =>
       op
     }
   )
-
-  {...ops, managers: managers}
 }
 
 @react.component
-let make = (~operation: Protocol.batch, ~dryRun, ~index=0, ~token, ~onSubmit) => {
+let make = (
+  ~signer: Account.t,
+  ~operations: array<Protocol.manager>,
+  ~dryRun,
+  ~index=0,
+  ~token,
+  ~onSubmit,
+) => {
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
   let showLimits =
     token != None ||
-      operation.managers
-      ->Array.get(index)
-      ->Option.mapWithDefault(false, ProtocolHelper.isContractCall)
+      operations->Array.get(index)->Option.mapWithDefault(false, ProtocolHelper.isContractCall)
 
   let form = Form.use(showLimits, dryRun, index, ({state}) => {
-    let op = updateOperation(index, state.values, operation)
-
-    sendOperationSimulate(op)->Promise.get(x =>
+    let managers = updateOperation(index, state.values, operations)
+    sendOperationSimulate(signer, managers)->Promise.get(x =>
       switch x {
       | Ok(dr) =>
-        let op = updateOperation(index, dr->Form.fromDryRun(showLimits, index), op)
-        onSubmit(op, dr)
+        let managers = updateOperation(index, dr->Form.fromDryRun(showLimits, index), managers)
+        onSubmit(managers, dr)
       | Error(_) => ()
       }
     )

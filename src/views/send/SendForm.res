@@ -28,21 +28,23 @@ open Protocol
 module StateLenses = %lenses(
   type state = {
     amount: string,
-    sender: Account.t,
+    sender: Alias.t,
     recipient: FormUtils.Alias.any,
   }
 )
 
 type validState = {
   amount: Protocol.Amount.t,
-  sender: Account.t,
+  sender: Alias.t,
   recipient: FormUtils.Alias.t,
   entrypoint: option<ProtocolOptions.TransactionParameters.entrypoint>,
   parameter: option<ProtocolOptions.TransactionParameters.value>,
 }
 
 let unsafeExtractValidState = (token, state: StateLenses.state): validState => {
-  amount: state.amount->FormUtils.parseAmount(token)->FormUtils.Unsafe.getAmount,
+  amount: state.amount
+  ->FormUtils.parseAmount(state.sender.address, token)
+  ->FormUtils.Unsafe.getAmount,
   sender: state.sender,
   recipient: state.recipient->FormUtils.Unsafe.account,
   entrypoint: None,
@@ -57,27 +59,13 @@ let toState = (vs: validState): StateLenses.state => {
 
 include ReForm.Make(StateLenses)
 
-let buildTransfer = (inputTransfers, source) => {
-  let transfers =
-    inputTransfers
-    ->List.map((t: validState) => {
-      let destination = t.recipient->FormUtils.Alias.address
-      let data = {
-        open Transfer
-        {destination: destination, amount: t.amount}
-      }
-      ProtocolHelper.Transfer.makeSimple(~data, ())
-    })
-    ->List.toArray
-
-  ProtocolHelper.Transfer.makeBatch(~source, ~transfers, ())
+let buildTransaction = (t: validState) => {
+  let destination = t.recipient->FormUtils.Alias.address
+  let data = {
+    open Transfer
+    {destination: destination, amount: t.amount}
+  }
+  ProtocolHelper.Transfer.makeSimple(~data, ())->Protocol.Transfer
 }
 
-let buildTransaction = (batch: list<validState>) =>
-  switch batch {
-  | list{} => assert false
-  | list{first, ..._} as inputTransfers =>
-    let source = first.sender
-
-    buildTransfer(inputTransfers, source)
-  }
+let buildTransactions = (batch: list<validState>) => batch->List.map(buildTransaction)->List.toArray

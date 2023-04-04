@@ -98,12 +98,16 @@ let styles = {
 
 module Generic = {
   @react.component
-  let make = (~height, ~style as stylearg=?, ~children) => {
+  let make = (~minHeight, ~style as stylearg=?, ~children) => {
     let theme = ThemeContext.useTheme()
     <Hoverable
       style={
         open Style
-        arrayOption([stylearg, Some(styles["container"]), Some(style(~height=height->dp, ()))])
+        arrayOption([
+          stylearg,
+          Some(styles["container"]),
+          Some(style(~minHeight=minHeight->dp, ())),
+        ])
       }>
       {hovered =>
         <View
@@ -122,8 +126,8 @@ module Generic = {
 
 module Base = {
   @react.component
-  let make = (~height, ~style=?, ~innerStyle=?, ~isNested=false, ~isLast=false, ~children) =>
-    <Generic height ?style>
+  let make = (~minHeight, ~style=?, ~innerStyle=?, ~isNested=false, ~isLast=false, ~children) =>
+    <Generic minHeight ?style>
       {_ => <>
         {isNested ? <NestedElement isLast /> : React.null}
         <View
@@ -139,9 +143,9 @@ module Base = {
 
 module Bordered = {
   @react.component
-  let make = (~height, ~style=?, ~innerStyle=?, ~isNested=false, ~isLast=false, ~children) => {
+  let make = (~minHeight, ~style=?, ~innerStyle=?, ~isNested=false, ~isLast=false, ~children) => {
     let theme = ThemeContext.useTheme()
-    <Generic height ?style>
+    <Generic minHeight ?style>
       {_ => <>
         {isNested ? <NestedElement isLast /> : React.null}
         <View

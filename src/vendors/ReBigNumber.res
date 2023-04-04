@@ -41,6 +41,10 @@ type t
 @send external times: (t, t) => t = "times"
 @send external powInt: (t, int) => t = "pow"
 @send external isEqualTo: (t, t) => bool = "isEqualTo"
+@send external isLessThanOrEqualTo: (t, t) => bool = "isLessThanOrEqualTo"
+@send external isGreaterThanOrEqualTo: (t, t) => bool = "isGreaterThanOrEqualTo"
+@send external comparedTo: (t, t) => int = "comparedTo"
+@send external minus: (t, t) => t = "minus"
 
 let toFixed = (~decimals=?, t) => toFixed(t, decimals)
 
@@ -48,3 +52,12 @@ let fromInt64 = i => i->Int64.to_string->fromString
 let toInt64 = i => i->toFixed->Int64.of_string
 
 let zero = fromInt(0)
+
+type nat = t
+
+module Comparator = Belt.Id.MakeComparable({
+  type t = nat
+  let cmp = comparedTo
+})
+
+module Map = Map.Make(Comparator)

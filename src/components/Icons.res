@@ -84,7 +84,7 @@ module Make = (Svg: SVG) => {
 
   let build: builder = (~color=?, ~style=?, ~size) => {
     let st = style
-    <I style=?st ?color size />
+    <I ?color style=?st size />
   }
 
   include I
@@ -174,3 +174,4 @@ module Umami = Make(SVGIconUmami)
 module Help = Make(SVGIconHelp)
 module Tos = Make(SVGIconTos)
 module Galleon = Make(SVGIconGalleon)
+module Key = Make(SVGIconKey)

@@ -141,7 +141,8 @@ let make = (
       </View>
     )
 
-  <ModalTemplate.Form ?headerCenter headerRight=?closeButton headerLeft=?backButton ?loading ?style>
+  <ModalTemplate.Form
+    ?headerCenter headerRight=?closeButton headerLeft=?backButton ?loading ?style>
     children
   </ModalTemplate.Form>
 }

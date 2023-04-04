@@ -38,6 +38,19 @@ module URL: {
   let build_url: (string, list<(string, string)>) => string
 
   module Explorer: {
+
+    @ocaml.doc(" URL generators for TzKT API that can be used as fallback. ")
+    module Tzkt: {
+      let operations: (
+        Network.t,
+        PublicKeyHash.t,
+        ~types: array<string>=?,
+        ~destination: PublicKeyHash.t=?,
+        ~limit: int=?,
+        unit,
+      ) => option<t>
+    }
+
     let operations: (
       Network.t,
       PublicKeyHash.t,
@@ -103,6 +116,13 @@ module URL: {
       ~network: Network.t,
       ~account: PublicKeyHash.t,
     ) => Promise.result<t>
+
+    let tzktContractStorage: (
+      ~network: Network.network,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.result<t>
+
+    let tzktBigmapKeys: (~network: Network.network, ~bigmap: int) => Promise.result<t>
   }
 
   /* Fetch URL as a JSON. */
@@ -114,6 +134,18 @@ module URL: {
 
 @ocaml.doc(" Mezos requests for mempool operations and classical operations. ")
 module type Explorer = {
+
+  @ocaml.doc(" Tzkt API requests that can be used as fallback. ")
+  module Tzkt: {
+    let getOperations: (
+      Network.t,
+      PublicKeyHash.t,
+      ~types: array<string>=?,
+      ~destination: PublicKeyHash.t=?,
+      ~limit: int=?,
+      unit,
+    ) => Promise.t<array<Operation.t>>
+  }
   let getOperations: (
     Network.t,
     PublicKeyHash.t,
@@ -134,6 +166,12 @@ module type Explorer = {
     ~contract: PublicKeyHash.t,
     ~id: option<int>,
   ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
+
+  let getMultisigs: (
+    Network.network,
+    ~addresses: list<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 @ocaml.doc(" This generic version exists only for tests purpose ")
 module ExplorerMaker: (

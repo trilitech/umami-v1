@@ -33,26 +33,27 @@ let styles = {
 @react.component
 let make = (~style=?, ~kind: option<Alias.kind>, ~isHD: bool) => {
   let theme = ThemeContext.useTheme()
+  let icon = (builder: Icons.builder) =>
+    builder(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis)
 
   <View ?style>
     {switch kind {
     | Some(Account(Encrypted | Unencrypted)) if !isHD =>
       <Tag style={styles["tag"]} content=I18n.Label.account_umami />
     | Some(Account(Encrypted | Unencrypted)) =>
-      Icons.Umami.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis)
+      icon(Icons.Umami.build)
     | Some(Account(Galleon)) =>
-      Icons.Galleon.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis)
+      icon(Icons.Galleon.build)
     | Some(Account(Ledger)) =>
-      Icons.LedgerP.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis)
+      icon(Icons.LedgerP.build)
     | Some(Account(CustomAuth(infos))) =>
-      infos.provider->CustomAuthProviders.getIcon(
-        ~style=?None,
-        ~size=20.,
-        ~color=theme.colors.iconMediumEmphasis,
-      )
-    | None => React.null
+      icon(infos.provider->CustomAuthProviders.getIcon)
+    | None =>
+      React.null
     | Some(Contact) =>
       Icons.AddressBook.build(~style=?None, ~size=20., ~color=theme.colors.iconMediumEmphasis)
+    | Some(Multisig) =>
+      icon(Icons.Key.build)
     }}
   </View>
 }

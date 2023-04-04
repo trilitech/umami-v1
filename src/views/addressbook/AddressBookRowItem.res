@@ -91,7 +91,7 @@ let memo = component =>
 let make = memo((~account: Alias.t) => {
   let addToast = LogsContext.useToast()
 
-  <RowItem.Bordered height=46.>
+  <RowItem.Bordered minHeight=46.>
     <View style={styles["inner"]}>
       <View style={styles["cellAlias"]}>
         <Typography.Body1> {account.name->React.string} </Typography.Body1>

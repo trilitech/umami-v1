@@ -52,20 +52,23 @@ let back = ((step, set), f) =>
 
 @react.component
 let make = (
-  ~source: Account.t,
-  ~state,
+  ~proposal=?,
+  ~signer: Account.t,
+  ~state=React.useState(() => None),
   ~signOpStep as (step, setStep),
   ~dryRun,
   ~secondaryButton=?,
-  ~operation,
+  ~operations,
   ~sendOperation: (~operation: Protocol.batch, TaquitoAPI.Signer.intent) => Promise.t<_>,
   ~loading,
+  ~icon=?,
+  ~name=?,
 ) => {
-  let ((operation: Protocol.batch, dryRun), setOp) = React.useState(() => (operation, dryRun))
+  let ((operations, dryRun), setOp) = React.useState(() => (operations, dryRun))
 
   let theme = ThemeContext.useTheme()
 
-  let subtitle = switch source.Account.kind {
+  let subtitle = switch signer.Account.kind {
   | Ledger => I18n.Expl.hardware_wallet_confirm_operation
   | Galleon
   | Encrypted
@@ -100,34 +103,39 @@ let make = (
 
   switch step {
   | SummaryStep => <>
-      <View style=FormStyles.header>
-        <Typography.Overline1> {subtitle->React.string} </Typography.Overline1>
-      </View>
+      <View style=FormStyles.header> {subtitle->Typography.overline1} </View>
       <OperationSummaryView.Batch
-        operation
-        dryRun
+        ?proposal
+        signer
+        operations
+        dryRun=Some(dryRun)
         editAdvancedOptions={i => setAdvancedOptions(Some(i))}
         advancedOptionsDisabled
+        ?icon
+        ?name
       />
       {<Buttons.RightArrowButton
         style={styles["advancedOptions"]}
         disabled=advancedOptionsDisabled
         text=I18n.Label.advanced_options
-        stateIcon={optionsSet(operation.managers) == Some(true)
+        stateIcon={optionsSet(operations) == Some(true)
           ? <Icons.Edit style={styles["edited"]} size=25. color=theme.colors.iconPrimary />
           : React.null}
         onPress={_ => setAdvancedOptions(None)}
       />->ReactUtils.onlyWhen(dryRun.simulations->Array.length == 1)}
       <SigningBlock
-        accountKind=source.Account.kind
+        accountKind=signer.Account.kind
         state
         ?secondaryButton
         loading
-        sendOperation={sendOperation(~operation)}
+        sendOperation={signingIntent => {
+          let operation = {Protocol.source: signer, managers: operations}
+          sendOperation(~operation, signingIntent)
+        }}
       />
     </>
 
   | AdvancedOptStep(index) =>
-    <AdvancedOptionsView operation dryRun ?index onSubmit=onAdvOptSubmit token=None />
+    <AdvancedOptionsView signer operations dryRun ?index onSubmit=onAdvOptSubmit token=None />
   }
 }

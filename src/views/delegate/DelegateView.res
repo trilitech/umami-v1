@@ -32,31 +32,20 @@ let styles = {
     "switchCmp": style(~height=16.->dp, ~width=32.->dp, ()),
     "switchThumb": style(~transform=[scale(~scale=0.65)], ()),
     "operationSummary": style(~marginBottom=20.->dp, ()),
-    "deleteLoading": style(~paddingVertical=170.->dp, ()),
   })
-}
-
-let buildTransaction = (state: DelegateForm.state) => {
-  let infos = {
-    open Protocol.Delegation
-    {
-      delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
-      options: ProtocolOptions.make(),
-    }
-  }
-
-  (ProtocolHelper.Delegation.makeSingleton(~source=state.values.sender, ~infos, ()), infos)
 }
 
 type step =
   | SendStep
-  | PasswordStep(Protocol.Delegation.t, Protocol.batch, Protocol.Simulation.results)
+  | SourceStep
+  | SigningStep(Account.t, array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
-  | PasswordStep(_, _, _) => "passwordstep"
+  | SourceStep => "sourceStep"
+  | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
   }
 
@@ -64,8 +53,7 @@ module Form = {
   let build = (action: action, onSubmit) => {
     let (initAccount, initDelegate) = switch action {
     | Create(account, _) => (account, None)
-    | Edit(account, delegate)
-    | Delete(account, delegate) => (account, Some(delegate))
+    | Edit(account, delegate) => (account, Some(delegate))
     }
 
     DelegateForm.use(
@@ -84,10 +72,8 @@ module Form = {
             }
           , Baker))
       },
-      ~onSubmit=({state}) => {
-        let operation = buildTransaction(state)
-        onSubmit(operation)
-
+      ~onSubmit=x => {
+        onSubmit(x)
         None
       },
       ~initialState={
@@ -100,50 +86,97 @@ module Form = {
     )
   }
 
+  module ViewBase = {
+    type param_FormGroupDelegateSelector = {
+      value: PublicKeyHash.t,
+      handleChange: Alias.t => unit,
+      disabled: bool,
+      error: option<string>,
+    }
+    type param_FormGroupBakerSelector = {
+      value: option<string>,
+      handleChange: option<string> => unit,
+      error: option<string>,
+    }
+    type param_Submit = {
+      text: string,
+      onPress: ReactNative.Event.pressEvent => unit,
+      disabledLook: bool,
+      loading: bool,
+    }
+
+    @react.component
+    let make = (
+      ~delegate: param_FormGroupDelegateSelector,
+      ~baker: param_FormGroupBakerSelector,
+      ~submit: param_Submit,
+    ) => {
+      <>
+        <ReactFlipToolkit.FlippedView flipId="form">
+          <FormGroupDelegateSelector
+            label=I18n.Label.account_delegate
+            value=delegate.value
+            handleChange=delegate.handleChange
+            error=delegate.error
+            disabled=delegate.disabled
+          />
+          <FormGroupBakerSelector
+            label=I18n.Label.baker
+            value=baker.value
+            handleChange=baker.handleChange
+            error=baker.error
+          />
+        </ReactFlipToolkit.FlippedView>
+        <ReactFlipToolkit.FlippedView flipId="submit">
+          <View style=FormStyles.verticalFormAction>
+            <Buttons.SubmitPrimary
+              text=submit.text
+              onPress=submit.onPress
+              loading=submit.loading
+              disabledLook=submit.disabledLook
+            />
+          </View>
+        </ReactFlipToolkit.FlippedView>
+      </>
+    }
+  }
+
   module View = {
     open DelegateForm
 
     @react.component
     let make = (~form, ~action, ~loading) => {
       let onSubmitDelegateForm = _ => form.submit()
-
       let formFieldsAreValids = FormUtils.formFieldsAreValids(form.fieldsState, form.validateFields)
 
-      <>
-        <ReactFlipToolkit.FlippedView flipId="form">
-          <FormGroupDelegateSelector
-            label=I18n.Label.account_delegate
-            value=form.values.sender.address
-            handleChange={d => form.handleChange(Sender, d)}
-            error={form.getFieldError(Field(Sender))}
-            disabled={switch action {
-            | Create(_, fixed) => fixed
-            | Edit(_)
-            | Delete(_) => true
-            }}
-          />
-          <FormGroupBakerSelector
-            label=I18n.Label.baker
-            value={form.values.baker == "" ? None : form.values.baker->Some}
-            handleChange={b => b->Option.getWithDefault("") |> form.handleChange(Baker)}
-            error={form.getFieldError(Field(Baker))}
-          />
-        </ReactFlipToolkit.FlippedView>
-        <ReactFlipToolkit.FlippedView flipId="submit">
-          <View style=FormStyles.verticalFormAction>
-            <Buttons.SubmitPrimary
-              text={switch action {
-              | Create(_) => I18n.Btn.delegation_submit
-              | Edit(_) => I18n.Btn.update
-              | Delete(_) => I18n.Btn.confirm
-              }}
-              onPress=onSubmitDelegateForm
-              loading
-              disabledLook={!formFieldsAreValids}
-            />
-          </View>
-        </ReactFlipToolkit.FlippedView>
-      </>
+      let delegate: ViewBase.param_FormGroupDelegateSelector = {
+        value: form.values.sender.address,
+        handleChange: {d => form.handleChange(Sender, d)},
+        error: {form.getFieldError(Field(Sender))},
+        disabled: {
+          switch action {
+          | Create(_, fixed) => fixed
+          | Edit(_) => true
+          }
+        },
+      }
+      let baker: ViewBase.param_FormGroupBakerSelector = {
+        value: {form.values.baker == "" ? None : form.values.baker->Some},
+        handleChange: {b => b->Option.getWithDefault("") |> form.handleChange(Baker)},
+        error: {form.getFieldError(Field(Baker))},
+      }
+      let submit: ViewBase.param_Submit = {
+        text: {
+          switch action {
+          | Create(_) => I18n.Btn.delegation_submit
+          | Edit(_) => I18n.Btn.update
+          }
+        },
+        onPress: onSubmitDelegateForm,
+        loading: loading,
+        disabledLook: {!formFieldsAreValids},
+      }
+      <ViewBase delegate baker submit />
     }
   }
 }
@@ -161,67 +194,65 @@ let make = (~closeAction, ~action) => {
 
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
-  React.useEffect0(() => {
-    switch action {
-    | Delete(account, publicKeyHash) =>
-      let delegate = Protocol.Delegation.Undelegate(Some(publicKeyHash))
-      let op = ProtocolHelper.Delegation.makeSingleton(
-        ~source=account,
-        ~infos={delegate: delegate, options: ProtocolOptions.make()},
-        (),
-      )
-      sendOperationSimulate(op)->Promise.getOk(dryRun =>
-        setModalStep(_ => PasswordStep(
-          {delegate: delegate, options: ProtocolOptions.make()},
-          op,
-          dryRun,
-        ))
-      )
+  let makeOperation = (state: DelegateForm.state) =>
+    {
+      open Protocol.Delegation
+      {
+        delegate: Delegate(state.values.baker->PublicKeyHash.build->Result.getExn),
+        options: ProtocolOptions.make(),
+      }
+    }->Protocol.Delegation
 
-    | _ => ()
+  let (_, setStack) as stackState = React.useState(_ => list{})
+
+  let onSubmit = ({state}: DelegateForm.onSubmitAPI) => {
+    switch state.values.sender.Alias.kind {
+    | Some(Account(_)) =>
+      let source = Alias.toAccountExn(state.values.sender)
+      let operations = [makeOperation(state)]
+      Promise.async(() =>
+        sendOperationSimulate(source, operations)->Promise.mapOk(dryRun =>
+          setModalStep(_ => SigningStep(source, operations, dryRun))
+        )
+      )
+    | Some(Multisig) =>
+      let action = [makeOperation(state)]
+      let initiator = state.values.sender.address
+      setStack(_ => list{(initiator, action, None)})
+      setModalStep(_ => SourceStep)
+    | _ => assert false
     }
+  }
 
-    None
-  })
-
-  let form = Form.build(action, ((op: Protocol.batch, d: Protocol.Delegation.t)) =>
-    Promise.async(() =>
-      sendOperationSimulate(op)->Promise.mapOk(dryRun =>
-        setModalStep(_ => PasswordStep(d, op, dryRun))
-      )
-    )
-  )
+  let form = Form.build(action, onSubmit)
 
   let (signStep, _) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
 
   let title = switch (modalStep, action) {
-  | (PasswordStep({delegate}, _, _), _) =>
-    let summaryTitle = switch delegate {
-    | Delegate(_) => I18n.Title.confirm_delegate
-    | Undelegate(_) => I18n.Title.delegate_delete
-    }
+  | (SigningStep(_), _) =>
+    let summaryTitle = I18n.Title.confirm_delegate
     SignOperationView.makeTitle(~custom=summaryTitle, signStep)->Some
-  | (SendStep, Create(_)) => I18n.Title.delegate->Some
-  | (SendStep, Edit(_)) => I18n.Title.delegate_update->Some
-  | (SendStep, Delete(_)) => I18n.Title.delegate_delete->Some
+  | (SendStep | SourceStep, Create(_)) => I18n.Title.delegate->Some
+  | (SendStep | SourceStep, Edit(_)) => I18n.Title.delegate_update->Some
   | (SubmittedStep(_), _) => None
   }
 
   let (signingState, _) as state = React.useState(() => None)
 
   let closing = switch (modalStep, (signingState: option<SigningBlock.state>)) {
-  | (PasswordStep(_, {source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({kind: Ledger}, _, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)
-  | (PasswordStep(_, {source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
+  | (SigningStep({kind: CustomAuth({provider})}, _, _), Some(WaitForConfirm)) =>
     ModalFormView.Deny(I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName))
   | _ => ModalFormView.Close(closeAction)
   }
 
   let back = SignOperationView.back(signOpStep, () =>
-    switch (modalStep, action) {
-    | (PasswordStep(_, _, _), Create(_))
-    | (PasswordStep(_, _, _), Edit(_)) =>
-      Some(() => setModalStep(_ => SendStep))
+    switch modalStep {
+    | SourceStep
+    | SigningStep(_) =>
+      let default = () => setModalStep(_ => SendStep)
+      SourceStepView.back(~default, stackState)
     | _ => None
     }
   )
@@ -236,16 +267,16 @@ let make = (~closeAction, ~action) => {
       <ModalFormView back closing ?title>
         <ReactFlipToolkit.FlippedView.Inverse inverseFlipId="modal">
           {switch modalStep {
+          | SendStep => <Form.View form action loading=loadingSimulate />
+          | SourceStep =>
+            let callback = (account, operations) =>
+              sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(account, operations, dryRun))
+              })
+            <SourceStepView ?back stack=stackState callback />
+          | SigningStep(signer, operations, dryRun) =>
+            <SignOperationView signer signOpStep dryRun state operations sendOperation loading />
           | SubmittedStep(hash) => <SubmittedView hash onPressCancel />
-          | SendStep =>
-            switch action {
-            | Delete(_) => <LoadingView style={styles["deleteLoading"]} />
-            | _ => <Form.View form action loading=loadingSimulate />
-            }
-          | PasswordStep(_, operation, dryRun) =>
-            <SignOperationView
-              source=operation.source signOpStep dryRun state operation sendOperation loading
-            />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

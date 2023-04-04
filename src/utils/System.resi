@@ -27,6 +27,8 @@ type Errors.t +=
   | NoSuchFileError(string)
 
 let getVersion: unit => string
+let relaunch: unit => unit
+let quit: unit => unit
 
 type plateform = [#darwin | #win32 | #linux]
 

@@ -83,6 +83,7 @@ let make = (
   ~hasError=false,
   ~disabled=false,
   ~keyPopover,
+  ~backgroundColor=?,
 ) => {
   let theme = ThemeContext.useTheme()
   let disabled = disabled || (items->Array.size == 1 && noneItem->Option.isNone)
@@ -139,7 +140,9 @@ let make = (
             open Style
             array(
               buttonStyle(
-                disabled ? theme.colors.stateDisabled : theme.colors.background,
+                disabled
+                  ? theme.colors.stateDisabled
+                  : backgroundColor->Option.getWithDefault(theme.colors.background),
                 borderColor,
                 Some(2.),
               ),

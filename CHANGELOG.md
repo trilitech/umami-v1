@@ -1,6 +1,10 @@
 # umami's CHANGELOG
 
-## Unreleased changes
+## Beta (0.9.0)
+
+- Add multisig@v1.0.0 support
+- Drop native Limanet support
+- Drop native Mumbainet support
 
 ## Beta (0.8.7)
 

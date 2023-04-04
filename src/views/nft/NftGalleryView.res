@@ -65,7 +65,7 @@ let styles = {
 
 module Card = {
   @react.component
-  let make = (~nft: Token.t, ~balance: ReBigNumber.t, ~account: Account.t) => {
+  let make = (~nft: Token.t, ~balance: ReBigNumber.t, ~account: Alias.t) => {
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
 
     let (_, animatedOpenValue) = AnimationHooks.useAnimationOpen(true, () => ())
@@ -121,7 +121,7 @@ module Card = {
 let uniqueKey = (contract: PublicKeyHash.t, id) => (contract :> string) ++ ("-" ++ Int.toString(id))
 
 @react.component
-let make = (~account, ~nfts: TokensLibrary.WithBalance.t) => {
+let make = (~account: Alias.t, ~nfts: TokensLibrary.WithBalance.t) => {
   let hidden = TokenStorage.Registered.get()->Result.getWithDefault(PublicKeyHash.Map.empty)
 
   let nfts = React.useMemo1(

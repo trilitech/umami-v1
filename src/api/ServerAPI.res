@@ -63,14 +63,13 @@ module URL = {
   let fromString = s => s
 
   let get = {
-    let umamiInstallationId =
-      switch LocalStorage.UmamiInstallationId.get() {
-      | Ok(v) => v
-      | Error(_) =>
-        let id = genUuid()
-        LocalStorage.UmamiInstallationId.set(id)
-        Js.log("Storage umami installation id not found, generated " ++ id)
-        id
+    let umamiInstallationId = switch LocalStorage.UmamiInstallationId.get() {
+    | Ok(v) => v
+    | Error(_) =>
+      let id = genUuid()
+      LocalStorage.UmamiInstallationId.set(id)
+      Js.log("Storage umami installation id not found, generated " ++ id)
+      id
     }
 
     url => {
@@ -114,6 +113,40 @@ module URL = {
   }
 
   module Explorer = {
+    module Tzkt = {
+      let baseURL = (network: Network.network) => {
+        switch network.Network.chain {
+        | #Mainnet => "https://api.mainnet.tzkt.io/v1/"->Some
+        | #Ghostnet => "https://api.ghostnet.tzkt.io/v1/"->Some
+        | #Limanet => "https://api.limanet.tzkt.io/v1/"->Some
+        | _ => None
+        }
+      }
+
+      let operations = (
+        network: Network.network,
+        account: PublicKeyHash.t,
+        ~types: option<array<string>>=?,
+        ~destination: option<PublicKeyHash.t>=?,
+        ~limit: option<int>=?,
+        (),
+      ) => {
+        baseURL(network)->Option.map(baseURL => {
+          let args = {
+            open List.Infix
+            \"@?"(
+              types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+              \"@?"(
+                limit->arg_opt("limit", lim => lim->Js.Int.toString),
+                \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
+              ),
+            )
+          }
+          build_url(baseURL ++ "accounts/" ++ (account :> string) ++ "/operations", args)
+        })
+      }
+    }
+
     let operations = (
       network: Network.network,
       account: PublicKeyHash.t,
@@ -133,8 +166,7 @@ module URL = {
           ),
         )
       }
-      let url = build_explorer_url(network, operationsPath, args)
-      url
+      build_explorer_url(network, operationsPath, args)
     }
 
     let checkToken = (network, ~contract: PublicKeyHash.t) => {
@@ -197,6 +229,13 @@ module URL = {
         )
       }
       build_explorer_url(network, "tokens/registry", args)
+    }
+
+    let multisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
+      open List
+      let args =
+        addresses->map(address => ("pkh", (address :> string)))->add(("k", (contract :> string)))
+      build_explorer_url(network, "multisig", args)
     }
   }
 
@@ -331,10 +370,46 @@ module URL = {
         )
       )
       ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
+
+    let tzktContractStorage = (~network: Network.network, ~contract: PublicKeyHash.t) =>
+      network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+        build_url(
+          "https://api." ++
+          (network ++
+          ".tzkt.io/v1/contracts/" ++
+          (contract :> string) ++
+          "/storage"),
+          list{},
+        )
+      )
+      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
+
+    let tzktBigmapKeys = (~network: Network.network, ~bigmap: int) =>
+      network.chain
+      ->Network.chainNetwork
+      ->Option.map(network =>
+        build_url(
+          "https://api." ++ (network ++ ".tzkt.io/v1/bigmaps/" ++ bigmap->Int.toString ++ "/keys"),
+          list{},
+        )
+      )
+      ->ResultEx.fromOption(UnknownNetwork(Network.getChainId(network.chain)))
   }
 }
 
 module type Explorer = {
+  module Tzkt: {
+    let getOperations: (
+      Network.t,
+      PublicKeyHash.t,
+      ~types: array<string>=?,
+      ~destination: PublicKeyHash.t=?,
+      ~limit: int=?,
+      unit,
+    ) => Promise.t<array<Operation.t>>
+  }
   let getOperations: (
     Network.network,
     PublicKeyHash.t,
@@ -355,6 +430,12 @@ module type Explorer = {
     ~contract: PublicKeyHash.t,
     ~id: option<int>,
   ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
+
+  let getMultisigs: (
+    Network.network,
+    ~addresses: list<PublicKeyHash.t>,
+    ~contract: PublicKeyHash.t,
+  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 
 module ExplorerMaker = (
@@ -370,14 +451,14 @@ module ExplorerMaker = (
 
   let filterMalformedDuplicates = ops => {
     open Operation
-    let l = ops->List.fromArray->List.sort((o1, o2) => compare((o1.hash, o1.id), (o2.hash, o2.id)))
+    let l = ops->List.fromArray->List.sort((o1, o2) => compare((o1.hash, o1.id, o1.internal), (o2.hash, o2.id, o2.internal)))
 
     let rec loop = (acc, l) =>
       switch l {
       | list{} => acc
       | list{h} => list{h, ...acc}
       | list{h1, h2, ...t} =>
-        if h1.hash == h2.hash && h1.id == h2.id {
+        if h1.hash == h2.hash && h1.id == h2.id && h1.internal == h2.internal {
           let h1 = h1->isMalformedTokenTransfer ? None : Some(h1)
           let h2 = h2->isMalformedTokenTransfer ? None : Some(h2)
 
@@ -389,6 +470,34 @@ module ExplorerMaker = (
       }
 
     loop(list{}, l)->List.reverse->List.toArray
+  }
+
+  module Tzkt = {
+    let getOperations = (
+      network,
+      account: PublicKeyHash.t,
+      ~types: option<array<string>>=?,
+      ~destination: option<PublicKeyHash.t>=?,
+      ~limit: option<int>=?,
+      (),
+    ) =>
+      Option.mapWithDefault(
+        URL.Explorer.Tzkt.operations(network, account, ~types?, ~destination?, ~limit?, ()),
+        Result.Error(Errors.Generic("Unsupported network"))->Promise.value,
+        url =>
+          Get.get(url)
+          ->Promise.flatMapOk(res =>
+            res
+            ->Result.fromExn({
+              open Json.Decode
+              array(Operation.Decode.Tzkt.t)
+            })
+            ->Result.map(array => Array.keepMap(array, x => x))
+            ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+            ->Promise.value
+          )
+          ->Promise.mapOk(filterMalformedDuplicates),
+      )
   }
 
   let getOperations = (
@@ -451,6 +560,24 @@ module ExplorerMaker = (
         array(decoder)
       })
       ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+      ->Promise.value
+    })
+
+  let getMultisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+    network
+    ->URL.Explorer.multisigs(~addresses, ~contract)
+    ->Get.get
+    ->Promise.flatMapOk(response => {
+      let decoder = json => {
+        open Json.Decode
+        (
+          json |> field("pkh", PublicKeyHash.decoder),
+          json |> field("ks", array(PublicKeyHash.decoder)),
+        )
+      }
+      response
+      ->Result.fromExn(Json.Decode.array(decoder))
+      ->Result.mapError(error => error->JsonEx.filterJsonExn->JsonError)
       ->Promise.value
     })
 }

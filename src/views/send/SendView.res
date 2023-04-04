@@ -24,7 +24,6 @@
 /* *************************************************************************** */
 
 open ReactNative
-open Protocol
 
 module FormGroupAmountWithTokenSelector = {
   let styles = {
@@ -78,20 +77,20 @@ module FormGroupAmountWithTokenSelector = {
 
 type step =
   | SendStep
-  | SigningStep(Protocol.batch, Protocol.Simulation.results)
-  | EditStep(int, SendForm.validState)
+  | SigningStep(Account.t, array<Protocol.manager>, Protocol.Simulation.results)
   | SubmittedStep(string)
+  | SourceStep
 
 let stepToString = step =>
   switch step {
   | SendStep => "sendstep"
-  | SigningStep(_, _) => "signingstep"
-  | EditStep(_, _) => "editstep"
+  | SigningStep(_) => "signingstep"
   | SubmittedStep(_) => "submittedstep"
+  | SourceStep => "sourcestep"
   }
 
 module Form = {
-  let defaultInit = (account: Account.t) => {
+  let defaultInit = (account: Alias.t) => {
     open SendForm.StateLenses
     {
       amount: "",
@@ -137,11 +136,11 @@ module Form = {
 
     @react.component
     let make = (
+      ~proposal=false,
       ~tokenState: (option<Token.t>, (option<Token.t> => option<Token.t>) => unit),
       ~token=?,
       ~mode,
       ~form,
-      ~aliases,
       ~loading,
       ~simulatingBatch=false,
     ) => {
@@ -157,6 +156,8 @@ module Form = {
         ? I18n.Btn.update
         : batchMode
         ? I18n.Btn.add_transaction
+        : proposal
+        ? I18n.Btn.proposal_submit
         : I18n.Btn.send_submit
 
       let onSubmit = onSubmitAll->Option.getWithDefault(() => form.submit())
@@ -188,10 +189,9 @@ module Form = {
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient
-            filterOut={form.values.sender->Alias.fromAccount->Some}
-            aliases
+            keep={a => a.address != form.values.sender.address}
             value=form.values.recipient
-            handleChange={form.handleChange(Recipient)}
+            onChange={form.handleChange(Recipient)}
             error={form.getFieldError(Field(Recipient))}
           />
         </ReactFlipToolkit.FlippedView>
@@ -218,28 +218,31 @@ module Form = {
 
 module EditionView = {
   @react.component
-  let make = (~account, ~aliases, ~initValues, ~onSubmit, ~index, ~loading) => {
+  let make = (~closeAction, ~account, ~initValues, ~onSubmit, ~index, ~loading) => {
     let token = switch initValues.SendForm.amount {
     | Protocol.Amount.Tez(_) => None
     | Token({token}) => Some(token)
     }
-
     let (token, _) as tokenState = React.useState(() => token)
-
+    let onSubmit = (_, {state}: SendForm.onSubmitAPI) => {
+      let validState = SendForm.unsafeExtractValidState(token, state.values)
+      onSubmit(validState)
+    }
     let initValues = initValues->SendForm.toState
-
     let form = Form.use(~initValues, account, token, onSubmit(token))
-
-    <Form.View tokenState ?token form mode=Form.View.Edition(index) aliases loading />
+    let closing = ModalFormView.confirm(~actionText=I18n.Btn.update_cancel, closeAction)
+    let title = I18n.Title.send
+    <ModalFormView title /* back=None */ closing titleStyle=FormStyles.headerMarginBottom8>
+      <Form.View tokenState ?token form mode=Form.View.Edition(index) loading />
+    </ModalFormView>
   }
 }
 
-@react.component
-let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
-  let initToken = StoreContext.SelectedToken.useGet()
-  let aliasesRequest = StoreContext.Aliases.useRequest()
+let senderIsMultisig = (sender: Alias.t) => PublicKeyHash.isContract(sender.address)
 
-  let aliases = aliasesRequest->ApiRequest.getDoneOk->Option.getWithDefault(PublicKeyHash.Map.empty)
+@react.component
+let make = (~account, ~closeAction, ~initalStep=SendStep) => {
+  let initToken = StoreContext.SelectedToken.useGet()
 
   let updateAccount = StoreContext.SelectedAccount.useSet()
 
@@ -249,22 +252,31 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let (operationRequest, sendOperation) = StoreContext.Operations.useCreate()
 
-  let sendOperation = (~operation: Protocol.batch, signingIntent) =>
+  let sendOperation = (~sender: Alias.t, ~operation: Protocol.batch, signingIntent) =>
     sendOperation({operation: operation, signingIntent: signingIntent})
     ->Promise.tapOk(result => setModalStep(_ => SubmittedStep(result.hash)))
-    ->Promise.tapOk(_ => updateAccount(operation.source.address))
+    ->Promise.tapOk(_ => updateAccount(sender.Alias.address))
 
   let (batch, _) = React.useState(_ => list{})
+  let (_, setStack) as stackState = React.useState(_ => list{})
 
   let (operationSimulateRequest, sendOperationSimulate) = StoreContext.Operations.useSimulate()
 
   let submitAction = React.useRef(#SubmitAll)
 
-  let onSubmitBatch = batch => {
-    let transaction = SendForm.buildTransaction(batch)
-    sendOperationSimulate(transaction)->Promise.getOk(dryRun =>
-      setModalStep(_ => SigningStep(transaction, dryRun))
-    )
+  let onSubmitBatch = (account, batch) => {
+    let transaction = SendForm.buildTransactions(batch)
+    sendOperationSimulate(account, transaction)->Promise.getOk(dryRun => {
+      setModalStep(_ => SigningStep(account, transaction, dryRun))
+    })
+  }
+
+  let onSubmitMultisig = (state: SendForm.validState) => {
+    let action = [SendForm.buildTransaction(state)]
+    let initiator = state.sender.Alias.address
+    let state = (initiator, action, None)
+    setStack(_ => list{state})
+    setModalStep(_ => SourceStep)
   }
 
   let {addTransfer, isSimulating} = GlobalBatchContext.useGlobalBatchContext()
@@ -273,10 +285,16 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     let validState = SendForm.unsafeExtractValidState(token, state.values)
 
     switch submitAction.current {
-    | #SubmitAll => onSubmitBatch(list{validState, ...batch})
+    | #SubmitAll =>
+      switch state.values.sender.kind {
+      | Some(Alias.Multisig) => onSubmitMultisig(validState)
+      | Some(Account(_)) =>
+        onSubmitBatch(state.values.sender->Alias.toAccountExn, list{validState, ...batch})
+      | _ => assert false
+      }
     | #AddToBatch =>
       let p = GlobalBatchXfs.validStateToTransferPayload(validState)
-      addTransfer(p, validState.sender, closeAction)
+      addTransfer(validState.sender.address, p, closeAction)
     }
   }
 
@@ -292,11 +310,6 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     form.submit()
   }
 
-  let onEdit = (_, token, {state}: SendForm.onSubmitAPI) => {
-    let validState = SendForm.unsafeExtractValidState(token, state.values)
-    onEdit(validState)
-  }
-
   let (signerState, _) as state = React.useState(() => None)
 
   let (sign, setSign) as signOpStep = React.useState(() => SignOperationView.SummaryStep)
@@ -305,10 +318,10 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
   | AdvancedOptStep(_) => None
   | SummaryStep =>
     switch (form.formState, modalStep, (signerState: option<SigningBlock.state>)) {
-    | (_, SigningStep({source: {kind: Ledger}}, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep({kind: Ledger}, _, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(I18n.Tooltip.reject_on_ledger)->Some
 
-    | (_, SigningStep({source: {kind: CustomAuth({provider})}}, _), Some(WaitForConfirm)) =>
+    | (_, SigningStep({kind: CustomAuth({provider})}, _, _), Some(WaitForConfirm)) =>
       ModalFormView.Deny(
         I18n.Tooltip.reject_on_provider(provider->ReCustomAuth.getProviderName),
       )->Some
@@ -319,11 +332,18 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
     }
   }
 
-  let back = switch sign {
-  | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
-  | SummaryStep =>
+  let back = {
+    let source_back = () => {
+      let default = () => setModalStep(_ => SendStep)
+      SourceStepView.back(~default, stackState)
+    }
     switch modalStep {
-    | SigningStep(_, _) => Some(() => setModalStep(_ => SendStep))
+    | SigningStep(_, _, _) =>
+      switch sign {
+      | AdvancedOptStep(_) => Some(() => setSign(_ => SummaryStep))
+      | SummaryStep => source_back()
+      }
+    | SourceStep => source_back()
     | _ => None
     }
   }
@@ -339,9 +359,9 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
 
   let title = switch modalStep {
   | SendStep
-  | EditStep(_) =>
+  | SourceStep =>
     Some(I18n.Title.send)
-  | SigningStep(_, _) => SignOperationView.makeTitle(sign)->Some
+  | SigningStep(_) => SignOperationView.makeTitle(sign)->Some
   | SubmittedStep(_) => None
   }
 
@@ -352,23 +372,33 @@ let make = (~account, ~closeAction, ~initalStep=SendStep, ~onEdit=_ => ()) => {
           {switch modalStep {
           | SubmittedStep(hash) =>
             <SubmittedView hash onPressCancel submitText=I18n.Btn.go_operations />
-          | EditStep(index, initValues) =>
-            let onSubmit = form => onEdit(index, form)
-            <EditionView account initValues onSubmit index loading=isSimulating aliases />
           | SendStep =>
             <Form.View
+              proposal={senderIsMultisig(form.state.values.sender)}
               tokenState
               ?token
               form
               mode=Form.View.Creation(Some(onAddToBatch), onSubmitAll)
               loading=loadingSimulate
               simulatingBatch=isSimulating
-              aliases
             />
-          | SigningStep(operation, dryRun) =>
+          | SigningStep(source, operations, dryRun) =>
             <SignOperationView
-              source=operation.source state signOpStep dryRun operation sendOperation loading
+              proposal={senderIsMultisig(form.state.values.sender)}
+              signer=source
+              state
+              signOpStep
+              dryRun
+              operations
+              sendOperation={sendOperation(~sender=form.state.values.sender)}
+              loading
             />
+          | SourceStep =>
+            let callback = (account, operations) =>
+              sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+                setModalStep(_ => SigningStep(account, operations, dryRun))
+              })
+            <SourceStepView ?back stack=stackState callback />
           }}
         </ReactFlipToolkit.FlippedView.Inverse>
       </ModalFormView>

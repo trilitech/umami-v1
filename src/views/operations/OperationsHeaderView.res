@@ -33,13 +33,6 @@ let styles = {
       ~marginTop=LayoutConst.pagePaddingVertical->dp,
       (),
     ),
-    "selector": style(
-      ~alignSelf=#flexStart,
-      ~minWidth=390.->dp,
-      ~marginTop=0.->dp,
-      ~marginBottom=30.->dp,
-      (),
-    ),
   })
 }
 
@@ -51,6 +44,6 @@ let make = (~account, ~children as right) =>
         {I18n.Title.operations->React.string}
       </Typography.Headline>
       <BalanceTotal />
-      <AccountElements.Selector.Simple account style={styles["selector"]} />
+      <AccountElements.Selector.Simple account />
     </Page.Header>
   </View>

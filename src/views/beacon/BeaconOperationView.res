@@ -105,7 +105,7 @@ let make = (
   let state = React.useState(() => None)
 
   React.useEffect1(() => {
-    sendOperationSimulate(operation)->Promise.ignore
+    sendOperationSimulate(sourceAccount, operation)->Promise.ignore
     None
   }, [operation])
 
@@ -165,11 +165,11 @@ let make = (
         | Done(Ok(dryRun), _) =>
           let secondaryButton = <Buttons.SubmitSecondary text=I18n.Btn.reject onPress=onAbort />
           <SignOperationView
-            source=sourceAccount
+            signer=sourceAccount
             dryRun
             signOpStep
             state
-            operation
+            operations=operation
             loading
             secondaryButton
             sendOperation

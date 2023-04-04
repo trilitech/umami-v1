@@ -69,36 +69,91 @@ module Content = {
     </View>
 }
 
-module EntityInfo = {
+module EntityInfoContent = {
   @react.component
-  let make = (~address: option<PublicKeyHash.t>, ~title, ~default=React.null, ~style=?) => {
-    let theme = ThemeContext.useTheme()
+  let make = (
+    ~address: option<PublicKeyHash.t>,
+    ~shrinkedAddressDisplay=?,
+    ~addressStyle=?,
+    ~icon=?,
+    ~iconStyle=styles["accounticon"],
+    ~name=?,
+    ~nameStyle=styles["subtitle"],
+    ~default=React.null,
+  ) => {
     let aliases = StoreContext.Aliases.useGetAll()
 
     let alias = address->Option.flatMap(alias => alias->AliasHelpers.getAliasFromAddress(aliases))
 
+    let name = switch name {
+    | Some(x) => Some(x)
+    | None => alias->Option.map(x => x.name)
+    }
+
+    let icon = switch icon {
+    | Some(x) => <View style=iconStyle> x </View>
+    | None =>
+      alias->ReactUtils.mapOpt(alias =>
+        <AliasIcon style=iconStyle kind=alias.Alias.kind isHD=true />
+      )
+    }
+
+    let prettyAddressDisplay = shrinkedAddressDisplay->Belt.Option.getWithDefault(false)
+    <>
+      {icon}
+      <View>
+        {name->ReactUtils.mapOpt(name =>
+          <Typography.Subtitle2
+            fontSize=16.
+            style={
+              open Style
+              arrayOption([
+                address == None ? Some(style(~marginBottom=0.->dp, ())) : None,
+                Some(nameStyle),
+              ])
+            }>
+            {name->React.string}
+          </Typography.Subtitle2>
+        )}
+        {address->Option.mapWithDefault(default, address => {
+          let fullAddressStr = (address :> string)
+          let formatedAddress = prettyAddressDisplay
+            ? address->PublicKeyHash.getShrinked()
+            : fullAddressStr
+          <Typography.Address style={Style.arrayOption([addressStyle])}>
+            {{formatedAddress}->React.string}
+          </Typography.Address>
+        })}
+      </View>
+    </>
+  }
+}
+
+module EntityInfo = {
+  @react.component
+  let make = (
+    ~address: option<PublicKeyHash.t>,
+    ~title=?,
+    ~icon=?,
+    ~name=?,
+    ~default=?,
+    ~style=?,
+    ~shrinkedAddressDisplay=?,
+  ) => {
+    let theme = ThemeContext.useTheme()
+
     <View ?style>
-      <Typography.Overline2 colorStyle=#mediumEmphasis style={styles["title"]}>
-        {title->React.string}
-      </Typography.Overline2>
+      {title->Option.mapWithDefault(React.null, title =>
+        <Typography.Overline2 colorStyle=#mediumEmphasis style={styles["title"]}>
+          {title->React.string}
+        </Typography.Overline2>
+      )}
       <View
         style={
           open Style
           array([styles["itemInfos"], style(~backgroundColor=theme.colors.stateDisabled, ())])
         }>
-        {alias->ReactUtils.mapOpt(alias =>
-          <AliasIcon style={styles["accounticon"]} kind=alias.Alias.kind isHD=true />
-        )}
-        <View>
-          {alias->ReactUtils.mapOpt(alias =>
-            <Typography.Subtitle2 fontSize=16. style={styles["subtitle"]}>
-              {alias.name->React.string}
-            </Typography.Subtitle2>
-          )}
-          {address->Option.mapWithDefault(default, address =>
-            <Typography.Address> {(address :> string)->React.string} </Typography.Address>
-          )}
-        </View>
+        <EntityInfoContent ?shrinkedAddressDisplay address ?icon ?name ?default />
       </View>
     </View>
   }
@@ -214,13 +269,12 @@ module Operations = {
             </Typography.Subtitle1>
             {switch recipient {
             | Some(recipient) =>
-              <AccountElements.Selector.Item
+              <AccountElements.Selector.BaseItem
+                forceFetch=true
                 style={styles["account"]}
-                account=Alias(
-                  recipient
-                  ->AliasHelpers.getAliasFromAddress(aliases)
-                  ->Option.getWithDefault(Alias.make(~name="", recipient)),
-                )
+                account={recipient
+                ->AliasHelpers.getAliasFromAddress(aliases)
+                ->Option.getWithDefault(Alias.make(~name="", recipient))}
                 showAmount={buildAmount(amount)}
               />
             | None => React.null
@@ -268,6 +322,8 @@ module Operations = {
     originationCode: option<(ReTaquitoTypes.Code.t, ReTaquitoTypes.Storage.t)>,
     parameter: option<ProtocolOptions.parameter>,
     optionsSet: bool,
+    icon: option<React.element>,
+    name: option<string>,
   }
 
   @react.component
@@ -310,23 +366,24 @@ module Operations = {
 module Base = {
   let buildDestinations = (smallest, destinations, button) =>
     switch destinations {
-    | [{Operations.address: address, title}] =>
-      <EntityInfo style={styles["element"]} address title />
+    | [{Operations.address: address, title, icon, name}] =>
+      <EntityInfo style={styles["element"]} address ?icon ?name title />
     | recipients => <Operations smallest recipients ?button />
     }
 
   @react.component
   let make = (
     ~style as styleProp=?,
-    ~source,
+    ~signer: (Account.t, string),
     ~destinations,
     ~content: list<(string, Belt.List.t<Protocol.Amount.t>)>,
   ) => {
+    let (signer, signer_title) = signer
     let content: list<(string, Belt.List.t<string>)> =
       content->List.map(((field, amounts)) => (field, amounts->List.map(Protocol.Amount.show)))
 
     <View style={Style.arrayOption([Some(styles["operationSummary"]), styleProp])}>
-      <EntityInfo address={(source->fst).Account.address->Some} title={source->snd} />
+      <EntityInfo address={signer.Account.address->Some} title={signer_title} />
       {content->ReactUtils.hideNil(content => <Content content />)}
       destinations
     </View>
@@ -342,25 +399,31 @@ module Batch = {
       }
     )
 
-  let buildSummaryContent = (operation: Protocol.batch, dryRun: Protocol.Simulation.results) => {
-    let feeSum = dryRun.simulations->ProtocolHelper.Simulation.sumFees
-
-    let partialFee = (I18n.Label.fee, list{Amount.Tez(feeSum)})
-
-    let revealFee =
-      dryRun.revealSimulation->Option.map(({fee}) => (
+  let buildSummaryContent = (
+    operations: array<Protocol.manager>,
+    dryRun: option<Protocol.Simulation.results>,
+  ) => {
+    let feeSum = Option.map(dryRun, ({simulations}) =>
+      simulations->ProtocolHelper.Simulation.sumFees
+    )
+    let partialFee = Option.map(feeSum, x => (I18n.Label.fee, list{Amount.Tez(x)}))
+    let revealFee = Option.flatMap(dryRun, ({revealSimulation}) =>
+      revealSimulation->Option.map(({fee}) => (
         I18n.Label.implicit_reveal_fee,
         list{Protocol.Amount.Tez(fee)},
       ))
+    )
+    let totalFees = Option.map(dryRun, ProtocolHelper.Simulation.getTotalFees)
 
-    let amounts =
-      operation.managers
+    let totals =
+      operations
       ->filterTransfers
       ->ProtocolHelper.Transfer.reduceArray((acc, t) => \"@:"(t.Transfer.amount, acc))
+      ->Protocol.Amount.reduce
 
-    let totals = amounts->Protocol.Amount.reduce
-
-    let subtotals = (I18n.Label.summary_subtotal, totals)
+    let subtotals = List.every(totals, Protocol.Amount.isZero)
+      ? None
+      : Some(I18n.Label.summary_subtotal, totals)
 
     let totalTez = {
       let (sub, noTokens) = switch totals {
@@ -368,34 +431,42 @@ module Batch = {
       | t => (Tez.zero, t == list{})
       }
 
-      (
-        noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
-        list{
-          Protocol.Amount.Tez({
-            open Tez.Infix
-            sub + dryRun->ProtocolHelper.Simulation.getTotalFees
-          }),
-        },
-      )
+      (sub == Tez.zero && totalFees == feeSum) ||
+        (noTokens && Option.mapWithDefault(totalFees, true, x => x == Tez.zero))
+        ? None
+        : Some(
+            noTokens ? I18n.Label.summary_total : I18n.Label.summary_total_tez,
+            list{
+              Protocol.Amount.Tez({
+                open Tez.Infix
+                sub +
+                Option.mapWithDefault(dryRun, Tez.zero, ProtocolHelper.Simulation.getTotalFees)
+              }),
+            },
+          )
     }
 
     open List.Infix
-    \"@:"(subtotals, \"@:"(partialFee, \"@?"(revealFee, list{totalTez})))
+    \"@?"(subtotals, \"@?"(partialFee, \"@?"(revealFee, \"@?"(totalTez, list{}))))
   }
 
   @react.component
   let make = (
     ~style=?,
-    ~operation: Protocol.batch,
-    ~dryRun: Protocol.Simulation.results,
+    ~proposal=false,
+    ~signer,
+    ~operations: array<Protocol.manager>,
+    ~dryRun: option<Protocol.Simulation.results>,
     ~editAdvancedOptions,
     ~advancedOptionsDisabled,
     ~hideBatchDetails=false,
+    ~icon=?,
+    ~name=?,
   ) => {
-    let content = buildSummaryContent(operation, dryRun)
+    let content = buildSummaryContent(operations, dryRun)
     open Operations
 
-    let destinations = operation.managers->Array.map(m =>
+    let destinations = operations->Array.mapWithIndex((i, m) =>
       switch m {
       | Transfer({options, parameter, data: Simple(t: Protocol.Transfer.generic<_>)}) => {
           title: I18n.Label.send_recipient,
@@ -404,6 +475,8 @@ module Batch = {
           originationCode: None,
           parameter: Some(parameter),
           optionsSet: ProtocolOptions.txOptionsSet(options),
+          icon: None,
+          name: None,
         }
       | Transfer({options, data: FA2Batch({address})}) => {
           title: I18n.operation_token_batch,
@@ -412,6 +485,8 @@ module Batch = {
           originationCode: None,
           parameter: None,
           optionsSet: ProtocolOptions.txOptionsSet(options),
+          icon: None,
+          name: None,
         }
       | Delegation(delegation) =>
         let (target, title) = switch delegation.delegate {
@@ -425,6 +500,8 @@ module Batch = {
           originationCode: None,
           parameter: None,
           optionsSet: false,
+          icon: None,
+          name: None,
         }
       | Origination(origination) => {
           address: origination.delegate,
@@ -433,6 +510,8 @@ module Batch = {
           originationCode: Some((origination.code, origination.storage)),
           parameter: None,
           optionsSet: false,
+          icon: icon->Option.mapWithDefault(None, f => f(i)),
+          name: name->Option.mapWithDefault(None, f => f(i)),
         }
       }
     )
@@ -454,7 +533,7 @@ module Batch = {
       />
     }
 
-    let smallest = switch operation.source.kind {
+    let smallest = switch signer.Account.kind {
     | CustomAuth(_)
     | Ledger => true
     | Galleon
@@ -464,8 +543,8 @@ module Batch = {
 
     <Base
       ?style
-      source=(operation.source, I18n.Title.sender_account)
-      destinations={hideBatchDetails
+      signer=(signer, proposal ? I18n.account : I18n.Title.sender_account)
+      destinations={hideBatchDetails || proposal
         ? React.null
         : Base.buildDestinations(smallest, destinations, Some(batchAdvancedOptions))}
       content

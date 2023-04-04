@@ -1,27 +1,27 @@
-/*****************************************************************************/
-/*                                                                           */
-/* Open Source License                                                       */
-/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com>          */
-/*                                                                           */
-/* Permission is hereby granted, free of charge, to any person obtaining a   */
-/* copy of this software and associated documentation files (the "Software"),*/
+/* *************************************************************************** */
+/*  */
+/* Open Source License */
+/* Copyright (c) 2019-2022 Nomadic Labs, <contact@nomadic-labs.com> */
+/*  */
+/* Permission is hereby granted, free of charge, to any person obtaining a */
+/* copy of this software and associated documentation files (the "Software"), */
 /* to deal in the Software without restriction, including without limitation */
-/* the rights to use, copy, modify, merge, publish, distribute, sublicense,  */
-/* and/or sell copies of the Software, and to permit persons to whom the     */
-/* Software is furnished to do so, subject to the following conditions:      */
-/*                                                                           */
-/* The above copyright notice and this permission notice shall be included   */
-/* in all copies or substantial portions of the Software.                    */
-/*                                                                           */
-/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR*/
-/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  */
-/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL   */
-/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER*/
-/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING   */
-/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER       */
-/* DEALINGS IN THE SOFTWARE.                                                 */
-/*                                                                           */
-/*****************************************************************************/
+/* the rights to use, copy, modify, merge, publish, distribute, sublicense, */
+/* and/or sell copies of the Software, and to permit persons to whom the */
+/* Software is furnished to do so, subject to the following conditions: */
+/*  */
+/* The above copyright notice and this permission notice shall be included */
+/* in all copies or substantial portions of the Software. */
+/*  */
+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR */
+/* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, */
+/* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL */
+/* THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER */
+/* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING */
+/* FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER */
+/* DEALINGS IN THE SOFTWARE. */
+/*  */
+/* *************************************************************************** */
 
 open ReactNative
 
@@ -61,12 +61,8 @@ let styles = {
 module ShrinkedAddress = {
   @react.component
   let make = (~style as styleProp=?, ~address: PublicKeyHash.t, ~n=6, ~clipboardId=?) => {
+    let shrinked = address->PublicKeyHash.getShrinked(~n, ())
     let address = (address :> string)
-    let l = address->String.length
-    let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1)
-    let endSlice = address->Js.String2.slice(~from=l - n - 1, ~to_=l - 1)
-
-    let res = `${startSlice}...${endSlice}`
 
     let addToast = LogsContext.useToast()
 
@@ -75,7 +71,7 @@ module ShrinkedAddress = {
         open Style
         arrayOption([styleProp, styles["shrinkContainer"]->Some])
       }>
-      <Typography.Address> {res->React.string} </Typography.Address>
+      <Typography.Address> {shrinked->React.string} </Typography.Address>
       {clipboardId->ReactUtils.mapOpt(clipboardId =>
         <ClipboardButton
           copied=I18n.Log.beacon_sign_payload
@@ -116,34 +112,24 @@ module Slim = {
 }
 
 module Selector = {
-  type account =
-    | Account(Account.t)
-    | Alias(Alias.t)
+  type item = Alias.t
 
-  let name = x =>
-    switch x {
-    | Account(a) => a.name
-    | Alias(a) => a.name
-    }
+  let name = (x: item) => x.name
 
-  let address = x =>
-    switch x {
-    | Account(a) => a.address
-    | Alias(a) => a.address
-    }
+  let address = (x: item) => x.address
 
   let icon = x =>
-    switch x {
-    | Account(a) =>
-      <AliasIcon style={itemStyles["accounticon"]} kind=Some(Account(a.kind)) isHD=true />
-    | Alias(_) => React.null
+    switch x.Alias.kind {
+    | None | Some(Contact) => React.null
+    | Some(Account(_)|Multisig) as kind => <AliasIcon style={itemStyles["accounticon"]} kind isHD=true />
     }
 
-  module Item = {
+  module BaseItem = {
     @react.component
     let make = (
       ~style as paramStyle=?,
-      ~account: account,
+      ~account: item,
+      ~forceFetch,
       ~token: option<Token.t>=?,
       ~showAmount=Balance,
       ~shrinkId=?,
@@ -166,7 +152,7 @@ module Selector = {
               {account->name->React.string}
             </Typography.Subtitle2>
             {switch showAmount {
-            | Balance => <AccountInfoBalance address={account->address} ?token />
+            | Balance => <AccountInfoBalance forceFetch address={account->address} ?token />
             | Nothing => React.null
 
             | Amount(e) => e
@@ -174,40 +160,46 @@ module Selector = {
           </View>
           {switch shrinkId {
           | Some(shrinkId) => <ShrinkedAddress clipboardId=shrinkId address={account->address} />
-          | None =>
-            <Typography.Address> {(account->address :> string)->React.string} </Typography.Address>
+          | None => (account->address :> string)->Typography.address
           }}
         </View>
       </View>
     }
   }
 
-  let baseRenderButton = (~showAmount, ~token, selectedAccount: option<Account.t>, _hasError) =>
+  let baseRenderButton = (
+    ~showAmount,
+    ~forceFetch,
+    ~token,
+    selectedAccount: option<item>,
+    _hasError: bool,
+  ) =>
     <View style={styles["selectorContent"]}>
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
-        <Item style={itemStyles["itemInSelector"]} account=Account(account) showAmount ?token />
+        <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount ?token />
       )}
     </View>
 
-  let baseRenderItem = (~showAmount, ~token, account: Account.t) =>
-    <Item style={itemStyles["itemInSelector"]} account=Account(account) showAmount ?token />
-
-  let renderButton = baseRenderButton(~showAmount=Balance, ~token=None)
-
-  let renderItem = baseRenderItem(~showAmount=Balance, ~token=None)
+  let baseRenderItem = (~showAmount, ~forceFetch, ~token, account: item) =>
+    <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount ?token />
 
   module Simple = {
+    open Style
     @react.component
-    let make = (~account: Account.t, ~style=?) => {
-      let accounts = StoreContext.Accounts.useGetAll()
+    let make = (~account: item, ~style=?, ~keep=_ => true) => {
+      let items =
+        StoreContext.useGetAccountsMultisigsAliasesAsAliases()
+        ->ApiRequest.getWithDefault(PublicKeyHash.Map.empty)
+        ->PublicKeyHash.Map.valuesToArray
+        ->Belt.Array.keep(keep)
+        ->SortArray.stableSortBy(Alias.compareName)
 
       let updateAccount = StoreContext.SelectedAccount.useSet()
+      let renderButton = baseRenderButton(~forceFetch=false, ~showAmount=Balance, ~token=None)
+      let renderItem = baseRenderItem(~forceFetch=false, ~showAmount=Balance, ~token=None)
 
-      let items =
-        accounts->PublicKeyHash.Map.valuesToArray->SortArray.stableSortBy(Account.compareName)
-
-      <>
-        <Typography.Overline2> {I18n.account->React.string} </Typography.Overline2>
+      <View style={Style.style(~width=415.->dp, ~paddingBottom=16.->dp, ())}>
+        {I18n.account->Typography.overline2}
         <View style={styles["spacer"]} />
         <Selector
           items
@@ -219,7 +211,7 @@ module Selector = {
           renderItem
           keyPopover="accountSelector"
         />
-      </>
+      </View>
     }
   }
 }

@@ -57,6 +57,14 @@ let isContract = (k: t) =>
   //no need to handle the error case. k is already a pkh
   }
 
+let isImplicit = (k: t) =>
+  switch ReTaquitoUtils.validateAnyAddress(k) {
+  | Ok(#Contract) => false
+  | Ok(#Address) => true
+  | Error(_) => false
+  //no need to handle the error case. k is already a pkh
+  }
+
 let buildAny = s =>
   switch ReTaquitoUtils.validateAnyAddress(s) {
   | Ok(#Contract) => Ok(Contract(s))
@@ -77,6 +85,13 @@ let buildImplicit = (a: string) =>
   | Ok(Contract(a)) => Error(NotAnImplicit(a))
   | Error(e) => Error(e)
   }
+
+let getShrinked = (address: t, ~n=6, ()) => {
+  let address = (address :> string)
+  let startSlice = address->Js.String2.slice(~from=0, ~to_=n - 1)
+  let endSlice = address->Js.String2.sliceToEnd(~from=-n - 1)
+  `${startSlice}...${endSlice}`
+}
 
 module Scheme = {
   type t =

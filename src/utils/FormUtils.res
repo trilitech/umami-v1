@@ -29,7 +29,7 @@ type amount =
   | Amount(Amount.t)
   | Illformed(string)
 
-let parseAmount = (v, token: option<TokenRepr.t>) =>
+let parseAmount = (v, source: PublicKeyHash.t, token: option<TokenRepr.t>) =>
   if v == "" {
     None
   } else {
@@ -42,7 +42,7 @@ let parseAmount = (v, token: option<TokenRepr.t>) =>
         let vt = v->Token.Unit.fromStringDecimals(t.decimals)
         switch vt {
         | Error(_) => v->Illformed->Some
-        | Ok(amount) => Amount.makeToken(~amount, ~token=t)->Amount->Some
+        | Ok(amount) => Amount.makeToken(~amount, ~source, ~token=t)->Amount->Some
         }
       },
     )

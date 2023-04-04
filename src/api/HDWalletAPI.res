@@ -173,8 +173,10 @@ module Aliases = {
   type t = array<Alias.t>
 
   let get = (~config: ConfigContext.env) => {
+    let chainid = Network.getChainId(config.network.chain)
     let pkhs = config.baseDir()->KeyWallet.PkhAliases.read
     let sks = config.baseDir()->KeyWallet.SecretAliases.read
+    let ms = Multisig.Cache.getWithFallback()->Result.getWithDefault(PublicKeyHash.Map.empty)
 
     Promise.flatMapOk2(sks, pkhs, (sks, pkhs) =>
       pkhs
@@ -192,6 +194,15 @@ module Aliases = {
         open Alias
         {name: name, address: value, kind: Some(kind)}
       })
+      ->(aliases =>
+        Array.concat(
+          PublicKeyHash.Map.keepMap(ms, (k, v) =>
+            v.chain != chainid || Js.Array.some(({Alias.address: address}) => address == k, aliases)
+              ? None
+              : v->Alias.fromMultisig->Some
+          )->PublicKeyHash.Map.valuesToArray,
+          aliases,
+        ))
       ->Promise.ok
     )
   }
@@ -366,15 +377,20 @@ module Accounts = {
     let secretsBefore = secrets(~config)->Promise.value
     let aliases = Aliases.getAliasMap(~config)
 
-    let deletedAddresses = Promise.flatMapOk2(aliases, secretsBefore, (aliases, secretsBefore) =>
+    let deletedAddressesPkh = Promise.flatMapOk2(aliases, secretsBefore, (aliases, secretsBefore) =>
       secretsBefore[index]
       ->Option.map(secret =>
         secret.addresses
         ->Array.concat(secret.masterPublicKey->Option.mapWithDefault([], pkh => [pkh]))
-        ->Array.keepMap(v => aliases->Map.String.get((v :> string)))
+        ->Array.keep(v => aliases->Map.String.has((v :> string)))
       )
       ->Promise.fromOption(~error=SecretNotFound(index))
     )
+
+    let deletedAddresses = Promise.mapOk2(aliases, deletedAddressesPkh, (
+      aliases,
+      deletedAddressesPkh,
+    ) => deletedAddressesPkh->Array.keepMap(v => aliases->Map.String.get((v :> string))))
 
     let deleteAddressP =
       deletedAddresses->Promise.flatMapOk(addresses =>
@@ -408,9 +424,9 @@ module Accounts = {
       }
     }
 
-    secretsBeforeP->Promise.flatMapOk(() => {
+    Promise.flatMapOk(secretsBeforeP, _ => {
       applyStorage()
-      Promise.ok()
+      deletedAddressesPkh
     })
   }
 

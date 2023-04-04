@@ -71,10 +71,10 @@ module CreateAccountButton = {
   }
 
   @react.component
-  let make = (~showOnboarding) => <>
+  let make = (~action) => <>
     <View style={styles["button"]}>
       <ButtonAction
-        onPress={_ => showOnboarding()}
+        onPress={_ => action()}
         text=I18n.Btn.create_or_import_secret
         icon=Icons.Account.build
         primary=true
@@ -87,13 +87,13 @@ module BuyTezButton = {
   let styles = {
     open Style
     StyleSheet.create({
-      "button": style(~marginLeft=-6.->dp, ~marginBottom=2.->dp, ()),
+      "button": style(~marginLeft=-6.->dp, ~marginBottom=2.->dp, ~alignSelf=#flexStart, ()),
       "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
     })
   }
 
   @react.component
-  let make = (~account, ~showView) => {
+  let make = (~account: Alias.t, ~showView) => {
     let theme = ThemeContext.useTheme()
     let network = ConfigContext.useNetwork()
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
@@ -131,6 +131,22 @@ module BuyTezButton = {
   }
 }
 
+type accountType = Individual | Multisig
+
+module AccountTypeSwitch = {
+  @react.component
+  let make = (~accountType, ~setAccountType) => {
+    <SegmentedButtons
+      selectedValue=accountType
+      setSelectedValue=setAccountType
+      buttons=[
+        (I18n.Btn.individual_accounts, Individual, false),
+        (I18n.Btn.multisig_accounts, Multisig, false),
+      ]
+    />
+  }
+}
+
 let getHDAddresses = secrets =>
   secrets
   ->Array.map(secret => {
@@ -156,13 +172,87 @@ module AccountsFlatList = {
         ->SortArray.stableSortBy(Account.compareName)
         ->Array.map(account => {
           let address = (account.address :> string)
-          <AccountRowItem
-            key={(address :> string)} account isHD={addresses->Set.String.has(address)} ?token
-          />
+          <AccountRowItem key=address account isHD={addresses->Set.String.has(address)} ?token />
         })
         ->React.array}
       </View>
     })
+  }
+}
+
+module MultisigAccountList = {
+  let styles = {
+    open Style
+    StyleSheet.create({
+      "container": style(~paddingLeft=16.->dp, ()),
+      "button": style(~marginTop=16.->dp, ~alignSelf=#flexStart, ()),
+    })
+  }
+
+  module AddMultisigButton = {
+    @react.component
+    let make = () => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <>
+        <Buttons.SubmitPrimary
+          style={styles["button"]} text=I18n.Btn.add_contract onPress={_ => openAction()}
+        />
+        {wrapModal(<MultisigAddView closeAction />)}
+      </>
+    }
+  }
+
+  module CreateMultisigButton = {
+    @react.component
+    let make = () => {
+      let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+      <>
+        <Buttons.SubmitPrimary
+          style={styles["button"]} text=I18n.Btn.create_new_multisig onPress={_ => openAction()}
+        />
+        {<CreateMultisigView closeAction />->wrapModal}
+      </>
+    }
+  }
+
+  @react.component
+  let make = (~token=?) => {
+    let multisigsRequest = StoreContext.Multisig.useRequest()
+
+    let displayMultisigs = multisigs => {
+      if PublicKeyHash.Map.size(multisigs) == 0 {
+        <Typography.Body1> {I18n.Expl.no_multisig_contract->React.string} </Typography.Body1>
+      } else {
+        let compare: (Multisig.t, Multisig.t) => int = (m1, m2) => {
+          let c = String.compare(m1.alias, m2.alias)
+          c == 0 ? String.compare((m1.address :> string), (m2.address :> string)) : c
+        }
+        <View>
+          {multisigs
+          ->PublicKeyHash.Map.valuesToArray
+          ->SortArray.stableSortBy(compare)
+          ->Array.map(multisig => {
+            <AccountRowItem.MultisigRowItem key={(multisig.address :> string)} multisig ?token />
+          })
+          ->React.array}
+        </View>
+      }
+    }
+    <View>
+      {switch multisigsRequest {
+      | Done(Ok(multisigs), _) => <>
+          {displayMultisigs(multisigs)}
+          {PublicKeyHash.Map.size(multisigs) == 0
+            ? <> <AddMultisigButton /> <CreateMultisigButton /> </>
+            : React.null}
+        </>
+      | Loading(Some(multisigs)) => <> {displayMultisigs(multisigs)} <LoadingView /> </>
+      | Done(Error(error), _) => <ErrorView error />
+      | NotAsked
+      | Loading(None) =>
+        <LoadingView />
+      }}
+    </View>
   }
 }
 
@@ -205,6 +295,7 @@ module AccountsTreeList = {
           )
           ->React.array}
         </View>
+        <View style=Style.style(~height=100.->Style.dp, ()) /> // Make sure last item has enough space for dropdown
       </>
     })
   }
@@ -216,12 +307,16 @@ let styles = {
 }
 
 @react.component
-let make = (~account, ~showOnboarding, ~showBuyTez, ~mode, ~setMode) => {
+let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll()
   let accountsRequest = StoreContext.Accounts.useRequest()
   let token = StoreContext.SelectedToken.useGet()
 
   let retryNetwork = ConfigContext.useRetryNetwork()
+
+  let (accountType, setAccountType) = React.useState(() =>
+    PublicKeyHash.isImplicit(account.address) ? Individual : Multisig
+  )
 
   <Page>
     <Page.Header
@@ -235,16 +330,21 @@ let make = (~account, ~showOnboarding, ~showBuyTez, ~mode, ~setMode) => {
         />
         <EditButton mode setMode />
       </>}>
-      <Typography.Headline style=Styles.title>
-        {I18n.Title.accounts->React.string}
-      </Typography.Headline>
+      {I18n.Title.accounts->Typography.headline(~style=Styles.title)}
       {mode->Mode.is_management ? <BalanceTotal /> : <BalanceTotal.WithTokenSelector ?token />}
       <View style={styles["actionBar"]}>
         {mode->Mode.is_management
-          ? <CreateAccountButton showOnboarding />
-          : <BuyTezButton account showView=showBuyTez />}
+          ? <CreateAccountButton action=showCreateAccount />
+          : <View>
+              <BuyTezButton account showView=showBuyTez />
+              <AccountTypeSwitch accountType setAccountType />
+            </View>}
       </View>
     </Page.Header>
-    {mode->Mode.is_management ? <AccountsTreeList /> : <AccountsFlatList ?token />}
+    {mode->Mode.is_management
+      ? <AccountsTreeList />
+      : accountType == Individual
+      ? <AccountsFlatList ?token />
+      : <MultisigAccountList ?token />}
   </Page>
 }

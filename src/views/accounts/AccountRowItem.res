@@ -28,64 +28,92 @@ open ReactNative
 let styles = {
   open Style
   StyleSheet.create({
-    "inner": style(~marginRight=10.->dp, ~flexDirection=#row, ()),
-    "actionButtons": style(
-      ~alignSelf=#flexEnd,
-      ~flexDirection=#row,
-      ~flex=1.,
-      ~marginBottom=8.->dp,
-      (),
-    ),
-    "button": style(~marginRight=4.->dp, ()),
+    "inner": style(~marginRight=10.->dp, ~flexDirection=#row, ~alignItems=#flexStart, ()),
     "actionContainer": style(~marginRight=24.->dp, ()),
   })
 }
 
-@react.component
-let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
-  let delegateRequest = StoreContext.Delegate.useLoad(account.address)
-  let addToast = LogsContext.useToast()
-
-  let balanceRequest = StoreContext.Balance.useLoad(~forceFetch=false, account.address)
-
-  let zeroTez = switch balanceRequest->ApiRequest.getDoneOk {
-  | None => true
-  | Some(balance) => balance == Tez.zero
-  }
-
-  <RowItem.Bordered height=90.>
-    <View style={styles["inner"]}>
-      <AliasIcon
-        style={SecretRowTree.styles["iconContainer"]} kind=Some(Account(account.kind)) isHD
-      />
-      <AccountInfo forceFetch=false account ?token />
-    </View>
-    <View style={styles["actionButtons"]}>
-      <ClipboardButton
-        copied=I18n.Log.address
-        tooltipKey={(account.address :> string)}
-        addToast
-        data={(account.address :> string)}
-        style={styles["button"]}
-      />
-      <QrButton
-        tooltipKey={(account.address :> string)}
-        account={account->Alias.fromAccount}
-        style={styles["button"]}
-      />
-    </View>
-    {delegateRequest
-    ->ApiRequest.mapWithDefault(React.null, delegate =>
-      <View style={styles["actionContainer"]}>
-        <DelegateButton
-          zeroTez
-          action={delegate->Option.mapWithDefault(
-            Delegate.Create(account, false),
-            delegate => Delegate.Edit(account, delegate),
-          )}
+module GenericRowItem = {
+  @react.component
+  let make = (
+    ~account: Alias.t,
+    ~token: option<Token.t>=?,
+    ~showBalance=?,
+    ~showAlias=?,
+    ~forceFetch=false,
+    ~icon_isHD=false,
+    ~description: option<React.element>=?,
+    ~children: React.element,
+  ) => {
+    open Style
+    <RowItem.Bordered
+      minHeight=90.
+      innerStyle={style(
+        ~alignSelf=#flexStart,
+        ~paddingVertical=8.->dp,
+        ~justifyContent=#spaceBetween,
+        (),
+      )}>
+      <View style={styles["inner"]}>
+        <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
+        <AccountInfo.GenericAccountInfo
+          ?token ?showBalance ?showAlias ?description forceFetch account
         />
       </View>
-    )
-    ->ReactUtils.onlyWhen(token == None)}
-  </RowItem.Bordered>
+      children
+    </RowItem.Bordered>
+  }
+}
+
+module Delegate = {
+  @react.component
+  let make = (~account: Alias.t) => {
+    let delegateRequest = StoreContext.Delegate.useLoad(account.address)
+    let balanceRequest =
+      StoreContext.Balance.useAll(false)->StoreContext.Balance.useOne(account.address)
+    let zeroTez = switch balanceRequest->ApiRequest.getDoneOk {
+    | None => true
+    | Some(balance) => balance == Tez.zero
+    }
+    <View style={styles["actionContainer"]}>
+      {delegateRequest->ApiRequest.mapWithDefault(React.null, delegate =>
+        <View style={styles["actionContainer"]}>
+          <DelegateButton
+            zeroTez
+            action={delegate->Option.mapWithDefault(
+              Delegate.Create(account, true),
+              delegate => Delegate.Edit(account, delegate),
+            )}
+          />
+        </View>
+      )}
+    </View>
+  }
+}
+
+module MultisigRowItem = {
+  @react.component
+  let make = (~multisig: Multisig.t, ~token: option<Token.t>=?) => {
+    let description = {
+      let threshold = multisig.threshold->ReBigNumber.toString
+      let signers = Array.length(multisig.signers)->Int.toString
+      <Typography.Body2 style={AccountInfo.styles["description"]}>
+        {I18n.Label.approval_threshold->React.string}
+        {" "->React.string}
+        {I18n.Label.out_of(threshold, signers)->React.string}
+      </Typography.Body2>
+    }
+    let account = Alias.fromMultisig(multisig)
+    <GenericRowItem account description ?token>
+      {<Delegate account />->ReactUtils.onlyWhen(token == None)}
+    </GenericRowItem>
+  }
+}
+
+@react.component
+let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
+  let account = Alias.fromAccount(account)
+  <GenericRowItem account ?token icon_isHD=isHD>
+    {<Delegate account />->ReactUtils.onlyWhen(token == None)}
+  </GenericRowItem>
 }

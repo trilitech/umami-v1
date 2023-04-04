@@ -80,7 +80,7 @@ module Details = {
 
 let makeValidState = (
   amount: Protocol.Amount.t,
-  sender: Account.t,
+  sender: Alias.t,
   recipient: PublicKeyHash.t,
   parameter,
 ): SendForm.validState => {
@@ -91,57 +91,45 @@ let makeValidState = (
   entrypoint: parameter.ProtocolOptions.entrypoint,
 }
 
-module EditView = {
+module AdvancedEditView = {
   @react.component
   let make = (
-    ~advancedEditMode,
-    ~managerIndex,
-    ~amount,
-    ~recipient,
-    ~account,
-    ~parameter,
-    ~operation,
+    ~signer,
+    ~operations: array<Umami.Protocol.manager>,
     ~dryRun,
-    ~onAdvancedSubmit,
-    ~onNominalEdit,
-    ~onClose,
+    ~index,
+    ~onSubmit,
+    ~closeAction,
   ) => {
+    <ModalFormView title=I18n.Label.advanced_options closing=ModalFormView.Close(closeAction)>
+      <AdvancedOptionsView signer operations dryRun index onSubmit token=None />
+    </ModalFormView>
+  }
+}
+
+module EditView = {
+  @react.component
+  let make = (~amount, ~recipient, ~account: Alias.t, ~parameter, ~onSubmit, ~closeAction) => {
     let dummyIndex = 3
-    advancedEditMode
-      ? {
-          open ModalFormView
-          operation->Option.mapWithDefault(React.null, operation =>
-            <ModalFormView title=I18n.Label.advanced_options closing=Close(onClose)>
-              <AdvancedOptionsView
-                operation
-                dryRun
-                index=managerIndex
-                onSubmit={(batch, dryRun) => onAdvancedSubmit(batch, dryRun)}
-                token=None
-              />
-            </ModalFormView>
-          )
-        }
-      : <SendView
-          account
-          closeAction=onClose
-          onEdit=onNominalEdit
-          initalStep={
-            open SendView
-            EditStep(dummyIndex, makeValidState(amount, account, recipient, parameter))
-          }
-        />
+    <SendView.EditionView
+      account
+      initValues={makeValidState(amount, account, recipient, parameter)}
+      onSubmit
+      index=dummyIndex
+      closeAction
+      loading=false //FIXME?
+    />
   }
 }
 let indexToCoords = (i, vs) => vs->Array.get(i)->Option.map(((coords, _)) => coords)
 
 @react.component
 let make = (
-  ~batch,
-  ~simulations: array<Umami.Protocol.Simulation.resultElt>,
+  ~account: Alias.t,
+  ~batch: array<Umami.Protocol.manager>,
   ~replaceBatchItem: (Umami.GlobalBatchTypes.rowData, unit => unit) => unit,
   ~removeBatchItem,
-  ~dryRun,
+  ~dryRun: option<Umami.Protocol.Simulation.results>,
   ~setBatchAndSim,
   ~onDeleteAll,
 ) => {
@@ -150,7 +138,7 @@ let make = (
     (),
   )
 
-  let (openModal, closeModal, inModal) = ModalAction.useModal()
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal()
 
   let (indexDetails, setIndexDetails) = React.useState(() => None)
 
@@ -183,11 +171,11 @@ let make = (
   let resetEdit = () => {
     setAdvancedEditMode(_ => false)
     setIndexToEdit(_ => None)
-    closeModal()
+    closeAction()
   }
 
   let handleAdvancedSubmit = (batch, dryRun) => {
-    setBatchAndSim((batch, dryRun))
+    setBatchAndSim((account.address, batch, Some(dryRun)))
     resetEdit()
   }
 
@@ -210,7 +198,7 @@ let make = (
     <GlobalBatchDataTable
       indexedRows
       onDeleteAll=openConfirmModal
-      simulations
+      dryRun
       onDelete=handleRemove
       onDetails={i => {
         setIndexDetails(_ => Some(i))
@@ -218,12 +206,12 @@ let make = (
       }}
       onEdit={i => {
         setIndexToEdit(_ => Some(i))
-        openModal()
+        openAction()
       }}
       onAdvanced={i => {
         setAdvancedEditMode(_ => true)
         setIndexToEdit(_ => Some(i))
-        openModal()
+        openAction()
       }}
     />
     {confirmDeleteModal()}
@@ -231,22 +219,27 @@ let make = (
     {trRowToEdit
     ->Option.mapWithDefault(React.null, row => {
       let (coords, amount, recipient, parameter) = row
+      let closeAction = resetEdit
 
-      let (managerIndex, _) = coords
-      <EditView
-        advancedEditMode
-        managerIndex
-        amount
-        parameter
-        recipient
-        account=batch.source
-        operation=Some(batch)
-        dryRun
-        onAdvancedSubmit=handleAdvancedSubmit
-        onNominalEdit={vs => handleNominalSubmit(coords, vs)}
-        onClose=resetEdit
-      />
+      {
+        switch (dryRun, advancedEditMode ? Alias.toAccount(account)->ResultEx.toOption : None) {
+        | (Some(dryRun), Some(signer)) =>
+          let operations = batch
+          let (index, _) = coords
+          let onSubmit = handleAdvancedSubmit
+          <AdvancedEditView signer operations dryRun index onSubmit closeAction />
+        | _ =>
+          <EditView
+            amount
+            parameter
+            recipient
+            account
+            onSubmit={vs => handleNominalSubmit(coords, vs)}
+            closeAction
+          />
+        }
+      }
     })
-    ->inModal}
+    ->wrapModal}
   </>
 }

@@ -50,7 +50,7 @@ let keepNonFormErrors = x =>
 
 let useCreate = (~sideEffect=?, ()) => {
   let set = (~config, {operation, signingIntent}) =>
-    config->NodeAPI.Operation.run(operation, ~signingIntent)
+    config->NodeAPI.Operation.run(operation.source, operation.managers, ~signingIntent)
 
   ApiRequest.useSetter(
     ~toast=true,
@@ -65,7 +65,7 @@ let useCreate = (~sideEffect=?, ()) => {
 /* Simulate */
 
 let useSimulate = () => {
-  let set = (~config, operation) => config->NodeAPI.Simulation.run(operation)
+  let set = (~config, (source, managers)) => config->NodeAPI.Simulation.run(source, managers)
 
   ApiRequest.useSetter(~set, ~kind=Logs.Operation, ~keepError=keepNonFormErrors, ())
 }
@@ -80,15 +80,14 @@ let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ())
     let operations = config.network->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ())
     let currentLevel =
       Network.monitor(config.network.explorer)->Promise.mapOk(monitor => monitor.nodeLastBlock)
-
-    let f = (operations, currentLevel) =>
+    let f = (operations, currentLevel) => {
       switch (operations, currentLevel) {
       | (Ok(operations), Ok(currentLevel)) =>
         Ok({operations: operations, currentLevel: currentLevel})
       | (Error(_) as e, _)
       | (_, Error(_) as e) => e
       }
-
+    }
     Promise.map2(operations, currentLevel, f)
   }
 

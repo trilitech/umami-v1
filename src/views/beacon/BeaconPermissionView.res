@@ -102,7 +102,7 @@ let make = (
           {I18n.Expl.beacon_dapp_request->React.string}
         </Typography.Body2>
       </View>
-      <FormGroupAccountSelector
+      <FormGroupAccountSelector.Implicits
         label=I18n.Label.beacon_account value=account handleChange={a => setAccount(_ => a)}
       />
       <View style={styles["formActionSpaceBetween"]}>

@@ -103,16 +103,14 @@ module SelectedAccountView = {
   @react.component
   let make = (~children) => {
     let selectedAccount = StoreContext.SelectedAccount.useGetAtInit()
-
     selectedAccount->ReactUtils.mapOpt(account => children(account))
   }
 }
 
 module Dashboard = {
   @react.component
-  let make = (~account, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
+  let make = (~account: Alias.t, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) = React.useState(_ => AccountsView.Mode.Simple)
-
     <>
       {switch route {
       | Accounts =>
@@ -121,19 +119,18 @@ module Dashboard = {
           mode=accountsViewMode
           setMode=setAccountsViewMode
           showBuyTez
-          showOnboarding={() => setMainPage(_ => Homepage.AddAccountModal)}
+          showCreateAccount={() => setMainPage(_ => Homepage.AddAccountModal)}
         />
       | Nft => <NftView account />
       | Operations => <OperationsView account />
       | AddressBook => <AddressBookView />
       | Delegations => <DelegationsView />
-      | Tokens => <TokensView />
+      | Contracts => <ContractsView />
       | Settings => <SettingsView />
       | Logs => <LogsView />
       | Batch => <GlobalBatchView />
       | Help => <HelpView />
-      | NotFound =>
-        <View> <Typography.Body1> {I18n.error404->React.string} </Typography.Body1> </View>
+      | NotFound => <View> {I18n.error404->Typography.body1} </View>
       }}
     </>
   }
@@ -151,9 +148,9 @@ let shouldDisplayNavbar = (
   | Loading(Some(_)) => true
   | Done(_) =>
     switch mainPageState {
+    | BuyTez(_)
     | Onboarding
     | AddAccountModal => false
-    | BuyTez(_) => false
     | Dashboard => true
     }
   }
@@ -194,14 +191,47 @@ module AppView = {
 
     let toastBox = LogsContext.useToastBox()
 
-    <>
+    let rootStyle = {
+      open Style
+      array([styles["layout"], style(~backgroundColor=theme.colors.background, ())])
+    }
+
+    let fallbackElement = (e: RescriptReactErrorBoundary.params<string>) => {
+      open Style
+      let err = ` ${e.error} ` // Make sure that error is a string
+      let stacktrace = e.info.componentStack
+      let btn = (text, onPress) =>
+        <Buttons.SubmitPrimary
+          text
+          onPress
+          style={array([
+            FormStyles.formSubmit,
+            style(~marginHorizontal=12.->dp, ~marginVertical=24.->dp, ()),
+          ])}
+        />
+      <View style=rootStyle>
+        <Page>
+          <View style={style(~flex=1., ~alignItems=#center, ~justifyContent=#center, ())}>
+            {I18n.Errors.unhandled_error_title->Typography.headline}
+            <View style={style(~flexDirection=#row, ())}>
+              {btn(I18n.Errors.reload_btn, _ => System.reload())}
+              {btn(I18n.Errors.relaunch_btn, _ => {
+                System.relaunch()
+                System.quit()
+              })}
+              {btn(I18n.Help.support_text, _ =>
+                Linking.openURL(MailToSupportButton.buildMailtoUrl(err))->ignore
+              )}
+            </View>
+            <ScrollView> {err->Typography.body1} {stacktrace->Typography.body1} </ScrollView>
+          </View>
+        </Page>
+      </View>
+    }
+    <RescriptReactErrorBoundary fallback=fallbackElement>
       toastBox
       <DocumentContext>
-        <View
-          style={
-            open Style
-            array([styles["layout"], style(~backgroundColor=theme.colors.background, ())])
-          }>
+        <View style=rootStyle>
           <Header />
           {eulaSignature
             ? <DisclaimerModal onSign />
@@ -232,7 +262,7 @@ module AppView = {
               </View>}
         </View>
       </DocumentContext>
-    </>
+    </RescriptReactErrorBoundary>
   }
 }
 
@@ -247,7 +277,11 @@ let make = () =>
               <NoticesContext>
                 <AppView />
                 <SelectedAccountView>
-                  {account => <BeaconConnectRequest account />}
+                  {account =>
+                    switch Alias.toAccount(account) {
+                    | Ok(account) => <BeaconConnectRequest account />
+                    | Error(_) => <> </>
+                    }}
                 </SelectedAccountView>
               </NoticesContext>
             </GlobalBatchContext>

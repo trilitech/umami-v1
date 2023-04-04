@@ -60,16 +60,34 @@ let makeGenericRowCell = (children, width, ~style=?, ~last=false, ()) => {
 let makeRowCell = (title, width, ~last=false, ()) =>
   makeGenericRowCell(<Typography.Body1> {title->React.string} </Typography.Body1>, width, ~last, ())
 
+let makeFeeCell = (~shouldDisplayFee, ~fee, ~style as styleArg, ~makeIcon, ~onAdvanced) => {
+  open Style
+  makeGenericRowCell(
+    <Typography.Body1
+      style={style(~display=#flex, ~alignItems=#center, ~justifyContent=#spaceBetween, ())}>
+      {(shouldDisplayFee ? fee : "")->React.string}
+      {makeIcon->Option.mapWithDefault(React.null, makeIcon =>
+        <ThemedPressable onPress={_ => onAdvanced()} style={style(~borderRadius=40., ())}>
+          {makeIcon(16.)}
+        </ThemedPressable>
+      )}
+    </Typography.Body1>,
+    150.,
+    ~style=styleArg,
+    (),
+  )
+}
+
 module Header = {
   @react.component
-  let make = (~onDeleteAll=() => ()) => {
+  let make = (~style as styleFromProp=?, ~fee, ~onDeleteAll=() => ()) => {
     open ReactNative.Style
-    <Table.Head>
+    <Table.Head style=?styleFromProp>
       {makeGenericHeaderCell(React.null, 10., ~style=style(~minWidth=30.->dp, ()), ())}
       {makeHeaderCell(I18n.global_batch_column_type, 130., ())}
       {makeHeaderCell(I18n.global_batch_subject, 130., ())}
       {makeHeaderCell(I18n.global_batch_recipient, 130., ())}
-      {makeHeaderCell(I18n.global_batch_fee, 150., ())}
+      {fee ? makeHeaderCell(I18n.global_batch_fee, 150., ()) : React.null}
       {makeGenericHeaderCell(
         <View
           style={style(
@@ -124,6 +142,9 @@ module TransferRowDisplay = {
     let getContactOrRaw = useGetContactOrRaw()
 
     let isContractCall = ProtocolHelper.Transfer.isNonNativeContractCall(recipient, amount)
+
+    // Disabled edit on all contact calls on just on multisig ?
+    let isExecuteMultisig = parameter.entrypoint == Multisig.Entrypoint.execute->Some
 
     let matchPos = wanted =>
       switch fa2Position {
@@ -185,18 +206,6 @@ module TransferRowDisplay = {
     let makeIcon = (builder: Umami.Icons.builder, size) =>
       builder(~color=theme.colors.borderMediumEmphasis, ~size, ~style=style(~margin=10.->dp, ()))
 
-    // let editFeeIconReused =
-    //   // has bad highlight bug
-    //   <IconButton
-    //     icon=Icons.Options.build
-    //     size=34.
-    //     onPress={_ => onAdvanced()}
-    //   />;
-
-    let editFeeBtn =
-      <ThemedPressable onPress={_ => onAdvanced()} style={style(~borderRadius=40., ())}>
-        {makeIcon(Icons.Options.build, 16.)}
-      </ThemedPressable>
     let nftIcon = makeIcon(Icons.Nft.build, 20.)
     let transferIcon = makeIcon(Icons.Send.build, 20.)
 
@@ -220,20 +229,17 @@ module TransferRowDisplay = {
       )}
       {makeRowCell(amount, 130., ())}
       {makeGenericRowCell(renderContact(Address(recipient)), 130., ())}
-      {makeGenericRowCell(
-        <Typography.Body1
-          style={style(~display=#flex, ~alignItems=#center, ~justifyContent=#spaceBetween, ())}>
-          {(shouldDisplayFee ? fee : "")->React.string}
-          {!isFa2 || (isFirst || isSingle) ? editFeeBtn : React.null}
-        </Typography.Body1>,
-        150.,
-        ~style=fa2Style,
-        (),
-      )}
+      {fee->Option.mapWithDefault(React.null, fee => {
+        let makeIcon = !isFa2 || isFirst || isSingle ? makeIcon(Icons.Options.build)->Some : None
+        let style = fa2Style
+        makeFeeCell(~shouldDisplayFee, ~fee, ~style, ~makeIcon, ~onAdvanced)
+      })}
       {makeGenericRowCell(
         <View style={style(~display=#flex, ~justifyContent=#flexEnd, ~flexDirection=#row, ())}>
           <View>
-            <BatchView.BuildingBatchMenu onDetails onEdit={isNFT ? None : Some(onEdit)} onDelete />
+            <BatchView.BuildingBatchMenu
+              onDetails onEdit={isNFT || isExecuteMultisig ? None : Some(onEdit)} onDelete
+            />
           </View>
         </View>,
         10.,
@@ -286,7 +292,7 @@ let getFa2Pos = (
 @react.component
 let make = (
   ~indexedRows: array<rowData>,
-  ~simulations: array<Umami.Protocol.Simulation.resultElt>,
+  ~dryRun: option<Umami.Protocol.Simulation.results>,
   ~onDelete,
   ~onEdit,
   ~onAdvanced,
@@ -294,30 +300,29 @@ let make = (
   ~onDetails,
 ) => {
   let allCoords = indexedRows->Array.map(((a, _)) => a)
-
-  <>
-    <Header onDeleteAll />
-    {indexedRows
-    ->Array.mapWithIndex((arrIndex, rowData) => {
-      let (coords, payload) = rowData
-
-      let (managerIndex, _) = coords
-      let (amount, recipient, parameter) = payload
-      <TransferRowDisplay
-        key={makeKey(coords)}
-        amount
-        recipient
-        fee={getFeeDisplay(~simulation=simulations[managerIndex])}
-        onDelete={() => onDelete(arrIndex)}
-        parameter
-        onEdit={_ => onEdit(arrIndex)}
-        onDetails={parameter->ProtocolHelper.Transfer.hasParams
-          ? Some(_ => onDetails(arrIndex))
-          : None}
-        onAdvanced={_ => onAdvanced(arrIndex)}
-        fa2Position={getFa2Pos(coords, allCoords)}
-      />
-    })
-    ->React.array}
-  </>
+  let elements = Array.mapWithIndex(indexedRows, (i, x) => (i, x))
+  let renderItem = ((arrIndex, rowData)) => {
+    let (coords, payload) = rowData
+    let (managerIndex, _) = coords
+    let (amount, recipient, parameter) = payload
+    <TransferRowDisplay
+      key={makeKey(coords)}
+      amount
+      recipient
+      fee={Option.map(dryRun, x => getFeeDisplay(~simulation=x.simulations[managerIndex]))}
+      onDelete={() => onDelete(arrIndex)}
+      parameter
+      onEdit={_ => onEdit(arrIndex)}
+      onDetails={parameter->ProtocolHelper.Transfer.hasParams
+        ? Some(_ => onDetails(arrIndex))
+        : None}
+      onAdvanced={_ => onAdvanced(arrIndex)}
+      fa2Position={getFa2Pos(coords, allCoords)}
+    />
+  }
+  let gutters = n => Style.style(~marginHorizontal=(LayoutConst.pagePaddingHorizontal *. n)->Style.dp, ())
+  <View style={gutters(-1.)}>
+    <Header style={gutters(1.)} fee={dryRun != None} onDeleteAll />
+    <Pagination elements renderItem emptyComponent=React.null />
+  </View>
 }

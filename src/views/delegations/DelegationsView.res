@@ -60,11 +60,11 @@ let accountsToShow = accounts =>
   accounts
   ->PublicKeyHash.Map.valuesToArray
   ->Array.map(((a, _)) => a)
-  ->SortArray.stableSortBy(Account.compareName)
+  ->SortArray.stableSortBy(Alias.compare)
 
 module DelegateItem = {
   @react.component
-  let make = (~account: Account.t) => {
+  let make = (~account: Alias.t) => {
     let delegateRequest = StoreContext.Delegate.useLoad(account.address)
 
     delegateRequest
@@ -78,14 +78,15 @@ module DelegateItem = {
 
 @react.component
 let make = () => {
-  let accounts = StoreContext.Accounts.useGetAllWithDelegates()
+  let accounts = StoreContext.AccountsMultisigs.useGetAllWithDelegates()
+
   let delegateRequests = StoreContext.Delegate.useGetAllRequests()
 
   let items =
     accounts
     ->PublicKeyHash.Map.valuesToArray
     ->Array.keepMap(((account, delegate)) => delegate->Option.isNone ? Some(account) : None)
-    ->SortArray.stableSortBy(Account.compareName)
+    ->SortArray.stableSortBy(Alias.compare)
 
   let firstAccount = items->Array.get(0)
 
@@ -104,6 +105,7 @@ let make = () => {
               />
             )}
             <Table.Head>
+              <DelegateRowItem.CellIcon />
               <DelegateRowItem.CellAddress>
                 <Typography.Overline3>
                   {I18n.delegate_column_account->React.string}

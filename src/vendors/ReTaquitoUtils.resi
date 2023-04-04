@@ -47,3 +47,7 @@ let prefix: prefixes
 let b58cencode: (string, prefix) => string
 let b58cdecode: (string, prefix) => Js.TypedArray2.Uint8Array.t
 let b58cencodeArray: (Js.TypedArray2.Uint8Array.t, prefix) => string
+let encodeKeyHash: string => string
+let b58decode: string => string
+let encodePubKey: string => string
+let hex2buf: string => Js.TypedArray2.Uint8Array.t

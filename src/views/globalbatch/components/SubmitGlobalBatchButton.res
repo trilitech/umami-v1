@@ -23,21 +23,60 @@
 /*  */
 /* *************************************************************************** */
 
-open ReactNative
+module SignStep = {
+  @react.component
+  let make = (~source, ~dryRun, ~operations, ~resetGlobalBatch, ~closeAction) => {
+    let ledgerState = React.useState(() => None)
+    <SignGlobalBatch dryRun source operations resetGlobalBatch closeAction ledgerState />
+  }
+}
+
+type step =
+  | SourceStep
+  | SigningStep(Account.t, array<Protocol.manager>, option<Umami.Protocol.Simulation.results>)
+
+module Content = {
+  @react.component
+  let make = (~account, ~dryRun, ~operations, ~resetGlobalBatch, ~closeAction) => {
+    let (_, sendOperationSimulate) = StoreContext.Operations.useSimulate()
+    let (_, setStack) as stackState = React.useState(_ => list{})
+
+    let (step, setStep) = React.useState(() =>
+      switch Alias.toAccount(account) {
+      | Ok(account) => SigningStep(account, operations, dryRun)
+      | Error(_) =>
+        let state = (account.Alias.address, operations, None)
+        setStack(_ => list{state})
+        SourceStep
+      }
+    )
+    switch step {
+    | SigningStep(source, operations, dryRun) =>
+      <SignStep source dryRun operations resetGlobalBatch closeAction />
+    | SourceStep =>
+      let callback = (account, operations) =>
+        sendOperationSimulate(account, operations)->Promise.getOk(dryRun => {
+          setStep(_ => SigningStep(account, operations, dryRun->Some))
+        })
+      let back = SourceStepView.back(~default=closeAction, stackState)
+      <ModalFormView
+        title=I18n.Title.propose_batch closing={ModalFormView.Close(_ => closeAction())}>
+        <SourceStepView ?back stack=stackState callback />
+      </ModalFormView>
+    }
+  }
+}
 
 @react.component
-let make = (~dryRun, ~operation, ~resetGlobalBatch) => {
-  let (openModal, closeModal, inModal) = ModalAction.useModal()
-
-  let disabled = switch operation {
-  | None => true
-  | Some(_) => false
-  }
-  let onPress = _ => openModal()
-
-  let ledgerState = React.useState(() => None)
+let make = (~account: Alias.t, ~dryRun, ~operations, ~resetGlobalBatch) => {
+  let (operationSimulateRequest, _) = StoreContext.Operations.useSimulate()
+  let (openAction, closeAction, wrapModal) = ModalAction.useModal()
+  let disabled = operations == []
+  let onPress = _ => openAction()
+  let loading = ApiRequest.isLoading(operationSimulateRequest)
+  let text = account.kind == Some(Multisig) ? I18n.Btn.batch_proposal : I18n.Btn.batch_submit
   <>
-    <View> <Buttons.SubmitPrimary text=I18n.Btn.batch_submit onPress disabled /> </View>
-    {inModal(<SignGlobalBatch dryRun operation resetGlobalBatch closeModal ledgerState />)}
+    <Buttons.SubmitPrimary text onPress disabled loading />
+    {wrapModal(<Content account dryRun operations resetGlobalBatch closeAction />)}
   </>
 }

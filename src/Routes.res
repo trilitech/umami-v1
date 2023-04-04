@@ -30,7 +30,7 @@ type t =
   | Operations
   | AddressBook
   | Delegations
-  | Tokens
+  | Contracts
   | Settings
   | Logs
   | Nft
@@ -48,7 +48,7 @@ let match_ = (url: url) =>
   | "/operations" => Operations
   | "/address-book" => AddressBook
   | "/delegations" => Delegations
-  | "/tokens" => Tokens
+  | "/contracts" => Contracts
   | "/settings" => Settings
   | "/logs" => Logs
   | "/nft" => Nft
@@ -63,7 +63,7 @@ let toHref = x =>
   | Operations => "#/operations"
   | AddressBook => "#/address-book"
   | Delegations => "#/delegations"
-  | Tokens => "#/tokens"
+  | Contracts => "#/contracts"
   | Settings => "#/settings"
   | Logs => "#/logs"
   | Nft => "#/nft"
@@ -72,7 +72,7 @@ let toHref = x =>
   | NotFound => raise(RouteToNotFound)
   }
 
-/* This lets us push a Routes.t instead of a string to transition to a new  screen */
+/* This lets us push a Routes.t instead of a string to transition to a new screen */
 let push = route => route |> toHref |> push
 
 let useHrefAndOnPress = route => {
