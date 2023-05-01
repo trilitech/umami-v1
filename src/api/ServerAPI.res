@@ -145,6 +145,11 @@ module URL = {
           build_url(baseURL ++ "accounts/" ++ (account :> string) ++ "/operations", args)
         })
       }
+
+      let accountExistsUrl = (network: Network.t, ~account: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "accounts/" ++ (account :> string)
+      }
     }
 
     let operations = (
@@ -171,11 +176,6 @@ module URL = {
 
     let checkToken = (network, ~contract: PublicKeyHash.t) => {
       let path = "tokens/exists/" ++ (contract :> string)
-      build_explorer_url(network, path, list{})
-    }
-
-    let accountExists = (network, ~account: PublicKeyHash.t) => {
-      let path = "accounts/" ++ ((account :> string) ++ "/exists/")
       build_explorer_url(network, path, list{})
     }
 

@@ -41,14 +41,17 @@ let () = Errors.registerHandler("Node", x =>
 
 module Accounts = {
   let exists = (config, account) =>
-    URL.Explorer.accountExists(config, ~account)
+    config
+    ->URL.Explorer.Tzkt.accountExistsUrl(~account)
     ->URL.get
-    ->Promise.mapOk(json =>
-      switch Js.Json.classify(json) {
-      | Js.Json.JSONTrue => true
-      | _ => false
-      }
-    )
+    ->Promise.mapOk(json => {
+      json
+      ->Js.Json.decodeObject
+      ->Option.flatMap(o => Js.Dict.get(o, "type"))
+      ->Option.flatMap(Js.Json.decodeString)
+      ->Option.map(t => t != "empty")
+      ->Option.getExn
+  })
 }
 
 module Balance = {

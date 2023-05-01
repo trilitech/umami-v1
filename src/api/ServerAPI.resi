@@ -49,6 +49,8 @@ module URL: {
         ~limit: int=?,
         unit,
       ) => option<t>
+
+      let accountExistsUrl: (Network.t, ~account: PublicKeyHash.t) => t
     }
 
     let operations: (
@@ -60,7 +62,6 @@ module URL: {
       unit,
     ) => t
     let checkToken: (Network.t, ~contract: PublicKeyHash.t) => t
-    let accountExists: (Network.t, ~account: PublicKeyHash.t) => t
 
     let balances: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
 
