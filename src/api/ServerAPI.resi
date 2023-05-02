@@ -51,6 +51,7 @@ module URL: {
       ) => option<t>
 
       let accountExistsUrl: (Network.t, ~account: PublicKeyHash.t) => t
+      let balancesUrl: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
     }
 
     let operations: (
@@ -146,6 +147,11 @@ module type Explorer = {
       ~limit: int=?,
       unit,
     ) => Promise.t<array<Operation.t>>
+
+    let getBalances: (
+      Network.t,
+      ~addresses: list<PublicKeyHash.t>,
+    ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
   }
   let getOperations: (
     Network.t,

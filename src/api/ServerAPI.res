@@ -150,6 +150,13 @@ module URL = {
         let baseUrl = network->baseURL->Option.getExn
         baseUrl ++ "accounts/" ++ (account :> string)
       }
+
+      let balancesUrl = (network: Network.t, ~addresses: list<PublicKeyHash.t>) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++
+        "accounts?address.in=" ++
+        addresses->List.map(a => (a :> string))->List.toArray->Js.Array2.joinWith(",")
+      }
     }
 
     let operations = (
@@ -409,6 +416,11 @@ module type Explorer = {
       ~limit: int=?,
       unit,
     ) => Promise.t<array<Operation.t>>
+
+    let getBalances: (
+      Network.t,
+      ~addresses: list<PublicKeyHash.t>,
+    ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
   }
   let getOperations: (
     Network.network,
@@ -498,6 +510,34 @@ module ExplorerMaker = (
           )
           ->Promise.mapOk(filterMalformedDuplicates),
       )
+
+    let getBalances = (network: Network.t, ~addresses: list<PublicKeyHash.t>): Promise.t<
+      array<(PublicKeyHash.t, Tez.t)>,
+    > => {
+      // TZKT doesn't return values for empty accounts
+      let defaultBalances = addresses->List.toArray->Array.map(a => (a, Tez.fromMutezInt(0)))
+
+      network
+      ->URL.Explorer.Tzkt.balancesUrl(~addresses)
+      ->Get.get
+      ->Promise.flatMapOk(res => {
+        let decoder = json => {
+          open Json.Decode
+          (
+            json |> field("address", PublicKeyHash.decoder),
+            json |> field("balance", Tez.fromIntDecoder)
+          )
+        }
+        res
+        ->Result.fromExn({
+          open Json.Decode
+          array(decoder)
+        })
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value
+        ->Promise.mapOk(fetchedBalances => Array.concat(defaultBalances, fetchedBalances))
+      })
+    }
   }
 
   let getOperations = (
