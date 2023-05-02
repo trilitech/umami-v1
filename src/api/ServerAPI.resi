@@ -52,6 +52,7 @@ module URL: {
 
       let accountExistsUrl: (Network.t, ~account: PublicKeyHash.t) => t
       let balancesUrl: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
+      let checkTokenUrl: (Network.t, ~contract: PublicKeyHash.t) => t
     }
 
     let operations: (

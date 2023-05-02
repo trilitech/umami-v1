@@ -157,6 +157,11 @@ module URL = {
         "accounts?address.in=" ++
         addresses->List.map(a => (a :> string))->List.toArray->Js.Array2.joinWith(",")
       }
+
+      let checkTokenUrl = (network: Network.t, ~contract: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "tokens?contract=" ++ (contract :> string)
+      }
     }
 
     let operations = (

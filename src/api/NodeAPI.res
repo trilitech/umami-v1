@@ -213,16 +213,21 @@ module Tokens = {
   type tokenKind = [OperationRepr.Transaction.tokenKind | #NotAToken]
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) =>
-    URL.Explorer.checkToken(config, ~contract)
+    config
+    ->URL.Explorer.Tzkt.checkTokenUrl(~contract)
     ->URL.get
-    ->Promise.flatMapOk(json =>
-      switch Js.Json.classify(json) {
-      | Js.Json.JSONString("fa1-2") => Promise.ok(#KFA1_2)
-      | Js.Json.JSONString("fa2") => Promise.ok(#KFA2)
-      | Js.Json.JSONNull => Promise.ok(#NotAToken)
-      | _ => Promise.err(IllformedTokenContract)
+    ->Promise.flatMapOk(json => {
+      let standard =
+        json
+        ->Js.Json.decodeObject
+        ->Option.flatMap(o => Js.Dict.get(o, "standard"))
+        ->Option.flatMap(Js.Json.decodeString)
+      switch standard {
+      | Some("fa1.2") => Promise.ok(#KFA1_2)
+      | Some("fa2") => Promise.ok(#KFA2)
+      | _ => Promise.ok(#NotAToken)
       }
-    )
+    })
 
   let runFA12GetBalance = (network: Network.t, ~address, ~token) => {
     let json =
