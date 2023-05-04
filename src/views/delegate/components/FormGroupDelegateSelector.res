@@ -47,12 +47,10 @@ let make = (~label, ~value: PublicKeyHash.t, ~handleChange, ~error, ~disabled) =
   let renderButton = AccountElements.Selector.baseRenderButton(
     ~forceFetch=false,
     ~showAmount=Balance,
-    ~token=None,
   )
   let renderItem = AccountElements.Selector.baseRenderItem(
     ~forceFetch=false,
     ~showAmount=Balance,
-    ~token=None,
   )
 
   <FormGroup>

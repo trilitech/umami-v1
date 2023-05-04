@@ -58,7 +58,6 @@ module GenericAccountInfo = {
   open Style
   @react.component
   let make = (
-    ~token: option<Token.t>=?,
     ~showBalance=true,
     ~showAlias=true,
     ~forceFetch,
@@ -70,7 +69,7 @@ module GenericAccountInfo = {
         {account.name->React.string}
       </Typography.Subtitle1>->ReactUtils.onlyWhen(showAlias)}
       {showBalance
-        ? <AccountInfoBalance forceFetch address=account.address ?token />
+        ? <AccountInfoBalance forceFetch address=account.address />
         : <View style={styles["balanceEmpty"]} />}
       {Option.getWithDefault(description, React.null)}
       <View

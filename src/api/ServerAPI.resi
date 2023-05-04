@@ -67,13 +67,6 @@ module URL: {
 
     let balances: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
 
-    let tokenBalances: (
-      Network.t,
-      ~addresses: list<PublicKeyHash.t>,
-      ~contract: PublicKeyHash.t,
-      ~id: option<int>,
-    ) => t
-
     let tokenRegistry: (
       Network.t,
       ~accountsFilter: list<PublicKeyHash.t>=?,
@@ -167,13 +160,6 @@ module type Explorer = {
     Network.t,
     ~addresses: list<PublicKeyHash.t>,
   ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
-
-  let getTokenBalances: (
-    Network.t,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-    ~id: option<int>,
-  ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
 
   let getMultisigs: (
     Network.network,

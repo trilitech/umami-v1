@@ -51,28 +51,6 @@ module Balance = {
   }
 }
 
-module BalanceToken = {
-  @react.component
-  let make = (~forceFetch, ~address: PublicKeyHash.t, ~token: Token.t) => {
-    let balanceTokenRequest =
-      StoreContext.BalanceToken.useAll(forceFetch, token.address, token.kind)->StoreContext.BalanceToken.useOne(
-        ~address,
-        token.address,
-        token.kind,
-      )
-
-    switch balanceTokenRequest {
-    | Done(Ok(balance), _)
-    | Loading(Some(balance: Token.Unit.t)) =>
-      I18n.amount(balance->Token.Unit.toStringDecimals(token.decimals), token.symbol)->React.string
-    | Done(Error(_error), _) => I18n.amount(I18n.no_balance_amount, token.symbol)->React.string
-    | NotAsked
-    | Loading(None) =>
-      <BalanceActivityIndicator />
-    }
-  }
-}
-
 let styles = {
   open Style
   StyleSheet.create({
@@ -81,10 +59,7 @@ let styles = {
 }
 
 @react.component
-let make = (~forceFetch=true, ~address: PublicKeyHash.t, ~token: option<Token.t>=?) =>
+let make = (~forceFetch=true, ~address: PublicKeyHash.t) =>
   <Typography.Subtitle1 fontWeightStyle=#black style={styles["balance"]}>
-    {switch token {
-    | Some(token) => <BalanceToken forceFetch address token />
-    | None => <Balance forceFetch address />
-    }}
+    <Balance forceFetch address />
   </Typography.Subtitle1>
