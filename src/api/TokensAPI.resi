@@ -65,19 +65,6 @@ module Fetch: {
   let tokenContracts: (
     Network.t,
     ~accounts: list<PublicKeyHash.t>,
-    ~kinds: list<TokenContract.kind>=?,
-    ~limit: int64=?,
-    ~index: int64=?,
-    unit,
-  ) => Promise.t<PublicKeyHash.Map.map<TokenContract.t>>
-
-  // Returns all the token contracts available on the chain
-  let tokenRegistry: (
-    Network.t,
-    ~kinds: list<TokenContract.kind>,
-    ~limit: int64,
-    ~index: int64,
-    unit,
   ) => Promise.t<PublicKeyHash.Map.map<TokenContract.t>>
 
   // Fetch the tokens of a user: those already registered, those to register,

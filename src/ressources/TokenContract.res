@@ -42,6 +42,10 @@ type t = {
   kind: kind,
 }
 
+type tzktTokenBalance = {
+  token: t,
+}
+
 let fromTokenKind = x =>
   switch x {
   | TokenRepr.FA1_2 => #KFA1_2
@@ -97,6 +101,29 @@ module Decode = {
     ->Array.reduce(PublicKeyHash.Map.empty, (contracts, t) =>
       contracts->PublicKeyHash.Map.set(t.address, t)
     )
+
+  type address = {
+    address: PublicKeyHash.t
+  }
+
+  let addressDecoder = json => {
+    open Json.Decode
+    {address: json |> field("address", PublicKeyHash.decoder)}
+  }
+
+  let tokenDecoder = json => {
+    open Json.Decode
+    {
+      address: (json |> field("contract", addressDecoder)).address,
+      kind: json |> field("standard", string) |> kindFromString |> Result.getExn
+    }
+  }
+
+  let tzktDecoder = json => {
+    open Json.Decode
+
+    {token: json |> field("token", tokenDecoder)}
+  }
 }
 
 module Encode = {

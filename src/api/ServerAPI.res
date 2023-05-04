@@ -162,6 +162,18 @@ module URL = {
         let baseUrl = network->baseURL->Option.getExn
         baseUrl ++ "tokens?contract=" ++ (contract :> string)
       }
+
+      let tokenRegistryUrl = (
+        network: Network.t,
+        ~accounts: list<PublicKeyHash.t>
+      ) => {
+        let baseUrl = network->baseURL->Option.getExn
+        let accountsParam = switch accounts {
+        | list{} => ""
+        | _ => "&account.in=" ++ accounts->List.toArray->Js.Array2.map(a => (a :> string))->Js.Array2.joinWith(",")
+        }
+        baseUrl ++ "tokens/balances" ++ "?limit=1000" ++ accountsParam
+      }
     }
 
     let operations = (

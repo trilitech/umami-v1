@@ -35,6 +35,10 @@ type t = {
   kind: kind,
 }
 
+type tzktTokenBalance = {
+  token: t,
+}
+
 let fromTokenKind: TokenRepr.kind => kind
 let toTokenKind: (kind, int) => TokenRepr.kind
 let kindToString: kind => string
@@ -45,6 +49,7 @@ module Decode: {
   let record: Js.Json.t => t
   let array: Js.Json.t => array<t>
   let map: Js.Json.t => PublicKeyHash.Map.map<t>
+  let tzktDecoder: Js.Json.t => tzktTokenBalance
 }
 
 module Encode: {
