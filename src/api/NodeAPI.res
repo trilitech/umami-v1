@@ -135,7 +135,7 @@ module DelegateMaker = (
     })
 
     let operations =
-      config.network->ExplorerAPI.getOperations(
+      config.network->ExplorerAPI.Tzkt.getOperations(
         delegate,
         ~types=["transaction"],
         ~destination=account,
@@ -162,7 +162,7 @@ module DelegateMaker = (
     account: PublicKeyHash.t,
   ): Promise.t<option<delegationInfo>> => {
     let operations =
-      config.network->ExplorerAPI.getOperations(account, ~types=["delegation"], ~limit=1, ())
+      config.network->ExplorerAPI.Tzkt.getOperations(account, ~types=["delegation"], ~limit=1, ())
 
     operations->Promise.flatMapOk(operations =>
       if operations->Array.length == 0 {

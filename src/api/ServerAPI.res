@@ -135,13 +135,14 @@ module URL = {
           let args = {
             open List.Infix
             \"@?"(
-              types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+              types->arg_opt("type", t => t->Js.Array2.joinWith(",")),
               \"@?"(
                 limit->arg_opt("limit", lim => lim->Js.Int.toString),
-                \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
+                \"@?"(destination->arg_opt("target", dst => (dst :> string)), list{}),
               ),
             )
           }
+
           build_url(baseURL ++ "accounts/" ++ (account :> string) ++ "/operations", args)
         })
       }

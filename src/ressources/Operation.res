@@ -186,12 +186,13 @@ module Delegation = {
       let t = json => {
         {
           delegate: json
-          |> field("newDelegate", field("address", string))
+          |> optional(field("newDelegate", field("address", string)))
           |> (
-            delegate =>
-              delegate->Js.String2.length == 0
-                ? None
-                : Some(delegate->PublicKeyHash.build->Result.getExn)
+            delegate => switch delegate {
+              | None
+              | Some("") => None
+              | Some(delegate) => Some(delegate->PublicKeyHash.build->Result.getExn)
+            }
           ),
         }
       }
