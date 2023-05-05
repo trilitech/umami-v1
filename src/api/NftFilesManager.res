@@ -25,22 +25,13 @@
 
 open TokenRepr
 
-module ImageProxy = {
-  let buildUrl = url => {
-    let encodedURL = Js.Global.encodeURI(url)
+let buildURL = (ipfsUrl: string) =>
+  Js.String.replace("ipfs://", "https://cloudflare-ipfs.com/ipfs/", ipfsUrl)
 
-    ServerAPI.URL.build_url(
-      "https://graphic-proxy.mainnet.umamiwallet.com:444/",
-      list{("url", encodedURL)},
-    )
-  }
-}
-
-let getDisplayURL = token =>
-  token.asset.displayUri->Option.map(ImageProxy.buildUrl)
+let getDisplayURL = token => token.asset.displayUri->Option.map(buildURL)
 
 let getThumbnailURL = token =>
   switch token.asset.thumbnailUri {
-  | Some(u) => ImageProxy.buildUrl(u)->Some
+  | Some(uri) => buildURL(uri)->Some
   | None => getDisplayURL(token)
   }
