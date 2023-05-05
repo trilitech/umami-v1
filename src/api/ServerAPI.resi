@@ -56,6 +56,7 @@ module URL: {
         Network.t,
         ~accounts: list<PublicKeyHash.t>,
       ) => t
+      let multisigsUrl: (Network.t, ~contract: PublicKeyHash.t) => t
     }
 
     let operations: (
@@ -148,6 +149,12 @@ module type Explorer = {
       Network.t,
       ~addresses: list<PublicKeyHash.t>,
     ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
+
+    let getMultisigs: (
+      Network.t,
+      ~addresses: array<PublicKeyHash.t>,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.t<array<PublicKeyHash.t>>
   }
   let getOperations: (
     Network.t,
@@ -164,7 +171,7 @@ module type Explorer = {
   ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
 
   let getMultisigs: (
-    Network.network,
+    Network.t,
     ~addresses: list<PublicKeyHash.t>,
     ~contract: PublicKeyHash.t,
   ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>

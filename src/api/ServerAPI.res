@@ -175,6 +175,11 @@ module URL = {
         }
         baseUrl ++ "tokens/balances" ++ "?limit=1000" ++ accountsParam
       }
+
+      let multisigsUrl = (network: Network.t, ~contract: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "contracts/" ++ (contract :> string) ++ "/same?includeStorage=true&limit=1000"
+      }
     }
 
     let operations = (
@@ -419,6 +424,12 @@ module type Explorer = {
       Network.t,
       ~addresses: list<PublicKeyHash.t>,
     ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
+
+    let getMultisigs: (
+      Network.t,
+      ~addresses: array<PublicKeyHash.t>,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.t<array<PublicKeyHash.t>>
   }
   let getOperations: (
     Network.network,
@@ -529,6 +540,36 @@ module ExplorerMaker = (
         ->Promise.mapOk(fetchedBalances => Array.concat(defaultBalances, fetchedBalances))
       })
     }
+
+    type multisigContract = {
+      address: PublicKeyHash.t,
+      signers: array<PublicKeyHash.t>
+    }
+
+    let getMultisigs = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+      network
+      ->URL.Explorer.Tzkt.multisigsUrl(~contract)
+      ->Get.get
+      ->Promise.flatMapOk(response => {
+        let decoder = json => {
+          open Json.Decode
+          {
+            address: json |> field("address", PublicKeyHash.decoder),
+            signers: json |> field("storage", storageJson => storageJson |> field("signers", array(PublicKeyHash.decoder))),
+          }
+        }
+
+        let addressesSet = Set.fromArray(addresses, ~id=module(PublicKeyHash.Comparator))
+        decoder
+        ->Json.Decode.array(response)
+        ->Js.Array2.filter(contract => {
+            addressesSet
+            ->Set.intersect(Set.fromArray(contract.signers, ~id=module(PublicKeyHash.Comparator)))
+            ->Set.isEmpty
+          })
+        ->Js.Array2.map(contract => contract.address)
+        ->Promise.ok
+      })
   }
 
   let getOperations = (
