@@ -253,7 +253,7 @@ let make = () => {
           text=I18n.Btn.goto_doc
           onPress={_ =>
             System.openExternal(
-              "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Managing-Networks",
+              "https://github.com/trilitech/umami-v1/wiki/Managing-Networks",
             )}
         />
       </NoticeView.NoticeView>->ReactUtils.onlyWhen(offline)}

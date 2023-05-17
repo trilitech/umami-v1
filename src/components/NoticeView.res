@@ -148,7 +148,7 @@ let make = (~style=?, ~notice) => {
       {
         text: I18n.Btn.upgrade,
         onPress: _ =>
-          System.openExternal("https://gitlab.com/nomadic-labs/umami-wallet/umami/-/releases"),
+          System.openExternal("https://github.com/trilitech/umami-v1/releases"),
       },
     ]
   | NoticesContext.Notice_update_downloaded => [

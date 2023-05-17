@@ -130,7 +130,7 @@ let make = () =>
     <HelpItem
       icon=Icons.OpenExternal.build
       text=I18n.Help.faq_text
-      link="https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/home#faq-support-knowledge-base"
+      link="https://github.com/trilitech/umami-v1/wiki#faq---support-knowledge-base"
       descr=I18n.Help.faq_descr
     />
     <HelpItem

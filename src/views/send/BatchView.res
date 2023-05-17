@@ -72,7 +72,7 @@ module CSVFilePicker = {
 module CSVFormatLink = {
   let onPress = _ =>
     System.openExternal(
-      "https://gitlab.com/nomadic-labs/umami-wallet/umami/-/wikis/doc/Batch%20File%20Format%20Specifications",
+      "https://github.com/trilitech/umami-v1/wiki/Batch-File-Format-Specifications",
     )
 
   @react.component
