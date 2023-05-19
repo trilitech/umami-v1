@@ -80,16 +80,7 @@ module API = {
   let getAddresses = (network, ~addresses: array<PublicKeyHash.t>) => {
     switch contract(network.Network.chain) {
     | Some(contract) =>
-      let addresses = addresses->List.fromArray
-      network
-      ->ServerAPI.Explorer.getMultisigs(~addresses, ~contract)
-      ->Promise.mapOk(response => {
-        response->Array.reduce(Set.make(~id=module(PublicKeyHash.Comparator)), (
-          contracts,
-          (_, ks),
-        ) => contracts->Set.mergeMany(ks))
-      })
-      ->Promise.mapOk(Set.toArray)
+      ServerAPI.Explorer.Tzkt.getMultisigs(network, ~addresses, ~contract)
     | None => Promise.ok([])
     }
   }

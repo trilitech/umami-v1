@@ -40,23 +40,17 @@ module Base = {
     ~items: array<element>,
     ~handleChange,
     ~disabled=?,
-    ~token: option<Token.t>=?,
   ) => {
     // Update balances and avoid fetching them for each element
-    let _ = switch token {
-    | Some(token) => StoreContext.BalanceToken.useAll(true, token.address, token.kind)->ignore
-    | None => StoreContext.Balance.useAll(true)->ignore
-    }
+    StoreContext.Balance.useAll(true)->ignore
 
     let renderButton = AccountElements.Selector.baseRenderButton(
       ~showAmount=Balance,
       ~forceFetch=false,
-      ~token,
     )
     let renderItem = AccountElements.Selector.baseRenderItem(
       ~showAmount=Balance,
       ~forceFetch=false,
-      ~token,
     )
     <FormGroup>
       <FormLabel label style={styles["label"]} />
@@ -83,7 +77,6 @@ module Implicits = {
     ~value: Account.t,
     ~handleChange: Umami.Account.t => unit,
     ~disabled=?,
-    ~token: option<Token.t>=?,
     ~filter=_ => true,
   ) => {
     let value = Alias.fromAccount(value)
@@ -95,7 +88,7 @@ module Implicits = {
       ->Js.Array2.map(Alias.fromAccount)
       ->SortArray.stableSortBy(Alias.compare)
 
-    <Base label value items handleChange ?disabled ?token />
+    <Base label value items handleChange ?disabled />
   }
 }
 
@@ -105,7 +98,6 @@ let make = (
   ~value: element,
   ~handleChange,
   ~disabled=?,
-  ~token: option<Token.t>=?,
   ~filter=_ => true,
 ) => {
   let items =
@@ -114,5 +106,5 @@ let make = (
     ->PublicKeyHash.Map.valuesToArray
     ->Js.Array2.filter(x => filter(x.Alias.address))
     ->SortArray.stableSortBy(Alias.compareName)
-  <Base label value items handleChange ?disabled ?token />
+  <Base label value items handleChange ?disabled />
 }

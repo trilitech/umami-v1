@@ -95,7 +95,7 @@ module Slim = {
   }
 
   @react.component
-  let make = (~style as styleProp=?, ~id=?, ~address: PublicKeyHash.t, ~token=?, ~showAmount) =>
+  let make = (~style as styleProp=?, ~id=?, ~address: PublicKeyHash.t, ~showAmount) =>
     <View style=?styleProp>
       <View style={styles["id_address"]}>
         {id->ReactUtils.mapOpt(id =>
@@ -104,7 +104,7 @@ module Slim = {
         <ShrinkedAddress address style={styles["address"]} />
       </View>
       {switch showAmount {
-      | Balance => <AccountInfoBalance address ?token />
+      | Balance => <AccountInfoBalance address />
       | Nothing => React.null
       | Amount(e) => e
       }}
@@ -130,7 +130,6 @@ module Selector = {
       ~style as paramStyle=?,
       ~account: item,
       ~forceFetch,
-      ~token: option<Token.t>=?,
       ~showAmount=Balance,
       ~shrinkId=?,
     ) => {
@@ -152,7 +151,7 @@ module Selector = {
               {account->name->React.string}
             </Typography.Subtitle2>
             {switch showAmount {
-            | Balance => <AccountInfoBalance forceFetch address={account->address} ?token />
+            | Balance => <AccountInfoBalance forceFetch address={account->address} />
             | Nothing => React.null
 
             | Amount(e) => e
@@ -170,18 +169,17 @@ module Selector = {
   let baseRenderButton = (
     ~showAmount,
     ~forceFetch,
-    ~token,
     selectedAccount: option<item>,
     _hasError: bool,
   ) =>
     <View style={styles["selectorContent"]}>
       {selectedAccount->Option.mapWithDefault(<LoadingView />, account =>
-        <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount ?token />
+        <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount />
       )}
     </View>
 
-  let baseRenderItem = (~showAmount, ~forceFetch, ~token, account: item) =>
-    <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount ?token />
+  let baseRenderItem = (~showAmount, ~forceFetch, account: item) =>
+    <BaseItem forceFetch style={itemStyles["itemInSelector"]} account showAmount />
 
   module Simple = {
     open Style
@@ -195,8 +193,8 @@ module Selector = {
         ->SortArray.stableSortBy(Alias.compareName)
 
       let updateAccount = StoreContext.SelectedAccount.useSet()
-      let renderButton = baseRenderButton(~forceFetch=false, ~showAmount=Balance, ~token=None)
-      let renderItem = baseRenderItem(~forceFetch=false, ~showAmount=Balance, ~token=None)
+      let renderButton = baseRenderButton(~forceFetch=false, ~showAmount=Balance)
+      let renderItem = baseRenderItem(~forceFetch=false, ~showAmount=Balance)
 
       <View style={Style.style(~width=415.->dp, ~paddingBottom=16.->dp, ())}>
         {I18n.account->Typography.overline2}

@@ -53,35 +53,6 @@ let balancesfromArray = (
   balances->Array.reduce(previousMap, (map, (key, value)) => map->TokenRepr.Map.set(key, value))
 }
 
-let useLoadBalances = (
-  ~forceFetch=true,
-  ~requestState,
-  ~addresses: list<PublicKeyHash.t>,
-  ~selectedToken: option<(PublicKeyHash.t, TokenRepr.kind)>,
-) => {
-  let get = (~config: ConfigContext.env, (addresses, selectedToken)) =>
-    switch selectedToken {
-    | Some((token, kind)) =>
-      let setup = (token, kind) =>
-        config.network
-        ->ServerAPI.Explorer.getTokenBalances(~addresses, ~contract=token, ~id=kind)
-        ->Promise.mapOk(balancesfromArray(~contract=token, ~id=kind, ~tokenMap=requestState))
-      switch kind {
-      | TokenRepr.FA1_2 => setup(token, None)
-      | FA2(tokenId) => setup(token, Some(tokenId))
-      }
-    | None => Promise.ok(TokenRepr.Map.empty)
-    }
-
-  ApiRequest.useLoader(
-    ~get,
-    ~condition=_ => !(addresses->Js.List.isEmpty) && (selectedToken != None && forceFetch),
-    ~kind=Logs.Tokens,
-    ~requestState,
-    (addresses, selectedToken),
-  )
-}
-
 type nftCacheRequest = {
   holder: PublicKeyHash.t,
   allowHidden: bool,

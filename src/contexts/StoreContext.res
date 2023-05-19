@@ -121,21 +121,6 @@ let useLoadBalances = (~forceFetch=true, accounts, multisigs, balances) => {
   let addresses = List.reverseConcat(multisigs, accounts)
   BalanceApiRequest.useLoadBalances(~forceFetch, ~requestState, addresses)
 }
-
-let useLoadTokensBalances = (
-  ~forceFetch=true,
-  accounts,
-  multisigs,
-  tokensBalances,
-  selectedToken,
-) => {
-  let requestState = tokensBalances
-  let accounts = extractAddresses(accounts)
-  let multisigs = extractAddresses(multisigs)
-  let addresses = List.reverseConcat(multisigs, accounts)
-  TokensApiRequest.useLoadBalances(~forceFetch, ~requestState, ~addresses, ~selectedToken)
-}
-
 // Final Provider
 
 @react.component
@@ -258,8 +243,6 @@ let make = (~children) => {
   }, (fst(accountsRequestState), fst(multisigsRequestState)))
 
   let _ = useLoadBalances(accounts, multisigs, balanceRequestsState)
-
-  let _ = useLoadTokensBalances(accounts, multisigs, balanceTokenRequestsState, selectedToken)
 
   <Provider
     value={
@@ -398,17 +381,6 @@ module Balance = {
 }
 
 module BalanceToken = {
-  let useAll = (forceFetch, token: PublicKeyHash.t, kind: TokenRepr.kind) => {
-    let store = useStoreContext()
-    useLoadTokensBalances(
-      ~forceFetch,
-      store.accountsRequestState->fst,
-      store.multisigsRequestState->fst,
-      store.balanceTokenRequestsState,
-      Some((token, kind)),
-    )
-  }
-
   let useOne = (
     request,
     token: PublicKeyHash.t,

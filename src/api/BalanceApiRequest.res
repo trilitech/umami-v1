@@ -48,7 +48,7 @@ let getOne = (balancesRequest, address) =>
 let useLoadBalances = (~forceFetch=true, ~requestState, addresses: list<PublicKeyHash.t>) => {
   let get = (~config: ConfigContext.env, addresses) =>
     config.network
-    ->ServerAPI.Explorer.getBalances(~addresses)
+    ->ServerAPI.Explorer.Tzkt.getBalances(~addresses)
     ->Promise.mapOk(PublicKeyHash.Map.fromArray)
   ApiRequest.useLoader(
     ~get,

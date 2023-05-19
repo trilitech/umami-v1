@@ -37,7 +37,6 @@ module GenericRowItem = {
   @react.component
   let make = (
     ~account: Alias.t,
-    ~token: option<Token.t>=?,
     ~showBalance=?,
     ~showAlias=?,
     ~forceFetch=false,
@@ -57,7 +56,7 @@ module GenericRowItem = {
       <View style={styles["inner"]}>
         <AliasIcon style={SecretRowTree.styles["iconContainer"]} kind=account.kind isHD=icon_isHD />
         <AccountInfo.GenericAccountInfo
-          ?token ?showBalance ?showAlias ?description forceFetch account
+          ?showBalance ?showAlias ?description forceFetch account
         />
       </View>
       children
@@ -104,7 +103,7 @@ module MultisigRowItem = {
       </Typography.Body2>
     }
     let account = Alias.fromMultisig(multisig)
-    <GenericRowItem account description ?token>
+    <GenericRowItem account description>
       {<Delegate account />->ReactUtils.onlyWhen(token == None)}
     </GenericRowItem>
   }
@@ -113,7 +112,7 @@ module MultisigRowItem = {
 @react.component
 let make = (~account: Account.t, ~isHD: bool=false, ~token: option<Token.t>=?) => {
   let account = Alias.fromAccount(account)
-  <GenericRowItem account ?token icon_isHD=isHD>
+  <GenericRowItem account icon_isHD=isHD>
     {<Delegate account />->ReactUtils.onlyWhen(token == None)}
   </GenericRowItem>
 }

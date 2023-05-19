@@ -185,7 +185,6 @@ module Form = {
             label=I18n.Label.send_sender
             value=form.values.sender
             handleChange={form.handleChange(Sender)}
-            ?token
           />
           <FormGroupContactSelector
             label=I18n.Label.send_recipient

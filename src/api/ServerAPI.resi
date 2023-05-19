@@ -38,7 +38,6 @@ module URL: {
   let build_url: (string, list<(string, string)>) => string
 
   module Explorer: {
-
     @ocaml.doc(" URL generators for TzKT API that can be used as fallback. ")
     module Tzkt: {
       let operations: (
@@ -49,6 +48,15 @@ module URL: {
         ~limit: int=?,
         unit,
       ) => option<t>
+
+      let accountExistsUrl: (Network.t, ~account: PublicKeyHash.t) => t
+      let balancesUrl: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
+      let checkTokenUrl: (Network.t, ~contract: PublicKeyHash.t) => t
+      let tokenRegistryUrl: (
+        Network.t,
+        ~accounts: list<PublicKeyHash.t>,
+      ) => t
+      let multisigsUrl: (Network.t, ~contract: PublicKeyHash.t) => t
     }
 
     let operations: (
@@ -60,16 +68,8 @@ module URL: {
       unit,
     ) => t
     let checkToken: (Network.t, ~contract: PublicKeyHash.t) => t
-    let accountExists: (Network.t, ~account: PublicKeyHash.t) => t
 
     let balances: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
-
-    let tokenBalances: (
-      Network.t,
-      ~addresses: list<PublicKeyHash.t>,
-      ~contract: PublicKeyHash.t,
-      ~id: option<int>,
-    ) => t
 
     let tokenRegistry: (
       Network.t,
@@ -134,7 +134,6 @@ module URL: {
 
 @ocaml.doc(" Mezos requests for mempool operations and classical operations. ")
 module type Explorer = {
-
   @ocaml.doc(" Tzkt API requests that can be used as fallback. ")
   module Tzkt: {
     let getOperations: (
@@ -145,6 +144,17 @@ module type Explorer = {
       ~limit: int=?,
       unit,
     ) => Promise.t<array<Operation.t>>
+
+    let getBalances: (
+      Network.t,
+      ~addresses: list<PublicKeyHash.t>,
+    ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
+
+    let getMultisigs: (
+      Network.t,
+      ~addresses: array<PublicKeyHash.t>,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.t<array<PublicKeyHash.t>>
   }
   let getOperations: (
     Network.t,
@@ -160,15 +170,8 @@ module type Explorer = {
     ~addresses: list<PublicKeyHash.t>,
   ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
 
-  let getTokenBalances: (
-    Network.t,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-    ~id: option<int>,
-  ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
-
   let getMultisigs: (
-    Network.network,
+    Network.t,
     ~addresses: list<PublicKeyHash.t>,
     ~contract: PublicKeyHash.t,
   ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>

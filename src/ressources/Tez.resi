@@ -22,3 +22,4 @@ let toBigNumber: t => ReBigNumber.t
 let formatString: string => option<string>
 
 let decoder: Json.Decode.decoder<t>
+let fromIntDecoder: Json.Decode.decoder<t>

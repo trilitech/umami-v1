@@ -342,15 +342,21 @@ let cachedTokensWithRegistration = (network, filter) =>
 
 module Fetch = {
   // Returns the known list of multiple accounts' tokens
-  let tokenContracts = (config, ~accounts, ~kinds=?, ~limit=?, ~index=?, ()) => {
+  let tokenContracts = (config, ~accounts) => {
     open ServerAPI
-    URL.Explorer.tokenRegistry(config, ~accountsFilter=accounts, ~kinds?, ~limit?, ~index?, ())
+    config
+    ->URL.Explorer.Tzkt.tokenRegistryUrl(~accounts)
     ->URL.get
-    ->Promise.flatMapOk(tokens => tokens->JsonEx.decode(TokenContract.Decode.map)->Promise.value)
+    ->Promise.mapOk(tokens => {
+      tokens
+      ->Js.Json.decodeArray
+      ->Option.getExn
+      ->Array.map(obj => obj->JsonEx.decode(TokenContract.Decode.tzktDecoder)->Result.getExn)
+      ->Array.reduce(PublicKeyHash.Map.empty, (contracts, t) =>
+        contracts->PublicKeyHash.Map.set(t.token.address, t.token)
+      )
+    })
   }
-
-  let tokenRegistry = (config, ~kinds, ~limit, ~index, ()) =>
-    tokenContracts(config, ~accounts=list{}, ~kinds, ~limit, ~index, ())
 
   // If the result from BetterCallDev does not contain enough information, fetch
   // the metadata from the node using Taquito's API
@@ -582,7 +588,7 @@ module Fetch = {
       let onTokens = onTokens->Option.map(f => f(~total=TzktAPI.tokensNumber(tokens)))
 
       let tokens =
-        tokenContracts(network, ~accounts, ())->Promise.flatMapOk(tokensContracts =>
+        tokenContracts(network, ~accounts)->Promise.flatMapOk(tokensContracts =>
           tokens->pruneMissingContracts(network, tokensContracts, cache)->Promise.map(v => Ok(v))
         )
 

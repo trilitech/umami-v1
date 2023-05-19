@@ -41,14 +41,17 @@ let () = Errors.registerHandler("Node", x =>
 
 module Accounts = {
   let exists = (config, account) =>
-    URL.Explorer.accountExists(config, ~account)
+    config
+    ->URL.Explorer.Tzkt.accountExistsUrl(~account)
     ->URL.get
-    ->Promise.mapOk(json =>
-      switch Js.Json.classify(json) {
-      | Js.Json.JSONTrue => true
-      | _ => false
-      }
-    )
+    ->Promise.mapOk(json => {
+      json
+      ->Js.Json.decodeObject
+      ->Option.flatMap(o => Js.Dict.get(o, "type"))
+      ->Option.flatMap(Js.Json.decodeString)
+      ->Option.map(t => t != "empty")
+      ->Option.getExn
+  })
 }
 
 module Balance = {
@@ -132,7 +135,7 @@ module DelegateMaker = (
     })
 
     let operations =
-      config.network->ExplorerAPI.getOperations(
+      config.network->ExplorerAPI.Tzkt.getOperations(
         delegate,
         ~types=["transaction"],
         ~destination=account,
@@ -159,7 +162,7 @@ module DelegateMaker = (
     account: PublicKeyHash.t,
   ): Promise.t<option<delegationInfo>> => {
     let operations =
-      config.network->ExplorerAPI.getOperations(account, ~types=["delegation"], ~limit=1, ())
+      config.network->ExplorerAPI.Tzkt.getOperations(account, ~types=["delegation"], ~limit=1, ())
 
     operations->Promise.flatMapOk(operations =>
       if operations->Array.length == 0 {
@@ -210,16 +213,21 @@ module Tokens = {
   type tokenKind = [OperationRepr.Transaction.tokenKind | #NotAToken]
 
   let checkTokenContract = (config, contract: PublicKeyHash.t) =>
-    URL.Explorer.checkToken(config, ~contract)
+    config
+    ->URL.Explorer.Tzkt.checkTokenUrl(~contract)
     ->URL.get
-    ->Promise.flatMapOk(json =>
-      switch Js.Json.classify(json) {
-      | Js.Json.JSONString("fa1-2") => Promise.ok(#KFA1_2)
-      | Js.Json.JSONString("fa2") => Promise.ok(#KFA2)
-      | Js.Json.JSONNull => Promise.ok(#NotAToken)
-      | _ => Promise.err(IllformedTokenContract)
+    ->Promise.flatMapOk(json => {
+      let standard =
+        json
+        ->Js.Json.decodeObject
+        ->Option.flatMap(o => Js.Dict.get(o, "standard"))
+        ->Option.flatMap(Js.Json.decodeString)
+      switch standard {
+      | Some("fa1.2") => Promise.ok(#KFA1_2)
+      | Some("fa2") => Promise.ok(#KFA2)
+      | _ => Promise.ok(#NotAToken)
       }
-    )
+    })
 
   let runFA12GetBalance = (network: Network.t, ~address, ~token) => {
     let json =

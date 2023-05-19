@@ -135,15 +135,50 @@ module URL = {
           let args = {
             open List.Infix
             \"@?"(
-              types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
+              types->arg_opt("type", t => t->Js.Array2.joinWith(",")),
               \"@?"(
                 limit->arg_opt("limit", lim => lim->Js.Int.toString),
-                \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
+                \"@?"(destination->arg_opt("target", dst => (dst :> string)), list{}),
               ),
             )
           }
+
           build_url(baseURL ++ "accounts/" ++ (account :> string) ++ "/operations", args)
         })
+      }
+
+      let accountExistsUrl = (network: Network.t, ~account: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "accounts/" ++ (account :> string)
+      }
+
+      let balancesUrl = (network: Network.t, ~addresses: list<PublicKeyHash.t>) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++
+        "accounts?address.in=" ++
+        addresses->List.map(a => (a :> string))->List.toArray->Js.Array2.joinWith(",")
+      }
+
+      let checkTokenUrl = (network: Network.t, ~contract: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "tokens?contract=" ++ (contract :> string)
+      }
+
+      let tokenRegistryUrl = (
+        network: Network.t,
+        ~accounts: list<PublicKeyHash.t>
+      ) => {
+        let baseUrl = network->baseURL->Option.getExn
+        let accountsParam = switch accounts {
+        | list{} => ""
+        | _ => "&account.in=" ++ accounts->List.toArray->Js.Array2.map(a => (a :> string))->Js.Array2.joinWith(",")
+        }
+        baseUrl ++ "tokens/balances" ++ "?limit=1000" ++ accountsParam
+      }
+
+      let multisigsUrl = (network: Network.t, ~contract: PublicKeyHash.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "contracts/" ++ (contract :> string) ++ "/same?includeStorage=true&limit=1000"
       }
     }
 
@@ -174,35 +209,10 @@ module URL = {
       build_explorer_url(network, path, list{})
     }
 
-    let accountExists = (network, ~account: PublicKeyHash.t) => {
-      let path = "accounts/" ++ ((account :> string) ++ "/exists/")
-      build_explorer_url(network, path, list{})
-    }
-
     let balances = (network, ~addresses: list<PublicKeyHash.t>) => {
       let path = "balances"
       let list_address = List.map(addresses, address => ("pkh", (address :> string)))
       build_explorer_url(network, path, list_address)
-    }
-
-    let tokenBalances = (
-      config,
-      ~addresses: list<PublicKeyHash.t>,
-      ~contract: PublicKeyHash.t,
-      ~id: option<int>,
-    ) => {
-      let path = "balances"
-      let list_address = List.map(addresses, address => ("pkh", (address :> string)))
-      let arg = switch id {
-      | Some(id) =>
-        Belt.List.concat(
-          list{("kt", (contract :> string)), ("id", id->Js.Int.toString)},
-          list_address,
-        )
-      | None => Belt.List.concat(list{("kt", (contract :> string))}, list_address)
-      }
-
-      build_explorer_url(config, path, arg)
     }
 
     let tokenRegistry = (
@@ -409,6 +419,17 @@ module type Explorer = {
       ~limit: int=?,
       unit,
     ) => Promise.t<array<Operation.t>>
+
+    let getBalances: (
+      Network.t,
+      ~addresses: list<PublicKeyHash.t>,
+    ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
+
+    let getMultisigs: (
+      Network.t,
+      ~addresses: array<PublicKeyHash.t>,
+      ~contract: PublicKeyHash.t,
+    ) => Promise.t<array<PublicKeyHash.t>>
   }
   let getOperations: (
     Network.network,
@@ -423,13 +444,6 @@ module type Explorer = {
     Network.network,
     ~addresses: list<PublicKeyHash.t>,
   ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
-
-  let getTokenBalances: (
-    Network.t,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-    ~id: option<int>,
-  ) => Promise.t<array<(PublicKeyHash.t, TokenRepr.Unit.t)>>
 
   let getMultisigs: (
     Network.network,
@@ -498,6 +512,64 @@ module ExplorerMaker = (
           )
           ->Promise.mapOk(filterMalformedDuplicates),
       )
+
+    let getBalances = (network: Network.t, ~addresses: list<PublicKeyHash.t>): Promise.t<
+      array<(PublicKeyHash.t, Tez.t)>,
+    > => {
+      // TZKT doesn't return values for empty accounts
+      let defaultBalances = addresses->List.toArray->Array.map(a => (a, Tez.fromMutezInt(0)))
+
+      network
+      ->URL.Explorer.Tzkt.balancesUrl(~addresses)
+      ->Get.get
+      ->Promise.flatMapOk(res => {
+        let decoder = json => {
+          open Json.Decode
+          (
+            json |> field("address", PublicKeyHash.decoder),
+            json |> field("balance", Tez.fromIntDecoder)
+          )
+        }
+        res
+        ->Result.fromExn({
+          open Json.Decode
+          array(decoder)
+        })
+        ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
+        ->Promise.value
+        ->Promise.mapOk(fetchedBalances => Array.concat(defaultBalances, fetchedBalances))
+      })
+    }
+
+    type multisigContract = {
+      address: PublicKeyHash.t,
+      signers: array<PublicKeyHash.t>
+    }
+
+    let getMultisigs = (network: Network.t, ~addresses: array<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
+      network
+      ->URL.Explorer.Tzkt.multisigsUrl(~contract)
+      ->Get.get
+      ->Promise.flatMapOk(response => {
+        let decoder = json => {
+          open Json.Decode
+          {
+            address: json |> field("address", PublicKeyHash.decoder),
+            signers: json |> field("storage", storageJson => storageJson |> field("signers", array(PublicKeyHash.decoder))),
+          }
+        }
+
+        let addressesSet = Set.fromArray(addresses, ~id=module(PublicKeyHash.Comparator))
+        decoder
+        ->Json.Decode.array(response)
+        ->Js.Array2.filter(contract => {
+            addressesSet
+            ->Set.intersect(Set.fromArray(contract.signers, ~id=module(PublicKeyHash.Comparator)))
+            ->Set.isEmpty
+          })
+        ->Js.Array2.map(contract => contract.address)
+        ->Promise.ok
+      })
   }
 
   let getOperations = (
@@ -530,29 +602,6 @@ module ExplorerMaker = (
       let decoder = json => {
         open Json.Decode
         (json |> field("pkh", PublicKeyHash.decoder), json |> field("balance", Tez.decoder))
-      }
-      res
-      ->Result.fromExn({
-        open Json.Decode
-        array(decoder)
-      })
-      ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-      ->Promise.value
-    })
-
-  let getTokenBalances = (
-    network,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-    ~id: option<int>,
-  ) =>
-    network
-    ->URL.Explorer.tokenBalances(~addresses, ~contract, ~id)
-    ->Get.get
-    ->Promise.flatMapOk(res => {
-      let decoder = json => {
-        open Json.Decode
-        (json |> field("pkh", PublicKeyHash.decoder), json |> field("balance", TokenRepr.decoder))
       }
       res
       ->Result.fromExn({

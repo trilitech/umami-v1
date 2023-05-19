@@ -77,7 +77,7 @@ let waitForConfirmation = (config: ConfigContext.env, hash) =>
 
 let useLoad = (~requestState, ~limit=?, ~types=?, ~address: PublicKeyHash.t, ()) => {
   let get = (~config: ConfigContext.env, address) => {
-    let operations = config.network->ServerAPI.Explorer.getOperations(address, ~limit?, ~types?, ())
+    let operations = config.network->ServerAPI.Explorer.Tzkt.getOperations(address, ~limit?, ~types?, ())
     let currentLevel =
       Network.monitor(config.network.explorer)->Promise.mapOk(monitor => monitor.nodeLastBlock)
     let f = (operations, currentLevel) => {
