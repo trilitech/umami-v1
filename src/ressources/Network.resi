@@ -25,24 +25,9 @@
 
 type chainId = private string
 
-type apiVersion = {
-  api: Version.t,
-  indexer: string,
-  node: string,
-  chain: chainId,
-  protocol: string,
-}
-
 let apiLowestBound: Version.t
 let apiHighestBound: Version.t
 let checkInBound: Version.t => bool
-
-type monitorResult = {
-  nodeLastBlock: int,
-  nodeLastBlockTimestamp: string,
-  indexerLastBlock: int,
-  indexerLastBlockTimestamp: string,
-}
 
 type status =
   | Online
@@ -104,13 +89,12 @@ let externalExplorer: [< chain<chainId>] => Promise.result<string>
 type network = {
   name: string,
   chain: chain<chainId>,
-  explorer: string,
   endpoint: string,
 }
 
 type t = network
 
-let mk: (~explorer: string, ~endpoint: string, chain<chainId>) => network
+let mk: (~endpoint: string, chain<chainId>) => network
 
 let chainNetwork: chain<'chainId> => option<string>
 let networkChain: string => option<chain<'chainId>>
@@ -141,6 +125,4 @@ let testNetwork: network => Promise.t<ReTaquito.RPCClient.blockHeader>
 
 let findValidEndpoint: nativeChains => Promise.t<network>
 
-let monitor: string => Promise.t<monitorResult>
-
-let checkConfiguration: (string, string) => Promise.t<(apiVersion, chain<chainId>)>
+let checkConfiguration: (string) => Promise.t<chain<chainId>>

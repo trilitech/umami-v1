@@ -57,28 +57,8 @@ module URL: {
         ~accounts: list<PublicKeyHash.t>,
       ) => t
       let multisigsUrl: (Network.t, ~contract: PublicKeyHash.t) => t
+      let blocksCountUrl: Network.t => t
     }
-
-    let operations: (
-      Network.t,
-      PublicKeyHash.t,
-      ~types: array<string>=?,
-      ~destination: PublicKeyHash.t=?,
-      ~limit: int=?,
-      unit,
-    ) => t
-    let checkToken: (Network.t, ~contract: PublicKeyHash.t) => t
-
-    let balances: (Network.t, ~addresses: list<PublicKeyHash.t>) => t
-
-    let tokenRegistry: (
-      Network.t,
-      ~accountsFilter: list<PublicKeyHash.t>=?,
-      ~kinds: list<TokenContract.kind>=?,
-      ~limit: int64=?,
-      ~index: int64=?,
-      unit,
-    ) => t
   }
 
   module Endpoint: {
@@ -132,9 +112,9 @@ module URL: {
   let postJson: (t, Js.Json.t) => Promise.t<Js.Json.t>
 }
 
-@ocaml.doc(" Mezos requests for mempool operations and classical operations. ")
+@ocaml.doc(" Indexer requests for mempool operations and classical operations. ")
 module type Explorer = {
-  @ocaml.doc(" Tzkt API requests that can be used as fallback. ")
+  @ocaml.doc(" Tzkt API ")
   module Tzkt: {
     let getOperations: (
       Network.t,
@@ -155,26 +135,9 @@ module type Explorer = {
       ~addresses: array<PublicKeyHash.t>,
       ~contract: PublicKeyHash.t,
     ) => Promise.t<array<PublicKeyHash.t>>
+
+    let getBlocksCount: (Network.t) => Promise.t<int>
   }
-  let getOperations: (
-    Network.t,
-    PublicKeyHash.t,
-    ~types: array<string>=?,
-    ~destination: PublicKeyHash.t=?,
-    ~limit: int=?,
-    unit,
-  ) => Promise.t<array<Operation.t>>
-
-  let getBalances: (
-    Network.t,
-    ~addresses: list<PublicKeyHash.t>,
-  ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
-
-  let getMultisigs: (
-    Network.t,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 @ocaml.doc(" This generic version exists only for tests purpose ")
 module ExplorerMaker: (

@@ -56,18 +56,6 @@ let make = (~children) => {
 
   let push = n => setNotices(es => list{n, ...es})
 
-  let apiVersion = StoreContext.useApiVersion()
-  React.useEffect0(_ => {
-    let displayUpdateNotice =
-      apiVersion
-      ->Option.map(apiVersion => !Network.checkInBound(apiVersion.Network.api))
-      ->Option.getWithDefault(false)
-    if displayUpdateNotice {
-      push(Notice_update_required)
-    }
-    None
-  })
-
   let networkOffline = ConfigContext.useNetworkOffline()
   React.useEffect1(_ => {
     (networkOffline ? push : delete)(Notice_network_unreachable)

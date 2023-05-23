@@ -148,10 +148,7 @@ module AddToken = {
     let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
     let closeAction = () => closeAction()
 
-    let apiVersion: option<Network.apiVersion> = StoreContext.useApiVersion()
-
-    let chain =
-      apiVersion->Option.map(v => v.chain)->Option.getWithDefault(Network.unsafeChainId(""))
+    let chain = StoreContext.useChainId()->Option.getWithDefault(Network.unsafeChainId(""))
 
     let tooltip = ("add_token_from_op" ++ tooltipSuffix, I18n.Tooltip.add_contract)
     let onPress = _ => openAction()

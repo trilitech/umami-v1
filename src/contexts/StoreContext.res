@@ -57,7 +57,7 @@ type state = {
   accountsTokensNumberRequestState: apiRequestsState<int>,
   tokensNumberRequestState: requestState<int>,
   balanceTokenRequestsState: requestState<TokenRepr.Map.map<TokenRepr.Unit.t>>,
-  apiVersionRequestState: reactState<option<Network.apiVersion>>,
+  chainIdState: reactState<option<Network.chainId>>,
   eulaSignatureRequestState: reactState<bool>,
   beaconPeersRequestState: requestState<array<Beacon.peerInfo>>,
   beaconClient: reactState<option<ReBeacon.WalletClient.t>>,
@@ -89,7 +89,7 @@ let initialState = {
   accountsTokensNumberRequestState: initialApiRequestsState,
   tokensNumberRequestState: (NotAsked, _ => ()),
   balanceTokenRequestsState: (NotAsked, _ => ()),
-  apiVersionRequestState: (None, _ => ()),
+  chainIdState: (None, _ => ()),
   eulaSignatureRequestState: (false, _ => ()),
   beaconClient: (None, _ => ()),
   beaconPeersRequestState: (NotAsked, _ => ()),
@@ -126,7 +126,6 @@ let useLoadBalances = (~forceFetch=true, accounts, multisigs, balances) => {
 @react.component
 let make = (~children) => {
   let config = ConfigContext.useContent()
-  let addToast = LogsContext.useToast()
 
   let network = React.useMemo1(() => config.network, [config])
   let networkStatus = ConfigContext.useNetworkStatus()
@@ -156,7 +155,7 @@ let make = (~children) => {
   let accountsTokensNumberRequestState = React.useState(() => Map.String.empty)
   let tokensNumberRequestState = React.useState(() => ApiRequest.NotAsked)
   let balanceTokenRequestsState = React.useState(() => ApiRequest.NotAsked)
-
+  let chainIdState = React.useState(() => None)
   let aliasesRequestState = React.useState(() => ApiRequest.NotAsked)
   let bakersRequestState = React.useState(() => ApiRequest.NotAsked)
   let tokensRequestState = React.useState(() => ApiRequest.NotAsked)
@@ -172,9 +171,6 @@ let make = (~children) => {
     beaconPeersRequestState,
   )
 
-  let apiVersionRequestState = React.useState(() => None)
-  let (_, setApiVersion) = apiVersionRequestState
-
   let (_, setEulaSignature) as eulaSignatureRequestState = React.useState(() => false)
 
   let _: ApiRequest.t<_> = SecretApiRequest.useLoad(secretsRequestState)
@@ -188,23 +184,12 @@ let make = (~children) => {
     None
   })
 
-  ReactUtils.useAsyncEffect1(() =>
-    Network.checkConfiguration(config.network.explorer, config.network.endpoint)->Promise.mapOk(((
-      v: Network.apiVersion,
-      _,
-    )) => {
-      setApiVersion(_ => Some(v))
-      if !Network.checkInBound(v.api) {
-        addToast(Logs.error(~origin=Settings, Network.API(NotSupported(v.api))))
-      }
-    })
-  , [network])
-
   let resetNetwork = () => {
     snd(multisigsRequestState)(ApiRequest.expireCache)
     snd(balanceRequestsState)(ApiRequest.expireCache)
     snd(balanceTokenRequestsState)(ApiRequest.expireCache)
     snd(selectedTokenState)(_ => None)
+    snd(chainIdState)(_ => None)
   }
 
   React.useEffect1(() => {
@@ -265,7 +250,7 @@ let make = (~children) => {
       accountsTokensNumberRequestState: accountsTokensNumberRequestState,
       tokensNumberRequestState: tokensNumberRequestState,
       balanceTokenRequestsState: balanceTokenRequestsState,
-      apiVersionRequestState: apiVersionRequestState,
+      chainIdState: chainIdState,
       eulaSignatureRequestState: eulaSignatureRequestState,
       beaconClient: beaconClient,
       beaconNextRequestState: beaconNextRequestState,
@@ -313,9 +298,9 @@ let resetRequests = requestsState => requestsState->Map.String.map(ApiRequest.ex
 
 let resetRequest = requestState => requestState->ApiRequest.expireCache
 
-let useApiVersion = () => {
+let useChainId = () => {
   let store = useStoreContext()
-  store.apiVersionRequestState->fst
+  store.chainIdState->fst
 }
 
 let useEulaSignature = () => {
@@ -969,15 +954,6 @@ module Secrets = {
         // - AND have the default generated name (assume it has been automatically added by umami)
         // If another remaining secret is related to any deleted multisig, the multisig
         // will be re-added with the same name so it is ok to remove it here
-        // FIXME: we probably should be able to load everything from cache and filter this
-        //        instead of asking mezos for addresses.
-        //        But I don't have time to test it correctly and don't want to risk breaking anything.
-        //        Current implementation should leave useless multisigs in the cache if you do this:
-        //        1. have an implicit related to a multisig on a custom network (the multisig will be cached)
-        //        2. remove the custom network via the setting view
-        //        3. remove the implicit account
-        //        4. custom network not listed anymore in config file: related multisigs won't be selected for deletion
-        //        It is very unlikely to actually happen, especially when umami needs a mezos instance in order to run
         ->Promise.flatMapOk(addresses =>
           Promise.allArray(
             networks->Array.map(network =>
