@@ -57,6 +57,7 @@ module URL: {
         ~accounts: list<PublicKeyHash.t>,
       ) => t
       let multisigsUrl: (Network.t, ~contract: PublicKeyHash.t) => t
+      let blocksCountUrl: Network.t => t
     }
 
     let operations: (
@@ -155,6 +156,8 @@ module type Explorer = {
       ~addresses: array<PublicKeyHash.t>,
       ~contract: PublicKeyHash.t,
     ) => Promise.t<array<PublicKeyHash.t>>
+
+    let getBlocksCount: (Network.t) => Promise.t<int>
   }
   let getOperations: (
     Network.t,

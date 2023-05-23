@@ -29,13 +29,6 @@ let apiLowestBound: Version.t
 let apiHighestBound: Version.t
 let checkInBound: Version.t => bool
 
-type monitorResult = {
-  nodeLastBlock: int,
-  nodeLastBlockTimestamp: string,
-  indexerLastBlock: int,
-  indexerLastBlockTimestamp: string,
-}
-
 type status =
   | Online
   | Pending
@@ -132,7 +125,5 @@ let getNetworks: nativeChains => list<network>
 let testNetwork: network => Promise.t<ReTaquito.RPCClient.blockHeader>
 
 let findValidEndpoint: nativeChains => Promise.t<network>
-
-let monitor: string => Promise.t<monitorResult>
 
 let checkConfiguration: (string) => Promise.t<chain<chainId>>

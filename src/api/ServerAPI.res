@@ -180,6 +180,11 @@ module URL = {
         let baseUrl = network->baseURL->Option.getExn
         baseUrl ++ "contracts/" ++ (contract :> string) ++ "/same?includeStorage=true&limit=1000"
       }
+
+      let blocksCountUrl = (network: Network.t) => {
+        let baseUrl = network->baseURL->Option.getExn
+        baseUrl ++ "blocks/count"
+      }
     }
 
     let operations = (
@@ -430,6 +435,8 @@ module type Explorer = {
       ~addresses: array<PublicKeyHash.t>,
       ~contract: PublicKeyHash.t,
     ) => Promise.t<array<PublicKeyHash.t>>
+
+    let getBlocksCount: (Network.t) => Promise.t<int>
   }
   let getOperations: (
     Network.network,
@@ -568,6 +575,18 @@ module ExplorerMaker = (
             ->Set.isEmpty
           })
         ->Js.Array2.map(contract => contract.address)
+        ->Promise.ok
+      })
+
+    let getBlocksCount = (network: Network.t) =>
+      network
+      ->URL.Explorer.Tzkt.blocksCountUrl
+      ->Get.get
+      ->Promise.flatMapOk(json => {
+        json
+        ->Js.Json.decodeNumber
+        ->Option.map(Int.fromFloat)
+        ->Option.getExn
         ->Promise.ok
       })
   }

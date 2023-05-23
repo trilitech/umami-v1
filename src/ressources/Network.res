@@ -31,13 +31,6 @@ let apiHighestBound = Version.mk(2, 2)
 
 let checkInBound = version => Version.checkInBound(version, apiLowestBound, apiHighestBound)
 
-type monitorResult = {
-  nodeLastBlock: int,
-  nodeLastBlockTimestamp: string,
-  indexerLastBlock: int,
-  indexerLastBlockTimestamp: string,
-}
-
 type status =
   | Online
   | Pending
@@ -409,30 +402,6 @@ let fetchJson = (url, ~timeout=?, mkError) =>
   ->Promise.mapError(e => mkError(e))
   ->Promise.flatMapOk(response =>
     response->Fetch.Response.json->Promise.fromJs(err => mkError(Js.String.make(err)->#JsonError))
-  )
-
-let mapAPIError: _ => Errors.t = x =>
-  switch x {
-  | Json.ParseError(error) => API(MonitorRPCError(error))
-  | Json.Decode.DecodeError(error) => API(MonitorRPCError(error))
-  | _ => API(MonitorRPCError("Unknown error"))
-  }
-
-let monitor = url =>
-  (url ++ "/monitor/blocks")
-  ->fetchJson(e => API(NotAvailable(e)))
-  ->Promise.flatMapOk(json =>
-    Result.fromExn((), () => {
-      open Json.Decode
-      {
-        nodeLastBlock: json |> field("node_last_block", int),
-        nodeLastBlockTimestamp: json |> field("node_last_block_timestamp", string),
-        indexerLastBlock: json |> field("indexer_last_block", int),
-        indexerLastBlockTimestamp: json |> field("indexer_last_block_timestamp", string),
-      }
-    })
-    ->Result.mapError(mapAPIError)
-    ->Promise.value
   )
 
 let getNodeChain = (~timeout=?, url) =>
