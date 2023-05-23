@@ -288,7 +288,7 @@ module Decode = {
     let t = json =>
       Option.map(json |> payload(json |> field("type", string)), payload => {
         block: json |> optional(field("block", string)),
-        fee: json |> field("bakerFee", int) |> Tez.fromMutezInt, // Mezos does not use storageFee or allocationFee
+        fee: json |> field("bakerFee", int) |> Tez.fromMutezInt,
         hash: json |> field("hash", string),
         id: json |> field("id", int) |> Int.toString,
         level: json |> field("level", int),

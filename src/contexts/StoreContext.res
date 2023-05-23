@@ -954,15 +954,6 @@ module Secrets = {
         // - AND have the default generated name (assume it has been automatically added by umami)
         // If another remaining secret is related to any deleted multisig, the multisig
         // will be re-added with the same name so it is ok to remove it here
-        // FIXME: we probably should be able to load everything from cache and filter this
-        //        instead of asking mezos for addresses.
-        //        But I don't have time to test it correctly and don't want to risk breaking anything.
-        //        Current implementation should leave useless multisigs in the cache if you do this:
-        //        1. have an implicit related to a multisig on a custom network (the multisig will be cached)
-        //        2. remove the custom network via the setting view
-        //        3. remove the implicit account
-        //        4. custom network not listed anymore in config file: related multisigs won't be selected for deletion
-        //        It is very unlikely to actually happen, especially when umami needs a mezos instance in order to run
         ->Promise.flatMapOk(addresses =>
           Promise.allArray(
             networks->Array.map(network =>

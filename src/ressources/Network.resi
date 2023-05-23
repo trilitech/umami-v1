@@ -89,13 +89,12 @@ let externalExplorer: [< chain<chainId>] => Promise.result<string>
 type network = {
   name: string,
   chain: chain<chainId>,
-  explorer: string,
   endpoint: string,
 }
 
 type t = network
 
-let mk: (~explorer: string, ~endpoint: string, chain<chainId>) => network
+let mk: (~endpoint: string, chain<chainId>) => network
 
 let chainNetwork: chain<'chainId> => option<string>
 let networkChain: string => option<chain<'chainId>>

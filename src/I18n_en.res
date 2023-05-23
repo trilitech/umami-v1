@@ -212,7 +212,6 @@ module Label = {
   let storage = "Storage"
   let code = "Code"
   let custom_network_name = "Name"
-  let custom_network_mezos_url = "Mezos URL"
   let custom_network_node_url = plural => "Node URL" ++ (plural ? "s" : "")
   let file = "File"
   let storage_location = "Storage location"
@@ -247,7 +246,6 @@ module Input_placeholder = {
   let search_for_nft = "Search for NFT by name"
   let search_for_contract = "Search by name, symbol or KT address"
   let custom_network_node_url = "e.g. https://rpc.tzbeta.net"
-  let custom_network_mezos_url = "e.g. https://api.umamiwallet.com/mainnet"
   let select_backup_path = "Browse to the required folder or enter a path"
   let add_contract_name = "Enter contract name"
   let set_owner = "Paste tz address/Tezos Domains alias"

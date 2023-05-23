@@ -176,7 +176,6 @@ type configurableChains<'chainId> = [nativeChains | #Custom('chainId)]
 type network = {
   name: string,
   chain: chain<chainId>,
-  explorer: string,
   endpoint: string,
 }
 
@@ -246,7 +245,6 @@ module Encode = {
     object_(list{
       ("name", string(c.name)),
       ("chain", chainEncoder(c.chain)),
-      ("explorer", string(c.explorer)),
       ("endpoint", string(c.endpoint)),
     })
   }
@@ -297,27 +295,23 @@ module Decode = {
     {
       name: json |> field("name", string),
       chain: json |> field("chain", chainDecoder(chainFromString)),
-      explorer: json |> field("explorer", string),
       endpoint: json |> field("endpoint", string),
     }
   }
 }
 
-let mk = (~explorer, ~endpoint, chain) => {
+let mk = (~endpoint, chain) => {
   name: getDisplayedName(chain),
   chain: chain,
-  explorer: explorer,
   endpoint: endpoint,
 }
 
 let mainnet = mk(
-  ~explorer="https://mainnet.umamiwallet.com",
   ~endpoint="https://mainnet.smartpy.io/",
   #Mainnet,
 )
 
 let ghostnet = mk(
-  ~explorer="https://ghostnet.umamiwallet.com",
   ~endpoint="https://ghostnet.ecadinfra.com/",
   #Ghostnet,
 )

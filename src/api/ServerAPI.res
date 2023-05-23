@@ -57,9 +57,6 @@ module URL = {
 
   let build_url = (path, args) => path ++ (args == list{} ? "" : "?" ++ args->build_args)
 
-  let build_explorer_url = (network: Network.network, path, args) =>
-    build_url(network.explorer ++ ("/" ++ path), args)
-
   let fromString = s => s
 
   let get = {
@@ -76,7 +73,6 @@ module URL = {
       let init = Fetch.RequestInit.make(
         ~method_=Fetch.Get,
         ~headers=Fetch.HeadersInit.make({
-          "Mezos-Version": Network.apiHighestBound->Version.toString,
           "Umami-Version": System.getVersion(),
           "UmamiInstallationHash": umamiInstallationId,
         }),
@@ -185,72 +181,6 @@ module URL = {
         let baseUrl = network->baseURL->Option.getExn
         baseUrl ++ "blocks/count"
       }
-    }
-
-    let operations = (
-      network: Network.network,
-      account: PublicKeyHash.t,
-      ~types: option<array<string>>=?,
-      ~destination: option<PublicKeyHash.t>=?,
-      ~limit: option<int>=?,
-      (),
-    ) => {
-      let operationsPath = "accounts/" ++ ((account :> string) ++ "/operations")
-      let args = {
-        open List.Infix
-        \"@?"(
-          types->arg_opt("types", t => t->Js.Array2.joinWith(",")),
-          \"@?"(
-            limit->arg_opt("limit", lim => lim->Js.Int.toString),
-            \"@?"(destination->arg_opt("destination", dst => (dst :> string)), list{}),
-          ),
-        )
-      }
-      build_explorer_url(network, operationsPath, args)
-    }
-
-    let checkToken = (network, ~contract: PublicKeyHash.t) => {
-      let path = "tokens/exists/" ++ (contract :> string)
-      build_explorer_url(network, path, list{})
-    }
-
-    let balances = (network, ~addresses: list<PublicKeyHash.t>) => {
-      let path = "balances"
-      let list_address = List.map(addresses, address => ("pkh", (address :> string)))
-      build_explorer_url(network, path, list_address)
-    }
-
-    let tokenRegistry = (
-      network,
-      ~accountsFilter: list<PublicKeyHash.t>=list{},
-      ~kinds=?,
-      ~limit=?,
-      ~index=?,
-      (),
-    ) => {
-      let args = {
-        open List.Infix
-        \"@?"(
-          index->arg_opt("index", Int64.to_string),
-          \"@?"(
-            limit->arg_opt("limit", Int64.to_string),
-            \"@?"(
-              kinds->arg_opt("kinds", kinds =>
-                List.map(kinds, TokenContract.Encode.kindEncoder) |> String.concat(",")
-              ),
-              accountsFilter->List.map(a => ("accounts", (a :> string))),
-            ),
-          ),
-        )
-      }
-      build_explorer_url(network, "tokens/registry", args)
-    }
-
-    let multisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) => {
-      open List
-      let args =
-        addresses->map(address => ("pkh", (address :> string)))->add(("k", (contract :> string)))
-      build_explorer_url(network, "multisig", args)
     }
   }
 
@@ -438,25 +368,6 @@ module type Explorer = {
 
     let getBlocksCount: (Network.t) => Promise.t<int>
   }
-  let getOperations: (
-    Network.network,
-    PublicKeyHash.t,
-    ~types: array<string>=?,
-    ~destination: PublicKeyHash.t=?,
-    ~limit: int=?,
-    unit,
-  ) => Promise.t<array<Operation.t>>
-
-  let getBalances: (
-    Network.network,
-    ~addresses: list<PublicKeyHash.t>,
-  ) => Promise.t<array<(PublicKeyHash.t, Tez.t)>>
-
-  let getMultisigs: (
-    Network.network,
-    ~addresses: list<PublicKeyHash.t>,
-    ~contract: PublicKeyHash.t,
-  ) => Promise.t<array<(PublicKeyHash.t, array<PublicKeyHash.t>)>>
 }
 
 module ExplorerMaker = (
@@ -590,64 +501,6 @@ module ExplorerMaker = (
         ->Promise.ok
       })
   }
-
-  let getOperations = (
-    network,
-    account: PublicKeyHash.t,
-    ~types: option<array<string>>=?,
-    ~destination: option<PublicKeyHash.t>=?,
-    ~limit: option<int>=?,
-    (),
-  ) =>
-    network
-    ->URL.Explorer.operations(account, ~types?, ~destination?, ~limit?, ())
-    ->Get.get
-    ->Promise.flatMapOk(res =>
-      res
-      ->Result.fromExn({
-        open Json.Decode
-        array(Operation.Decode.t)
-      })
-      ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-      ->Promise.value
-    )
-    ->Promise.mapOk(filterMalformedDuplicates)
-
-  let getBalances = (network, ~addresses: list<PublicKeyHash.t>) =>
-    network
-    ->URL.Explorer.balances(~addresses)
-    ->Get.get
-    ->Promise.flatMapOk(res => {
-      let decoder = json => {
-        open Json.Decode
-        (json |> field("pkh", PublicKeyHash.decoder), json |> field("balance", Tez.decoder))
-      }
-      res
-      ->Result.fromExn({
-        open Json.Decode
-        array(decoder)
-      })
-      ->Result.mapError(e => e->JsonEx.filterJsonExn->JsonError)
-      ->Promise.value
-    })
-
-  let getMultisigs = (network, ~addresses: list<PublicKeyHash.t>, ~contract: PublicKeyHash.t) =>
-    network
-    ->URL.Explorer.multisigs(~addresses, ~contract)
-    ->Get.get
-    ->Promise.flatMapOk(response => {
-      let decoder = json => {
-        open Json.Decode
-        (
-          json |> field("pkh", PublicKeyHash.decoder),
-          json |> field("ks", array(PublicKeyHash.decoder)),
-        )
-      }
-      response
-      ->Result.fromExn(Json.Decode.array(decoder))
-      ->Result.mapError(error => error->JsonEx.filterJsonExn->JsonError)
-      ->Promise.value
-    })
 }
 
 module Explorer = ExplorerMaker(URL)

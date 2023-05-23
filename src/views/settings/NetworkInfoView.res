@@ -28,7 +28,6 @@ open ReactNative
 module StateLenses = %lenses(
   type state = {
     node: string,
-    mezos: string,
   }
 )
 module NetworkInfoCreateForm = ReForm.Make(StateLenses)
@@ -108,11 +107,6 @@ let make = (~network: Network.network, ~closeAction) => {
       current=currentEndpoint
       label={I18n.Label.custom_network_node_url(endpoints->Array.length > 0)}
       values=endpoints
-    />
-    <Item
-      style={styles["notFirstItem"]}
-      label=I18n.Label.custom_network_mezos_url
-      values=[network.explorer]
     />
   </ModalFormView>
 }

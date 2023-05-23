@@ -29,7 +29,6 @@ module StateLenses = %lenses(
   type state = {
     name: string,
     node: string,
-    mezos: string,
   }
 )
 module NetworkCreateForm = ReForm.Make(StateLenses)
@@ -56,14 +55,6 @@ let nodeErrorFilter = x =>
   | _ => None
   }
 
-let mezosErrorFilter = x =>
-  switch x {
-  | Some("APIError") => Some(I18n.Form_input_error.api_not_available)
-  | Some("TwoErrors") => Some(I18n.Form_input_error.api_not_available)
-  | Some("Inconsistency") => Some(I18n.Form_input_error.different_chains)
-  | _ => None
-  }
-
 let styles = {
   open Style
   StyleSheet.create({
@@ -79,7 +70,7 @@ let styles = {
 }
 
 @react.component
-let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
+let make = (~initNode=?, ~action: action, ~closeAction) => {
   let writeConf = ConfigContext.useWrite()
 
   let (loading, setLoading) = React.useState(_ => false)
@@ -121,13 +112,12 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
       Schema(
         nonEmpty(Name) +
         nonEmpty(Node) +
-        nonEmpty(Mezos) +
         custom(values => nameExistsCheck(values.name, customNetworks), Name),
       )
     },
     ~onSubmit=({state, raiseSubmitFailed}) => {
       let networkChanged = (network: Network.network) =>
-        network.explorer != state.values.mezos || network.endpoint != state.values.node
+        network.endpoint != state.values.node
 
       let log = switch action {
       | Create => I18n.custom_network_created
@@ -152,7 +142,6 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
           {
             name: state.values.name,
             chain: chain,
-            explorer: state.values.mezos,
             endpoint: state.values.node,
           }
         }
@@ -176,12 +165,10 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
     | Create => {
         name: "",
         node: initNode->Option.getWithDefault(""),
-        mezos: initMezos->Option.getWithDefault(""),
       }
     | Edit(network) => {
         name: network.name,
         node: network.endpoint,
-        mezos: network.explorer,
       }
     },
     ~i18n=FormUtils.i18n,
@@ -219,22 +206,6 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
         error={list{
           form.formState->FormUtils.getFormStateError->nodeErrorFilter,
           form.getFieldError(Field(Node)),
-        }->Option.firstSome}
-        onSubmitEditing=onSubmit
-        disabled=?{switch action {
-        | Create => None
-        | Edit(_) => None
-        }}
-        clearButton=true
-      />
-      <FormGroupTextInput
-        label=I18n.Label.custom_network_mezos_url
-        value=form.values.mezos
-        placeholder=I18n.Input_placeholder.custom_network_mezos_url
-        handleChange={form.handleChange(Mezos)}
-        error={list{
-          form.formState->FormUtils.getFormStateError->mezosErrorFilter,
-          form.getFieldError(Field(Mezos)),
         }->Option.firstSome}
         onSubmitEditing=onSubmit
         disabled=?{switch action {
