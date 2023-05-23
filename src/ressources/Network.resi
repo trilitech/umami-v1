@@ -25,14 +25,6 @@
 
 type chainId = private string
 
-type apiVersion = {
-  api: Version.t,
-  indexer: string,
-  node: string,
-  chain: chainId,
-  protocol: string,
-}
-
 let apiLowestBound: Version.t
 let apiHighestBound: Version.t
 let checkInBound: Version.t => bool
@@ -143,4 +135,4 @@ let findValidEndpoint: nativeChains => Promise.t<network>
 
 let monitor: string => Promise.t<monitorResult>
 
-let checkConfiguration: (string, string) => Promise.t<(apiVersion, chain<chainId>)>
+let checkConfiguration: (string) => Promise.t<chain<chainId>>

@@ -345,12 +345,11 @@ module MultisigPage = {
 
 @react.component
 let make = () => {
-  let apiVersion: option<Network.apiVersion> = StoreContext.useApiVersion()
   let syncState = React.useState(_ => Sync.NotInitiated)
   let searchState = React.useState(_ => "")
   let stop = React.useRef(false)
   let (contractType, _) as contractState = React.useState(() => Token)
-  let chain = apiVersion->Option.map(v => v.chain)
+  let chain = StoreContext.useChainId()
 
   {
     switch contractType {

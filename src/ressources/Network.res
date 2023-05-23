@@ -25,14 +25,6 @@
 
 type chainId = string
 
-type apiVersion = {
-  api: Version.t,
-  indexer: string,
-  node: string,
-  chain: chainId,
-  protocol: string,
-}
-
 let apiLowestBound = Version.mk(~fix=0, 2, 2)
 
 let apiHighestBound = Version.mk(2, 2)
@@ -443,42 +435,6 @@ let monitor = url =>
     ->Promise.value
   )
 
-let getAPIVersion = (~timeout=?, url) =>
-  (url ++ "/version")
-  ->fetchJson(~timeout?, e => API(NotAvailable(e)))
-  ->Promise.flatMapOk(json =>
-    Result.fromExn((), () => {
-      open Json.Decode
-      field("api", string, json)
-    })
-    ->Result.mapError(mapAPIError)
-    ->Promise.value
-    ->Promise.flatMapOk(api =>
-      Version.parse(api)
-      ->Result.mapError(x =>
-        switch x {
-        | Version.VersionFormat(e) => API(VersionFormat(e))
-        | _ => API(VersionRPCError("Unknown error"))
-        }
-      )
-      ->Promise.value
-    )
-    ->Promise.flatMapOk(api =>
-      Result.fromExn((), () => {
-        open Json.Decode
-        {
-          api: api,
-          indexer: json |> field("indexer", string),
-          node: json |> field("node", string),
-          chain: json |> field("chain", string),
-          protocol: json |> field("protocol", string),
-        }
-      })
-      ->Result.mapError(mapAPIError)
-      ->Promise.value
-    )
-  )
-
 let getNodeChain = (~timeout=?, url) =>
   (url ++ "/chains/main/chain_id")
   ->fetchJson(~timeout?, e => Node(NotAvailable(e)))
@@ -496,19 +452,6 @@ let getNodeChain = (~timeout=?, url) =>
     }
   )
 
-let checkConfiguration = (api_url, node_url): Promise.t<(apiVersion, chain<chainId>)> =>
-  Promise.map2(getAPIVersion(~timeout=5000, api_url), getNodeChain(~timeout=5000, node_url), (
-    api_res,
-    node_res,
-  ) =>
-    switch (api_res, node_res) {
-    | (Error(API(api_err)), Error(Node(node_err))) => Error(APIAndNodeError(api_err, node_err))
-    | (Error(err), _)
-    | (_, Error(err)) =>
-      Error(err)
-    | (Ok(apiVersion), Ok(nodeChain)) =>
-      String.equal(apiVersion.chain, nodeChain->getChainId)
-        ? Ok((apiVersion, nodeChain))
-        : Error(ChainInconsistency(apiVersion.chain, nodeChain->getChainId))
-    }
-  )
+let checkConfiguration = (node_url): Promise.t<chain<chainId>> => {
+  getNodeChain(~timeout=5000, node_url)
+}

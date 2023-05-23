@@ -136,8 +136,7 @@ let make = (~initNode=?, ~initMezos=?, ~action: action, ~closeAction) => {
 
       let checkConfig = () => {
         setLoading(_ => true)
-        Network.checkConfiguration(state.values.mezos, state.values.node)
-        ->Promise.mapOk(snd)
+        Network.checkConfiguration(state.values.node)
         ->Promise.tap(_ => setLoading(_ => false))
       }
 
