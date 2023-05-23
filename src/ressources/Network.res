@@ -25,26 +25,11 @@
 
 type chainId = string
 
-type apiVersion = {
-  api: Version.t,
-  indexer: string,
-  node: string,
-  chain: chainId,
-  protocol: string,
-}
-
 let apiLowestBound = Version.mk(~fix=0, 2, 2)
 
 let apiHighestBound = Version.mk(2, 2)
 
 let checkInBound = version => Version.checkInBound(version, apiLowestBound, apiHighestBound)
-
-type monitorResult = {
-  nodeLastBlock: int,
-  nodeLastBlockTimestamp: string,
-  indexerLastBlock: int,
-  indexerLastBlockTimestamp: string,
-}
 
 type status =
   | Online
@@ -191,7 +176,6 @@ type configurableChains<'chainId> = [nativeChains | #Custom('chainId)]
 type network = {
   name: string,
   chain: chain<chainId>,
-  explorer: string,
   endpoint: string,
 }
 
@@ -261,7 +245,6 @@ module Encode = {
     object_(list{
       ("name", string(c.name)),
       ("chain", chainEncoder(c.chain)),
-      ("explorer", string(c.explorer)),
       ("endpoint", string(c.endpoint)),
     })
   }
@@ -312,27 +295,23 @@ module Decode = {
     {
       name: json |> field("name", string),
       chain: json |> field("chain", chainDecoder(chainFromString)),
-      explorer: json |> field("explorer", string),
       endpoint: json |> field("endpoint", string),
     }
   }
 }
 
-let mk = (~explorer, ~endpoint, chain) => {
+let mk = (~endpoint, chain) => {
   name: getDisplayedName(chain),
   chain: chain,
-  explorer: explorer,
   endpoint: endpoint,
 }
 
 let mainnet = mk(
-  ~explorer="https://mainnet.umamiwallet.com",
   ~endpoint="https://mainnet.smartpy.io/",
   #Mainnet,
 )
 
 let ghostnet = mk(
-  ~explorer="https://ghostnet.umamiwallet.com",
   ~endpoint="https://ghostnet.ecadinfra.com/",
   #Ghostnet,
 )
@@ -419,66 +398,6 @@ let fetchJson = (url, ~timeout=?, mkError) =>
     response->Fetch.Response.json->Promise.fromJs(err => mkError(Js.String.make(err)->#JsonError))
   )
 
-let mapAPIError: _ => Errors.t = x =>
-  switch x {
-  | Json.ParseError(error) => API(MonitorRPCError(error))
-  | Json.Decode.DecodeError(error) => API(MonitorRPCError(error))
-  | _ => API(MonitorRPCError("Unknown error"))
-  }
-
-let monitor = url =>
-  (url ++ "/monitor/blocks")
-  ->fetchJson(e => API(NotAvailable(e)))
-  ->Promise.flatMapOk(json =>
-    Result.fromExn((), () => {
-      open Json.Decode
-      {
-        nodeLastBlock: json |> field("node_last_block", int),
-        nodeLastBlockTimestamp: json |> field("node_last_block_timestamp", string),
-        indexerLastBlock: json |> field("indexer_last_block", int),
-        indexerLastBlockTimestamp: json |> field("indexer_last_block_timestamp", string),
-      }
-    })
-    ->Result.mapError(mapAPIError)
-    ->Promise.value
-  )
-
-let getAPIVersion = (~timeout=?, url) =>
-  (url ++ "/version")
-  ->fetchJson(~timeout?, e => API(NotAvailable(e)))
-  ->Promise.flatMapOk(json =>
-    Result.fromExn((), () => {
-      open Json.Decode
-      field("api", string, json)
-    })
-    ->Result.mapError(mapAPIError)
-    ->Promise.value
-    ->Promise.flatMapOk(api =>
-      Version.parse(api)
-      ->Result.mapError(x =>
-        switch x {
-        | Version.VersionFormat(e) => API(VersionFormat(e))
-        | _ => API(VersionRPCError("Unknown error"))
-        }
-      )
-      ->Promise.value
-    )
-    ->Promise.flatMapOk(api =>
-      Result.fromExn((), () => {
-        open Json.Decode
-        {
-          api: api,
-          indexer: json |> field("indexer", string),
-          node: json |> field("node", string),
-          chain: json |> field("chain", string),
-          protocol: json |> field("protocol", string),
-        }
-      })
-      ->Result.mapError(mapAPIError)
-      ->Promise.value
-    )
-  )
-
 let getNodeChain = (~timeout=?, url) =>
   (url ++ "/chains/main/chain_id")
   ->fetchJson(~timeout?, e => Node(NotAvailable(e)))
@@ -496,19 +415,6 @@ let getNodeChain = (~timeout=?, url) =>
     }
   )
 
-let checkConfiguration = (api_url, node_url): Promise.t<(apiVersion, chain<chainId>)> =>
-  Promise.map2(getAPIVersion(~timeout=5000, api_url), getNodeChain(~timeout=5000, node_url), (
-    api_res,
-    node_res,
-  ) =>
-    switch (api_res, node_res) {
-    | (Error(API(api_err)), Error(Node(node_err))) => Error(APIAndNodeError(api_err, node_err))
-    | (Error(err), _)
-    | (_, Error(err)) =>
-      Error(err)
-    | (Ok(apiVersion), Ok(nodeChain)) =>
-      String.equal(apiVersion.chain, nodeChain->getChainId)
-        ? Ok((apiVersion, nodeChain))
-        : Error(ChainInconsistency(apiVersion.chain, nodeChain->getChainId))
-    }
-  )
+let checkConfiguration = (node_url): Promise.t<chain<chainId>> => {
+  getNodeChain(~timeout=5000, node_url)
+}

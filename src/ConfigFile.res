@@ -178,7 +178,6 @@ module Legacy = {
       {
         name: json |> field("name", string),
         chain: json |> field("chain", networkVariantLegacyDecoder),
-        explorer: json |> field("explorer", string),
         endpoint: json |> field("endpoint", string),
       }
     }

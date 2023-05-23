@@ -459,7 +459,7 @@ module Fetch = {
         )
       })
 
-    // Finally, we ask Mezos for the kind of the token (it might not have been
+    // Finally, we ask Indexer for the kind of the token (it might not have been
     // correctly indexed)
     let tryInAPI = (bcdTokens, token: PublicKeyHash.t, ids) =>
       NodeAPI.Tokens.checkTokenContract(config, token)->Promise.map(kind =>

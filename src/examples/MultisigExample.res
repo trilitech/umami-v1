@@ -15,7 +15,7 @@ let origination = Multisig.API.origination(
 )
 
 // 2 - Fetch contracts that concern an implcit address (Only explorer and chain fields are needed)
-let network: Network.t = {name: "foo", chain: #Ghostnet, explorer: "explorerHost", endpoint: "bar"}
+let network: Network.t = {name: "foo", chain: #Ghostnet, endpoint: "bar"}
 let contracts = Multisig.API.getAddresses(network, ~addresses=[creatorAddress])
 
 // 3 - Fetch proposals for a given multisig contract address
