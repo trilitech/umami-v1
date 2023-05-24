@@ -481,9 +481,9 @@ module ExplorerMaker = (
         decoder
         ->Json.Decode.array(response)
         ->Js.Array2.filter(contract => {
-            addressesSet
+            !(addressesSet
             ->Set.intersect(Set.fromArray(contract.signers, ~id=module(PublicKeyHash.Comparator)))
-            ->Set.isEmpty
+            ->Set.isEmpty)
           })
         ->Js.Array2.map(contract => contract.address)
         ->Promise.ok
