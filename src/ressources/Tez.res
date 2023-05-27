@@ -117,4 +117,4 @@ let toString = (tez: t) => {
 let formatString = s => s->fromString->Option.map(toString)
 
 let decoder = json => json |> Json.Decode.string |> fromMutezString
-let fromIntDecoder = json => json |> Json.Decode.int |> fromMutezInt
+let fromIntDecoder = json => json |> Json.Decode.float |> Js.Float.toString |> fromMutezString
