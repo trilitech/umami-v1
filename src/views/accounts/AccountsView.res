@@ -83,54 +83,6 @@ module CreateAccountButton = {
   </>
 }
 
-module BuyTezButton = {
-  let styles = {
-    open Style
-    StyleSheet.create({
-      "button": style(~marginLeft=-6.->dp, ~marginBottom=2.->dp, ~alignSelf=#flexStart, ()),
-      "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
-    })
-  }
-
-  @react.component
-  let make = (~account: Alias.t, ~showView) => {
-    let theme = ThemeContext.useTheme()
-    let network = ConfigContext.useNetwork()
-    let (visibleModal, openAction, closeAction) = ModalAction.useModalActionState()
-    let network = switch network.chain {
-    | #Mainnet => #mainnet->Some
-    | #Ghostnet => #ghosnet->Some
-    | _ => None
-    }
-
-    let buyTez = (network, address: PublicKeyHash.t) => {
-      closeAction()
-      let widget = ReWert.makeTezWidget(~network, ~address, ~theme)
-      let url = widget->ReWert.Widget.getEmbedUrl
-      showView(url)
-    }
-
-    <>
-      <View style={styles["button"]}>
-        <ButtonAction
-          onPress={_ => openAction()}
-          text=I18n.Btn.buy_tez
-          icon=Icons.Shop.build
-          primary=true
-          disabled={network == None}
-        />
-      </View>
-      {switch network {
-      | None => React.null
-      | Some(network) =>
-        <ModalAction visible=visibleModal onRequestClose=closeAction>
-          <WertView account submit={buyTez(network)} closeAction />
-        </ModalAction>
-      }}
-    </>
-  }
-}
-
 type accountType = Individual | Multisig
 
 module AccountTypeSwitch = {
@@ -307,7 +259,7 @@ let styles = {
 }
 
 @react.component
-let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode) => {
+let make = (~account: Alias.t, ~showCreateAccount, ~mode, ~setMode) => {
   let resetSecrets = StoreContext.Secrets.useResetAll()
   let accountsRequest = StoreContext.Accounts.useRequest()
   let token = StoreContext.SelectedToken.useGet()
@@ -336,7 +288,6 @@ let make = (~account: Alias.t, ~showCreateAccount, ~showBuyTez, ~mode, ~setMode)
         {mode->Mode.is_management
           ? <CreateAccountButton action=showCreateAccount />
           : <View>
-              <BuyTezButton account showView=showBuyTez />
               <AccountTypeSwitch accountType setAccountType />
             </View>}
       </View>
