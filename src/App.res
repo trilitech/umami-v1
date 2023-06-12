@@ -109,7 +109,7 @@ module SelectedAccountView = {
 
 module Dashboard = {
   @react.component
-  let make = (~account: Alias.t, ~route: Routes.t, ~showBuyTez, ~setMainPage) => {
+  let make = (~account: Alias.t, ~route: Routes.t, ~setMainPage) => {
     let (accountsViewMode, setAccountsViewMode) = React.useState(_ => AccountsView.Mode.Simple)
     <>
       {switch route {
@@ -118,7 +118,6 @@ module Dashboard = {
           account
           mode=accountsViewMode
           setMode=setAccountsViewMode
-          showBuyTez
           showCreateAccount={() => setMainPage(_ => Homepage.AddAccountModal)}
         />
       | Nft => <NftView account />
@@ -252,7 +251,6 @@ module AppView = {
                       {account =>
                         <Dashboard
                           account
-                          showBuyTez={url => setMainPage(_ => BuyTez(url))}
                           route
                           setMainPage
                         />}
