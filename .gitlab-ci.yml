@@ -3,6 +3,7 @@ stages:
   - umami-test
   - test
   - dist
+  - dast
 
 cache:
   paths:
@@ -54,6 +55,7 @@ include:
   - template: Security/SAST-IaC.gitlab-ci.yml
 #   - template: Code-Quality.gitlab-ci.yml
   - local: .gitlab-ci-dist.yml
+  - template: DAST.gitlab-ci.yml
 
 # code_quality:
 #   stage: test
@@ -65,3 +67,10 @@ include:
 sast:
   stage: test
   image: docker:stable
+
+# Your selected site and scanner profiles:
+dast:
+  stage: dast
+  dast_configuration:
+    site_profile: "QA mainnet"
+    scanner_profile: "Test scanner profile"
