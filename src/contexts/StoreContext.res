@@ -189,7 +189,7 @@ let make = (~children) => {
     snd(balanceRequestsState)(ApiRequest.expireCache)
     snd(balanceTokenRequestsState)(ApiRequest.expireCache)
     snd(selectedTokenState)(_ => None)
-    snd(chainIdState)(_ => None)
+    snd(chainIdState)(_ => Some(network.chain->Network.getChainId))
   }
 
   React.useEffect1(() => {
