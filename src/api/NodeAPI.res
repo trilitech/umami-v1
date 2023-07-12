@@ -219,7 +219,9 @@ module Tokens = {
     ->Promise.flatMapOk(json => {
       let standard =
         json
-        ->Js.Json.decodeObject
+        ->Js.Json.decodeArray
+        ->Option.flatMap(arr => arr->List.fromArray->List.head)
+        ->Option.flatMap(Js.Json.decodeObject)
         ->Option.flatMap(o => Js.Dict.get(o, "standard"))
         ->Option.flatMap(Js.Json.decodeString)
       switch standard {
