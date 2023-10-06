@@ -376,7 +376,6 @@ module Title = {
   let delete_contract = "Delete contract?"
   let delete_secret = "Delete Secret?"
   let scan = "Scan"
-  let disclaimer = "User Agreement"
   let beacon_connection_request = "Connection Request"
   let beacon_sign_request = "Sign"
   let beacon_pairing = "Connect to DApp with pairing request"
