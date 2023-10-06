@@ -32,17 +32,15 @@ let styles = {
   open Style
   StyleSheet.create({
     "modal": style()->unsafeAddStyle({"boxShadow": "none"}),
-    "title": style(~marginBottom=4.->dp, ~textAlign=#center, ()),
-    "updateNotice": style(~textAlign=#center, ()),
-    "subtitle": style(~textAlign=#center, ~marginTop=4.->dp, ()),
-    "disclaimerText": style(~marginBottom=32.->dp, ~marginTop=24.->dp, ()),
-    "checkboxLabel": style(~fontSize=16., ~alignItems=#flexStart, ~paddingBottom=20.->dp, ()),
+    "title": style(~marginBottom=30.->dp, ~textAlign=#center, ()),
   })
 }
 
 @react.component
 let make = (~onSign) => {
   let theme = ThemeContext.useTheme()
+  let (firstLinkHovered, setFirstLinkHovered) = React.useState(_ => false)
+  let (secondLinkHovered, setSecondLinkHovered) = React.useState(_ => false)
 
   let onAgree = () => Disclaimer.sign()
 
@@ -70,34 +68,63 @@ let make = (~onSign) => {
       array([styles["modal"], style(~backgroundColor=theme.colors.barBackground, ())])
     }>
     <Typography.Headline style={styles["title"]}>
-      {I18n.Title.disclaimer->React.string}
+      {React.string("Accept and continue")}
     </Typography.Headline>
-    <Typography.Body2 colorStyle=#mediumEmphasis style={styles["updateNotice"]}>
-      {I18n.Disclaimer.last_updated(Disclaimer.updateTime)->React.string}
-    </Typography.Body2>
-    <Typography.Overline1 colorStyle=#highEmphasis style={styles["subtitle"]}>
-      {I18n.Disclaimer.please_sign->React.string}
-    </Typography.Overline1>
-    <DocumentContext.ScrollView showsVerticalScrollIndicator=true style={styles["disclaimerText"]}>
-      <DisclaimerText />
-    </DocumentContext.ScrollView>
     <View>
-      <View>
         <CheckboxItem
-          style={styles["checkboxLabel"]}
-          label=I18n.Disclaimer.agreement_checkbox
           labelFontWeightStyle=#regular
           labelStyle={Style.style(~color=Typography.getColor(#highEmphasis, theme), ())}
           value=form.values.read
           handleChange={form.handleChange(Read)}
         />
+        <div style={
+          ReactDOM.Style.make(
+            ~fontFamily="SourceSansPro",
+            ~display="block",
+            ~position="absolute",
+            ~marginLeft="40px",
+            ~color=Typography.getColor(#highEmphasis, theme),
+            ()
+          )}>
+          <p style={ReactDOM.Style.make(~display="inline", ())}>{React.string("I confirm that I have read and agreed with the ")}</p>
+          <a
+            onMouseEnter={_ => setFirstLinkHovered(_ => true)}
+            onMouseLeave={_ => setFirstLinkHovered(_ => false)}
+            href="https://umamiwallet.com/tos.html" style={
+              ReactDOM.Style.make(
+                ~display="inline",
+                ~color=firstLinkHovered ? theme.colors.primaryButtonBackground : "inherit",
+                ~fontFamily="SourceSansPro",
+                ())
+              } target="_blank">
+            {React.string("Terms of Use")}
+          </a>
+          <p style={ReactDOM.Style.make(~display="inline", ())}>{React.string(" and the ")}</p>
+          <a
+            onMouseEnter={_ => setSecondLinkHovered(_ => true)}
+            onMouseLeave={_ => setSecondLinkHovered(_ => false)}
+            href="https://umamiwallet.com/privacypolicy.html" style={
+              ReactDOM.Style.make(
+                ~display="inline",
+                ~fontFamily="SourceSansPro",
+                ~color=secondLinkHovered ? theme.colors.primaryButtonBackground : "inherit",
+                ())
+              } target="_blank">
+            {React.string("Privacy Policy")}
+          </a>
+        </div>
+      <View>
+
       </View>
       <Buttons.SubmitPrimary
         text=I18n.Btn.disclaimer_agree
         onPress={_ => form.submit()}
         disabledLook={!formFieldsAreValids}
-        style=FormStyles.formSubmit
+        style={
+          open Style
+          style(~marginTop=40.->dp, ())
+        }
       />
     </View>
-  </ModalFormView> /* style=Style.(array([|style(~align=`center, ())|])) */
+  </ModalFormView>
 }
