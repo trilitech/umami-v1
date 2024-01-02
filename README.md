@@ -2,8 +2,7 @@
 
 # [A powerful Tezos wallet](https://umamiwallet.com)
 
-Umami is a cryptocurrency wallet developed by [Nomadic
-Labs](https://www.nomadic-labs.com/) to interact with the [Tezos
+Umami is a cryptocurrency wallet developed by [Trilitech](https://trili.tech/) to interact with the [Tezos
 Blockchain](https://tezos.com/). It runs as a desktop electron based app with multiple features: 
 
 - HD Wallet
@@ -30,7 +29,7 @@ Install now from our [release page](https://gitlab.com/nomadic-labs/umami-wallet
 ### 1) Clone the repository
 
 ```
-git clone https://gitlab.com/nomadic-labs/umami-wallet/umami/ && cd umami
+git clone [https://gitlab.com/nomadic-labs/umami-wallet/umami/](https://github.com/trilitech/umami-v1.git) && cd umami-v1
 ```
 
 ### 2) Requirements:
